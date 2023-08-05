@@ -1,0 +1,10 @@
+name: doghouse
+channels:
+  - defaults
+dependencies:
+  - pip=23.1.2
+  - python=3.10.11
+  - numpy-base
+  - pip:
+    - -r requirements.txt
+

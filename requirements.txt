@@ -1,0 +1,7 @@
+pandas
+numpy
+pyyaml
+pyspark
+psycopg2
+dota2
+steam
