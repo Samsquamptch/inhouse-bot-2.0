@@ -10,14 +10,14 @@ import logging
 from eventemitter import EventEmitter
 from multiprocessing.connection import Client
 import time
-import threading
+import pandas as pd
 event = EventEmitter()
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
 (user, password) = getCredentialsSteam()
 client = SteamClient()
 dota = Dota2Client(client)
-
+Manager = dota2.features.chat.ChannelManager(dota, 'logger')
     
 @client.on('logged_on')
 def start_dota():
@@ -37,7 +37,7 @@ def create_base_lobby(filler):
 
     dota.destroy_lobby()
     opt = {
-            'game_name': 'Doghouse Test Lobby',
+            'game_name': 'Doghouse Test Lobby2',
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
             'fill_with_bots': False,
             'allow_spectating': True,
@@ -47,8 +47,9 @@ def create_base_lobby(filler):
             'pause_setting': 0,  # TODO: LobbyDotaPauseSetting_Unlimited
         }
     dota.create_practice_lobby(password="sttsq1", options=opt)
-    dota.join_practice_lobby_team()  # jump to unassigned players
     dota.channels.join_lobby_channel()
+    Manager.join_lobby_channel()
+    dota.join_practice_lobby_team()  # jump to unassigned players
     event.emit('check_queue')
 
 @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW) 
@@ -64,17 +65,29 @@ def do_queue(lobby, idList):
 def dota_invite(ids):    
     print('Inviting...')
     for i in ids:
+        print(f'inviting {i}')
         dota.invite_to_lobby(i)
 
 @dota.on('lobby_changed')
 def change_lobby(lobby):
-    print('something happened!')
+    pass
 @event.on('check_queue')
 def check_queue():
-    print('pinged')
+    with open('data/activate.txt', 'r+') as f:
+        lines = f.read()
+        if lines.strip() == 'yes':
+            print('Ready to send invites...')
+            df = pd.DataFrame(pd.read_csv('data/users.csv'))
+            ids = list(df['id'])
+            dota.emit('queue_full', ids)
+            f.write('no')
+        else:
+            pass
+    f.close()
+    time.sleep(0.1)
     event.emit('check_queue')
-    time.sleep(1)
-
+@Manager.on('message')
+def test(c, l):
+    print(l)
 client.cli_login(username=user, password=password)
 client.run_forever()
-
