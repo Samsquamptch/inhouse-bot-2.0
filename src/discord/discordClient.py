@@ -42,8 +42,8 @@ VouchedPlayers = loadVouched()
 class RegisterModal(ui.Modal, title='Register for inhouse'):
 	def __init__(self, *args, **kwargs) -> None:
 		super().__init__(*args, **kwargs)
-		answer1 = ui.NumberInput(label='dota id', style=discord.TextStyle.short, required=True)
-		answer2 = ui.NumberInput(label='mmr', style=discord.TextStyle.short, required=True)
+		answer1 = ui.TextInput(label='dota id', style=discord.TextStyle.short, required=True)
+		answer2 = ui.TextInput(label='mmr', style=discord.TextStyle.short, required=True)
 		self.add_item(answer1)
 		self.add_item(answer2)
 
