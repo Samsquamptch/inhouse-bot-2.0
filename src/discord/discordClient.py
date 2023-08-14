@@ -176,12 +176,12 @@ class EditVouchedModal(ui.Modal, title=''):
 
 	async def on_submit(self, interaction: discord.Interaction):
 		VouchedPlayers[interaction.user.name] = {self.children[0].label : self.children[0].value, self.children[1].label : self.children[1].value}
-		#saveVouched()
+		saveVouched()
 		await interaction.response.send_message(content=f'you edited {self.player} with {self.children[0].label}: {self.children[0].value} and {self.children[1].label}: {self.children[1].value}', ephemeral=True, delete_after=5)
 
 	async def on_submit(self, interaction: discord.Interaction):
 		VouchedPlayers[interaction.user.name] = {self.children[0].label : self.children[0].value, self.children[1].label : self.children[1].value}
-		#saveVouched()
+		saveVouched()
 		await interaction.response.send_message(content=f'you edited {self.player} with {self.children[0].label}: {self.children[0].value} and {self.children[1].label}: {self.children[1].value}', ephemeral=True, delete_after=5)
 
 
