@@ -29,8 +29,11 @@ class ViewUsersModal(discord.ui.Modal, title='View Users'):
 
     async def on_submit(self, interaction: discord.Interaction):
         if self.player_name == "all":
+            #for i in CSV file
             await interaction.response.send_message('Showing all registered users', ephemeral=True, delete_after=10)
         else:
+            print(self.player_name)
+            #player_id = discord.utils.get(user.id, nick=self.player_name)
             await interaction.response.send_message(f'Showing user {self.player_name} details', ephemeral=True,
                                                 delete_after=10)
 
@@ -65,6 +68,7 @@ class RoleSelectModal(discord.ui.Modal, title='Set Player Roles'):
     pos_5 = discord.ui.TextInput(label='Hard Support preference', max_length=1)
 
     async def on_submit(self, interaction: discord.Interaction):
+        #the values which need to be parsed into CSV
         print(self.pos_1)
         print(self.pos_2)
         print(self.pos_3)
@@ -78,6 +82,7 @@ class PlayerViewModal(discord.ui.Modal, title='View Player '):
     player_name = discord.ui.TextInput(label='Player name')
 
     async def on_submit(self, interaction: discord.Interaction):
+        #player_id = discord.utils.get(user.id, nick=self.player_name)
         await interaction.response.send_message(f'Looking for user {self.name}', ephemeral=True, delete_after=10)
 
 
