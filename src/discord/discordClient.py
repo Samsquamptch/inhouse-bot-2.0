@@ -8,8 +8,13 @@ class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     verify_user = discord.ui.TextInput(label='Verify user?', max_length=1, placeholder='y/n')
 
     async def on_submit(self, interaction: discord.Interaction):
-        if self.verify_user == 'y' or 'Y':
+        #this check isn't working, not sure why
+        print(self.verify_user)
+        if self.verify_user == "y" or "Y":
             await interaction.response.send_message(f'User {self.player_name} has been vouched', ephemeral=True,
+                                                    delete_after=10)
+        else:
+            await interaction.response.send_message(f'User {self.player_name} has not been vouched', ephemeral=True,
                                                     delete_after=10)
 
 
@@ -83,7 +88,7 @@ class PlayerViewModal(discord.ui.Modal, title='View Player '):
 
     async def on_submit(self, interaction: discord.Interaction):
         #player_id = discord.utils.get(user.id, nick=self.player_name)
-        await interaction.response.send_message(f'Looking for user {self.name}', ephemeral=True, delete_after=10)
+        await interaction.response.send_message(f'Looking for user {self.player_name}', ephemeral=True, delete_after=10)
 
 
 class AdminChoices(discord.ui.View):
