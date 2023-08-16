@@ -3,6 +3,7 @@ from discord.ext import commands
 import yaml
 from yaml.loader import SafeLoader
 
+
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s name')
     verify_user = discord.ui.TextInput(label='Verify user?', max_length=1, placeholder='y/n')
@@ -51,11 +52,11 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 
 
 class RoleSelectModal(discord.ui.Modal, title='Set Player Roles'):
-    pos1 = discord.ui.TextInput(label='Carry preference', max_length=1)
-    pos2 = discord.ui.TextInput(label='Midlane preference', max_length=1)
-    pos3 = discord.ui.TextInput(label='Offlane preference', max_length=1)
-    pos4 = discord.ui.TextInput(label='Support preference', max_length=1)
-    pos5 = discord.ui.TextInput(label='Hard Support preference', max_length=1)
+    pos_1 = discord.ui.TextInput(label='Carry preference', max_length=1)
+    pos_2 = discord.ui.TextInput(label='Midlane preference', max_length=1)
+    pos_3 = discord.ui.TextInput(label='Offlane preference', max_length=1)
+    pos_4 = discord.ui.TextInput(label='Support preference', max_length=1)
+    pos_5 = discord.ui.TextInput(label='Hard Support preference', max_length=1)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True,
@@ -77,7 +78,8 @@ class AdminChoices(discord.ui.View):
         discord.SelectOption(label="Verify", description="Verify a registered user"),
         discord.SelectOption(label="Edit", description="Edit a user's details and status"),
         discord.SelectOption(label="View", description="View all registered or a specific user"),
-        discord.SelectOption(label="Remove", description="Delete a registered user")
+        discord.SelectOption(label="Remove", description="Delete a registered user"),
+        discord.SelectOption(label="Refresh", description="Select to allow you to choose the same option")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -90,6 +92,8 @@ class AdminChoices(discord.ui.View):
                 await interaction.response.send_modal(ViewUsersModal())
             case "Remove":
                 await interaction.response.send_modal(RemoveUserModal())
+            case "Refresh":
+                await interaction.response.defer()
 
 
 class UserChoices(discord.ui.View):
@@ -99,7 +103,8 @@ class UserChoices(discord.ui.View):
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
         discord.SelectOption(label="Register", description="Register for the inhouse bot"),
         discord.SelectOption(label="Roles", description="Update what your role preferences are"),
-        discord.SelectOption(label="Players", description="View a player based on their name or steam ID")
+        discord.SelectOption(label="Players", description="View a player based on their name or steam ID"),
+        discord.SelectOption(label="Refresh", description="Select to allow you to choose the same option")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -110,11 +115,15 @@ class UserChoices(discord.ui.View):
                 await interaction.response.send_modal(RoleSelectModal())
             case "Players":
                 await interaction.response.send_modal(PlayerViewModal())
+            case "Refresh":
+                await interaction.response.defer()
+
 
 def load_token():
-	with open('../../credentials/discord_token.yml') as f:
-		data = yaml.load(f, Loader=SafeLoader)
-	return data['TOKEN']
+    with open('../../credentials/discord_token.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data['TOKEN']
+
 
 def run_discord_bot():
     intents = discord.Intents.default()
@@ -134,6 +143,7 @@ def run_discord_bot():
         await ctx.send("Admin options are below", view=AdminChoices())
 
     bot.run(load_token())
+
 
 if __name__ == '__main__':
     run_discord_bot()
