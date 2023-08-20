@@ -90,6 +90,14 @@ class PlayerViewModal(discord.ui.Modal, title='View Player '):
         #player_id = discord.utils.get(user.id, nick=self.player_name)
         await interaction.response.send_message(f'Looking for user {self.player_name}', ephemeral=True, delete_after=10)
 
+class RegisterButton(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Click to register for inhouse", emoji="📋",
+                       style=discord.ButtonStyle.green)
+    async def register(self, interaction: discord.Interaction, button: discord.ui.Button ):
+        await interaction.response.send_modal(RegisterUserModal())
 
 class AdminChoices(discord.ui.View):
     def __init__(self):
@@ -122,20 +130,21 @@ class UserChoices(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
-        discord.SelectOption(label="Register", emoji="📋", description="Register for the inhouse bot"),
         discord.SelectOption(label="Roles", emoji="🖊️", description="Update what your role preferences are"),
         discord.SelectOption(label="Players", emoji="👀", description="View a player based on their name or steam ID"),
+        discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
         match select.values[0]:
-            case "Register":
-                await interaction.response.send_modal(RegisterUserModal())
             case "Roles":
                 await interaction.response.send_modal(RoleSelectModal())
             case "Players":
                 await interaction.response.send_modal(PlayerViewModal())
+            case "Ladder":
+                await interaction.response.send_message(content="This feature has not yet been added", ephemeral=True,
+                                                        delete_after=10)
             case "Refresh":
                 await interaction.response.defer()
 
@@ -156,8 +165,9 @@ def run_discord_bot():
         print('bot now running!')
 
     @bot.command()
-    async def options(ctx):
-        await ctx.send("Please choose an option below", view=UserChoices())
+    async def user(ctx):
+        await ctx.send("New user? Please register here:", view=RegisterButton())
+        await ctx.send("Already registered? Please choose from the below options", view=UserChoices())
 
     @bot.command()
     async def admin(ctx):
