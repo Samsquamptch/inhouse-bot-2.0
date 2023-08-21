@@ -93,13 +93,16 @@ class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     verify_user = discord.ui.TextInput(label='Verify user?', max_length=1, placeholder='y/n')
 
     async def on_submit(self, interaction: discord.Interaction):
-        #this check isn't working, not sure why
-        print(self.verify_user)
-        if self.verify_user == "y" or "Y":
-            await interaction.response.send_message(f'User {self.player_name} has been vouched', ephemeral=True,
+        confirm_verification = str(self.verify_user)
+        match confirm_verification:
+            case "y" | "Y":
+                await interaction.response.send_message(f'User {self.player_name} has been vouched', ephemeral=True,
                                                     delete_after=10)
-        else:
-            await interaction.response.send_message(f'User {self.player_name} has not been vouched', ephemeral=True,
+            case "n" | "N":
+                await interaction.response.send_message(f'User {self.player_name} has not been vouched', ephemeral=True,
+                                                    delete_after=10)
+            case _:
+                await interaction.response.send_message(f'please use y/n to confirm vouching of user {self.player_name}', ephemeral=True,
                                                     delete_after=10)
 
 
