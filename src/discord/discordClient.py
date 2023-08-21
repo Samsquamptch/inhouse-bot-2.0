@@ -146,6 +146,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     player_mmr = discord.ui.TextInput(label='Player MMR')
 
     async def on_submit(self, interaction: discord.Interaction):
+        #server = interaction.user.guild
+        #role = discord.utils.get(server.roles, name="inhouse")
         disc = interaction.user.id
         steam = str(self.steam_id)
         mmr = self.player_mmr
@@ -155,6 +157,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(Player)
+        #await interaction.user.add_roles(role)
         await interaction.response.send_message('You\'ve been registered, please wait to be vouched', ephemeral=True,
                                                 delete_after=10)
 
