@@ -179,10 +179,16 @@ class RegisterButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
+
     @discord.ui.button(label="Click to register for inhouse", emoji="📋",
                        style=discord.ButtonStyle.green)
     async def register(self, interaction: discord.Interaction, button: discord.ui.Button ):
-        await interaction.response.send_modal(RegisterUserModal())
+        server = interaction.user.guild
+        role = discord.utils.get(server.roles, name="inhouse")
+        if role in interaction.user.roles:
+            await interaction.response.send_message(content="You are already registered", ephemeral=True)
+        else:
+            await interaction.response.send_modal(RegisterUserModal())
 
 class AdminChoices(discord.ui.View):
     def __init__(self):
