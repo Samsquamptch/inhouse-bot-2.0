@@ -11,7 +11,6 @@ class RolePreferenceSelect(discord.ui.View):
     role_pref = np.empty(5, dtype = int)
     role_pref.fill(5)
     role_counter = 0
-    current_user = None
 
     @discord.ui.select(
         placeholder="Carry Preference", max_values=1,
@@ -26,7 +25,15 @@ class RolePreferenceSelect(discord.ui.View):
     async def select_carry_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
         self.role_pref[0]= str(select_item.values[0])
         self.role_counter+=1
-        await interaction.response.defer()
+        if self.role_counter == 5:
+            current_user = str(interaction.user.id)
+            update_roles(current_user, self.role_pref)
+            await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
+                                                view=None)
+        else:
+            await interaction.response.defer()
+
 
     @discord.ui.select(
         placeholder="Midlane Preference", max_values=1,
@@ -41,7 +48,15 @@ class RolePreferenceSelect(discord.ui.View):
     async def select_mid_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
         self.role_pref[1]= str(select_item.values[0])
         self.role_counter+=1
-        await interaction.response.defer()
+        if self.role_counter == 5:
+            current_user = str(interaction.user.id)
+            update_roles(current_user, self.role_pref)
+            await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
+                                                view=None)
+        else:
+            await interaction.response.defer()
+
 
     @discord.ui.select(
         placeholder="Offlane Preference", max_values=1,
@@ -56,7 +71,15 @@ class RolePreferenceSelect(discord.ui.View):
     async def select_off_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
         self.role_pref[2]= str(select_item.values[0])
         self.role_counter+=1
-        await interaction.response.defer()
+        if self.role_counter == 5:
+            current_user = str(interaction.user.id)
+            update_roles(current_user, self.role_pref)
+            await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
+                                                view=None)
+        else:
+            await interaction.response.defer()
+
 
     @discord.ui.select(
         placeholder="Soft Support Preference", max_values=1,
@@ -71,7 +94,15 @@ class RolePreferenceSelect(discord.ui.View):
     async def select_soft_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
         self.role_pref[3]= str(select_item.values[0])
         self.role_counter+=1
-        await interaction.response.defer()
+        if self.role_counter == 5:
+            current_user = str(interaction.user.id)
+            update_roles(current_user, self.role_pref)
+            await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
+                                                view=None)
+        else:
+            await interaction.response.defer()
+
 
     @discord.ui.select(
         placeholder="Hard Support Preference", max_values=1,
@@ -84,17 +115,16 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.current_user = str(interaction.user.id)
         self.role_counter+=1
         self.role_pref[4]= str(select_item.values[0])
         if self.role_counter == 5:
-            user_data = pd.read_csv("../../data/users.csv")
-            X = user_data.query(f'disc=={self.current_user}')
-            user_data.iloc[X.index , [3,4,5,6,7]] = self.role_pref
-            user_data.to_csv("../../data/users.csv", index = False)
+            current_user = str(interaction.user.id)
+            update_roles(current_user, self.role_pref)
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
                                                 view=None)
+        else:
+            await interaction.response.defer()
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s name')
@@ -173,25 +203,6 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
             await interaction.response.send_message('Please enter your full Dotabuff user url when registering', ephemeral=True,
                                                 delete_after=10)
 
-
-class RoleSelectModal(discord.ui.Modal, title='Set Player Roles'):
-    pos_1 = discord.ui.TextInput(label='Carry preference', max_length=1)
-    pos_2 = discord.ui.TextInput(label='Midlane preference', max_length=1)
-    pos_3 = discord.ui.TextInput(label='Offlane preference', max_length=1)
-    pos_4 = discord.ui.TextInput(label='Support preference', max_length=1)
-    pos_5 = discord.ui.TextInput(label='Hard Support preference', max_length=1)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        #the values which need to be parsed into CSV
-        print(self.pos_1)
-        print(self.pos_2)
-        print(self.pos_3)
-        print(self.pos_4)
-        print(self.pos_5)
-        await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True,
-                                                delete_after=10)
-
-
 class PlayerViewModal(discord.ui.Modal, title='View Player '):
     player_name = discord.ui.TextInput(label='Player name')
 
@@ -244,8 +255,7 @@ class UserChoices(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
-        discord.SelectOption(label="RolesM", emoji="🖊️", description="Update what your role preferences are (MODAL)"),
-        discord.SelectOption(label="RolesS", emoji="📄", description="Update what your role preferences are (SELECT)"),
+        discord.SelectOption(label="Roles", emoji="📄", description="Update what your role preferences are"),
         discord.SelectOption(label="Players", emoji="👀", description="View a player based on their name or steam ID"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
@@ -255,13 +265,7 @@ class UserChoices(discord.ui.View):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="inhouse")
         match select.values[0]:
-            case "RolesM":
-                if role in interaction.user.roles:
-                    await interaction.response.send_modal(RoleSelectModal())
-                else:
-                    await interaction.response.send_message(content="Please register before setting roles", ephemeral=True)
-            case "RolesS":
-
+            case "Roles":
                 if role in interaction.user.roles:
                     await interaction.response.send_message(content="Please update your role preferences (select from top to bottom)",
                                                             view=RolePreferenceSelect(), ephemeral=True)
@@ -275,6 +279,11 @@ class UserChoices(discord.ui.View):
             case "Refresh":
                 await interaction.response.defer()
 
+def update_roles(current_user, role_pref):
+    user_data = pd.read_csv("../../data/users.csv")
+    X = user_data.query(f'disc=={current_user}')
+    user_data.iloc[X.index , [3,4,5,6,7]] = role_pref
+    user_data.to_csv("../../data/users.csv", index = False)
 
 def load_token():
     with open('../../credentials/discord_token.yml') as f:
