@@ -142,23 +142,27 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
 
 
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
-    steam_id = discord.ui.TextInput(label='Dotabuff/Steam ID')
+    dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR')
 
     async def on_submit(self, interaction: discord.Interaction):
         #server = interaction.user.guild
         #role = discord.utils.get(server.roles, name="inhouse")
         disc = interaction.user.id
-        steam = str(self.steam_id)
+        steam = str(self.dotabuff_url)
         mmr = self.player_mmr
-        x = steam.split("/")
-        steam = x[4]
-        player = [disc, steam, mmr, 5, 5, 5, 5, 5]
-        with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(player)
-        #await interaction.user.add_roles(role)
-        await interaction.response.send_message('You\'ve been registered, please wait to be vouched', ephemeral=True,
+        if "players/" in steam:
+            steam = steam.split("players/")
+            steam = steam[1]
+            player = [disc, steam, mmr, 5, 5, 5, 5, 5]
+            with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(player)
+            #await interaction.user.add_roles(role)
+            await interaction.response.send_message('You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
+                                                    view=RolePreferenceSelect(), ephemeral=True)
+        else:
+            await interaction.response.send_message('Please enter your full Dotabuff user url when registering', ephemeral=True,
                                                 delete_after=10)
 
 
