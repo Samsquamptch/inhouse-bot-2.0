@@ -26,8 +26,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.answer1 = select_item.values[0]
-        carry_pref = str(self.answer1)
+        carry_pref = str(select_item.values[0])
         current_user = str(interaction.user.id)
         with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
             reader = csv.DictReader(user_database)
@@ -50,8 +49,16 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.answer2 = select_item.values
-        print(self.answer2)
+        mid_pref = str(select_item.values[0])
+        current_user = str(interaction.user.id)
+        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
+            reader = csv.DictReader(user_database)
+            print(",".join(reader.fieldnames))  # print back the headers
+            for row in reader:
+                if row["disc"] == current_user:
+                    row["pos2"] = mid_pref
+                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
+                                    row["pos4"], row["pos5"]]))
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -65,8 +72,16 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.answer3 = select_item.values
-        print(self.answer3)
+        off_pref = str(select_item.values[0])
+        current_user = str(interaction.user.id)
+        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
+            reader = csv.DictReader(user_database)
+            print(",".join(reader.fieldnames))  # print back the headers
+            for row in reader:
+                if row["disc"] == current_user:
+                    row["pos3"] = off_pref
+                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
+                                    row["pos4"], row["pos5"]]))
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -80,8 +95,16 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.answer4 = select_item.values
-        print(self.answer4)
+        soft_support_pref = str(select_item.values[0])
+        current_user = str(interaction.user.id)
+        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
+            reader = csv.DictReader(user_database)
+            print(",".join(reader.fieldnames))  # print back the headers
+            for row in reader:
+                if row["disc"] == current_user:
+                    row["pos4"] = soft_support_pref
+                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
+                                    row["pos4"], row["pos5"]]))
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -95,8 +118,16 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.answer5 = select_item.values
-        print(self.answer5)
+        hard_support_pref = str(select_item.values[0])
+        current_user = str(interaction.user.id)
+        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
+            reader = csv.DictReader(user_database)
+            print(",".join(reader.fieldnames))  # print back the headers
+            for row in reader:
+                if row["disc"] == current_user:
+                    row["pos5"] = hard_support_pref
+                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
+                                    row["pos4"], row["pos5"]]))
         await interaction.response.defer()
         await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
                                                 view=None)
@@ -159,8 +190,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     player_mmr = discord.ui.TextInput(label='Player MMR')
 
     async def on_submit(self, interaction: discord.Interaction):
-        #server = interaction.user.guild
-        #role = discord.utils.get(server.roles, name="inhouse")
+        server = interaction.user.guild
+        role = discord.utils.get(server.roles, name="inhouse")
         disc = interaction.user.id
         steam = str(self.dotabuff_url)
         mmr = self.player_mmr
@@ -171,7 +202,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
             with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(player)
-            #await interaction.user.add_roles(role)
+            await interaction.user.add_roles(role)
             await interaction.response.send_message('You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
                                                     view=RolePreferenceSelect(), ephemeral=True)
         else:
@@ -258,12 +289,21 @@ class UserChoices(discord.ui.View):
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
+        server = interaction.user.guild
+        role = discord.utils.get(server.roles, name="inhouse")
         match select.values[0]:
             case "RolesM":
-                await interaction.response.send_modal(RoleSelectModal())
+                if role in interaction.user.roles:
+                    await interaction.response.send_modal(RoleSelectModal())
+                else:
+                    await interaction.response.send_message(content="Please register before setting roles", ephemeral=True)
             case "RolesS":
-                await interaction.response.send_message(content="Please update your role preferences (select from top to bottom)",
-                                                view=RolePreferenceSelect(), ephemeral=True)
+
+                if role in interaction.user.roles:
+                    await interaction.response.send_message(content="Please update your role preferences (select from top to bottom)",
+                                                            view=RolePreferenceSelect(), ephemeral=True)
+                else:
+                    await interaction.response.send_message(content="Please register before setting roles", ephemeral=True)
             case "Players":
                 await interaction.response.send_modal(PlayerViewModal())
             case "Ladder":
