@@ -151,11 +151,12 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         disc = interaction.user.id
         steam = str(self.steam_id)
         mmr = self.player_mmr
-        steam = steam[-9:]
-        Player = [disc, steam, mmr, 5, 5, 5, 5, 5]
+        x = steam.split("/")
+        steam = x[4]
+        player = [disc, steam, mmr, 5, 5, 5, 5, 5]
         with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(Player)
+            writer.writerow(player)
         #await interaction.user.add_roles(role)
         await interaction.response.send_message('You\'ve been registered, please wait to be vouched', ephemeral=True,
                                                 delete_after=10)
