@@ -149,7 +149,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         disc = interaction.user.id
         steam = str(self.steam_id)
         mmr = self.player_mmr
-        steam = steam[-9:]
+        X = steam.split("/")
+        steam = X[4]
         Player = [disc, steam, mmr, 5, 5, 5, 5, 5]
         with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
