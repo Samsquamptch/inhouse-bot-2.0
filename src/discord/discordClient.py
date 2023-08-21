@@ -121,7 +121,8 @@ class ViewUsersModal(discord.ui.Modal, title='View Users'):
     player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
 
     async def on_submit(self, interaction: discord.Interaction):
-        if self.player_name == "all":
+        input_name = str(self.player_name)
+        if input_name == "all":
             #for i in CSV file
             await interaction.response.send_message('Showing all registered users', ephemeral=True, delete_after=10)
         else:
