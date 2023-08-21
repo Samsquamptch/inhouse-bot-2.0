@@ -240,8 +240,6 @@ class InhouseQueue(discord.ui.View):
     queue_list = []
     queue_player_name = []
 
-
-
     @discord.ui.button(label="Join Queue", emoji="✅",
                        style=discord.ButtonStyle.green)
     async def join_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -334,9 +332,10 @@ class UserChoices(discord.ui.View):
 
 def update_roles(current_user, role_pref):
     user_data = pd.read_csv("../../data/users.csv")
-    X = user_data.query(f'disc=={current_user}')
-    user_data.iloc[X.index, [3, 4, 5, 6, 7]] = role_pref
+    user_roles = user_data.query(f'disc=={current_user}')
+    user_data.iloc[user_roles.index, [3, 4, 5, 6, 7]] = role_pref
     user_data.to_csv("../../data/users.csv", index=False)
+
 
 
 def load_token():
