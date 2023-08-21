@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import yaml
 from yaml.loader import SafeLoader
-
+import csv
 class RolePreferenceSelect(discord.ui.View):
 #Select menu for choosing your role preferences
 
@@ -146,10 +146,14 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     player_mmr = discord.ui.TextInput(label='Player MMR')
 
     async def on_submit(self, interaction: discord.Interaction):
-        #the values which need to be parsed into CSV
-        print(interaction.user.id)
-        print(self.steam_id)
-        print(self.player_mmr)
+        disc = interaction.user.id
+        steam = str(self.steam_id)
+        mmr = self.player_mmr
+        steam = steam[-9:]
+        Player = [disc, steam, mmr, 5, 5, 5, 5, 5]
+        with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(Player)
         await interaction.response.send_message('You\'ve been registered, please wait to be vouched', ephemeral=True,
                                                 delete_after=10)
 
