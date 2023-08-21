@@ -3,8 +3,11 @@ from discord.ext import commands
 import yaml
 from yaml.loader import SafeLoader
 import csv
+import fileinput
+
 class RolePreferenceSelect(discord.ui.View):
 #Select menu for choosing your role preferences
+
 
     answer1 = None
     answer2 = None
@@ -23,8 +26,17 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.answer1 = select_item.values
+        self.answer1 = select_item.values[0]
+        pos1 = str(self.answer1)
+        user = str(interaction.user.id)
         print(self.answer1)
+        with open('../../data/users.csv', 'r') as csv_file:
+            for line in csv.reader(csv_file):
+                if str(line[0]) == user:
+                    line[3] = pos1
+                    writer = csv.writer(open('../../data/users.csv', 'w'))
+                    writer.writerow(line)
+
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -86,7 +98,8 @@ class RolePreferenceSelect(discord.ui.View):
         self.answer5 = select_item.values
         print(self.answer5)
         await interaction.response.defer()
-        await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences", view=None)
+        await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
+                                                view=None)
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s name')
@@ -155,8 +168,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
             steam = steam.split("players/")
             steam = steam[1]
             player = [disc, steam, mmr, 5, 5, 5, 5, 5]
-            with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as f:
-                writer = csv.writer(f)
+            with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
+                writer = csv.writer(csv_file)
                 writer.writerow(player)
             #await interaction.user.add_roles(role)
             await interaction.response.send_message('You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
