@@ -3,6 +3,91 @@ from discord.ext import commands
 import yaml
 from yaml.loader import SafeLoader
 
+class RolePreferenceSelect(discord.ui.View):
+#Select menu for choosing your role preferences
+
+    answer1 = None
+    answer2 = None
+    answer3 = None
+    answer4 = None
+    answer5 = None
+
+    @discord.ui.select(
+        placeholder="Carry Preference", max_values=1,
+        options = [
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
+        ]
+    )
+    async def select_carry_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
+        self.answer1 = select_item.values
+        print(self.answer1)
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="Midlane Preference", max_values=1,
+        options = [
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
+        ]
+    )
+    async def select_mid_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
+        self.answer2 = select_item.values
+        print(self.answer2)
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="Offlane Preference", max_values=1,
+        options = [
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
+        ]
+    )
+    async def select_off_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
+        self.answer3 = select_item.values
+        print(self.answer3)
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="Soft Support Preference", max_values=1,
+        options = [
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
+        ]
+    )
+    async def select_soft_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
+        self.answer4 = select_item.values
+        print(self.answer4)
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        placeholder="Hard Support Preference", max_values=1,
+        options = [
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
+        ]
+    )
+    async def select_hard_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
+        self.answer5 = select_item.values
+        print(self.answer5)
+        await interaction.response.defer()
+        await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences", view=None)
+
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s name')
     verify_user = discord.ui.TextInput(label='Verify user?', max_length=1, placeholder='y/n')
@@ -130,7 +215,8 @@ class UserChoices(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
-        discord.SelectOption(label="Roles", emoji="🖊️", description="Update what your role preferences are"),
+        discord.SelectOption(label="RolesM", emoji="🖊️", description="Update what your role preferences are (MODAL)"),
+        discord.SelectOption(label="RolesS", emoji="📄", description="Update what your role preferences are (SELECT)"),
         discord.SelectOption(label="Players", emoji="👀", description="View a player based on their name or steam ID"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
@@ -138,8 +224,11 @@ class UserChoices(discord.ui.View):
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
         match select.values[0]:
-            case "Roles":
+            case "RolesM":
                 await interaction.response.send_modal(RoleSelectModal())
+            case "RolesS":
+                await interaction.response.send_message(content="Please update your role preferences (select from top to bottom)",
+                                                view=RolePreferenceSelect(), ephemeral=True)
             case "Players":
                 await interaction.response.send_modal(PlayerViewModal())
             case "Ladder":
