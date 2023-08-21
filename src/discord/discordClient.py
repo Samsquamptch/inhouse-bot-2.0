@@ -29,22 +29,14 @@ class RolePreferenceSelect(discord.ui.View):
         self.answer1 = select_item.values[0]
         carry_pref = str(self.answer1)
         current_user = str(interaction.user.id)
-        print(self.answer1)
-        # with open('../../data/users.csv', 'r') as csv_file:
-        #     for line in csv.reader(csv_file):
-        #         if str(line[0]) == user:
-        #             line[3] = pos1
-        #             writer = csv.writer(open('../../data/users.csv', 'w'))
-        #             writer.writerow(line)
-
         with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
             reader = csv.DictReader(user_database)
             print(",".join(reader.fieldnames))  # print back the headers
             for row in reader:
                 if row["disc"] == current_user:
                     row["pos1"] = carry_pref
-                    print(",".join([row["disc"], row["pos1"]]))
-
+                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
+                                    row["pos4"], row["pos5"]]))
         await interaction.response.defer()
 
     @discord.ui.select(
