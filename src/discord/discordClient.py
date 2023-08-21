@@ -6,15 +6,16 @@ import csv
 import numpy as np
 import pandas as pd
 
+
 class RolePreferenceSelect(discord.ui.View):
-#Select menu for choosing your role preferences
-    role_pref = np.empty(5, dtype = int)
+    # Select menu for choosing your role preferences
+    role_pref = np.empty(5, dtype=int)
     role_pref.fill(5)
     role_counter = 0
 
     @discord.ui.select(
         placeholder="Carry Preference", max_values=1,
-        options = [
+        options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
@@ -22,22 +23,22 @@ class RolePreferenceSelect(discord.ui.View):
             discord.SelectOption(label="Very low", value="1"),
         ]
     )
-    async def select_carry_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.role_pref[0]= str(select_item.values[0])
-        self.role_counter+=1
+    async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        self.role_pref[0] = str(select_item.values[0])
+        self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
             update_roles(current_user, self.role_pref)
             await interaction.response.defer()
-            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
-                                                view=None)
+            await interaction.followup.edit_message(interaction.message.id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
         else:
             await interaction.response.defer()
-
 
     @discord.ui.select(
         placeholder="Midlane Preference", max_values=1,
-        options = [
+        options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
@@ -45,22 +46,22 @@ class RolePreferenceSelect(discord.ui.View):
             discord.SelectOption(label="Very low", value="1"),
         ]
     )
-    async def select_mid_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.role_pref[1]= str(select_item.values[0])
-        self.role_counter+=1
+    async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        self.role_pref[1] = str(select_item.values[0])
+        self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
             update_roles(current_user, self.role_pref)
             await interaction.response.defer()
-            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
-                                                view=None)
+            await interaction.followup.edit_message(interaction.message.id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
         else:
             await interaction.response.defer()
-
 
     @discord.ui.select(
         placeholder="Offlane Preference", max_values=1,
-        options = [
+        options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
@@ -68,22 +69,22 @@ class RolePreferenceSelect(discord.ui.View):
             discord.SelectOption(label="Very low", value="1"),
         ]
     )
-    async def select_off_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.role_pref[2]= str(select_item.values[0])
-        self.role_counter+=1
+    async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        self.role_pref[2] = str(select_item.values[0])
+        self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
             update_roles(current_user, self.role_pref)
             await interaction.response.defer()
-            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
-                                                view=None)
+            await interaction.followup.edit_message(interaction.message.id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
         else:
             await interaction.response.defer()
-
 
     @discord.ui.select(
         placeholder="Soft Support Preference", max_values=1,
-        options = [
+        options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
@@ -91,22 +92,22 @@ class RolePreferenceSelect(discord.ui.View):
             discord.SelectOption(label="Very low", value="1"),
         ]
     )
-    async def select_soft_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.role_pref[3]= str(select_item.values[0])
-        self.role_counter+=1
+    async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        self.role_pref[3] = str(select_item.values[0])
+        self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
             update_roles(current_user, self.role_pref)
             await interaction.response.defer()
-            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
-                                                view=None)
+            await interaction.followup.edit_message(interaction.message.id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
         else:
             await interaction.response.defer()
-
 
     @discord.ui.select(
         placeholder="Hard Support Preference", max_values=1,
-        options = [
+        options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
@@ -114,17 +115,19 @@ class RolePreferenceSelect(discord.ui.View):
             discord.SelectOption(label="Very low", value="1"),
         ]
     )
-    async def select_hard_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        self.role_counter+=1
-        self.role_pref[4]= str(select_item.values[0])
+    async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        self.role_counter += 1
+        self.role_pref[4] = str(select_item.values[0])
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
             update_roles(current_user, self.role_pref)
             await interaction.response.defer()
-            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
-                                                view=None)
+            await interaction.followup.edit_message(interaction.message.id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
         else:
             await interaction.response.defer()
+
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s name')
@@ -135,13 +138,14 @@ class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
         match confirm_verification:
             case "y" | "Y":
                 await interaction.response.send_message(f'User {self.player_name} has been vouched', ephemeral=True,
-                                                    delete_after=10)
+                                                        delete_after=10)
             case "n" | "N":
                 await interaction.response.send_message(f'User {self.player_name} has not been vouched', ephemeral=True,
-                                                    delete_after=10)
+                                                        delete_after=10)
             case _:
-                await interaction.response.send_message(f'please use y/n to confirm vouching of user {self.player_name}', ephemeral=True,
-                                                    delete_after=10)
+                await interaction.response.send_message(
+                    f'please use y/n to confirm vouching of user {self.player_name}', ephemeral=True,
+                    delete_after=10)
 
 
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
@@ -161,13 +165,13 @@ class ViewUsersModal(discord.ui.Modal, title='View Users'):
     async def on_submit(self, interaction: discord.Interaction):
         input_name = str(self.player_name)
         if input_name == "all":
-            #for i in CSV file
+            # for i in CSV file
             await interaction.response.send_message('Showing all registered users', ephemeral=True, delete_after=10)
         else:
             print(self.player_name)
-            #player_id = discord.utils.get(user.id, nick=self.player_name)
+            # player_id = discord.utils.get(user.id, nick=self.player_name)
             await interaction.response.send_message(f'Showing user {self.player_name} details', ephemeral=True,
-                                                delete_after=10)
+                                                    delete_after=10)
 
 
 class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
@@ -197,18 +201,22 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                 writer = csv.writer(csv_file)
                 writer.writerow(player)
             await interaction.user.add_roles(role)
-            await interaction.response.send_message('You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
-                                                    view=RolePreferenceSelect(), ephemeral=True)
+            await interaction.response.send_message(
+                'You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
+                view=RolePreferenceSelect(), ephemeral=True)
         else:
-            await interaction.response.send_message('Please enter your full Dotabuff user url when registering', ephemeral=True,
-                                                delete_after=10)
+            await interaction.response.send_message('Please enter your full Dotabuff user url when registering',
+                                                    ephemeral=True,
+                                                    delete_after=10)
+
 
 class PlayerViewModal(discord.ui.Modal, title='View Player '):
     player_name = discord.ui.TextInput(label='Player name')
 
     async def on_submit(self, interaction: discord.Interaction):
-        #player_id = discord.utils.get(user.id, nick=self.player_name)
+        # player_id = discord.utils.get(user.id, nick=self.player_name)
         await interaction.response.send_message(f'Looking for user {self.player_name}', ephemeral=True, delete_after=10)
+
 
 class RegisterButton(discord.ui.View):
     def __init__(self):
@@ -216,7 +224,7 @@ class RegisterButton(discord.ui.View):
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📋",
                        style=discord.ButtonStyle.green)
-    async def register(self, interaction: discord.Interaction, button: discord.ui.Button ):
+    async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="inhouse")
         if role in interaction.user.roles:
@@ -224,16 +232,19 @@ class RegisterButton(discord.ui.View):
         else:
             await interaction.response.send_modal(RegisterUserModal())
 
-class QueueButton(discord.ui.View):
+
+class InhouseQueue(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     queue_list = []
     queue_player_name = []
 
+
+
     @discord.ui.button(label="Join Queue", emoji="✅",
                        style=discord.ButtonStyle.green)
-    async def join_queue(self, interaction: discord.Interaction, button: discord.ui.Button ):
+    async def join_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="inhouse")
         if role in interaction.user.roles:
@@ -250,7 +261,7 @@ class QueueButton(discord.ui.View):
 
     @discord.ui.button(label="Leave Queue", emoji="❌",
                        style=discord.ButtonStyle.red)
-    async def leave_queue(self, interaction: discord.Interaction, button: discord.ui.Button ):
+    async def leave_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="inhouse")
         if role in interaction.user.roles:
@@ -261,7 +272,6 @@ class QueueButton(discord.ui.View):
             await interaction.response.send_message(content="You have left the queue", ephemeral=True)
         else:
             await interaction.response.send_message(content="You aren't in the queue", ephemeral=True)
-
 
 
 class AdminChoices(discord.ui.View):
@@ -307,10 +317,12 @@ class UserChoices(discord.ui.View):
         match select.values[0]:
             case "Roles":
                 if role in interaction.user.roles:
-                    await interaction.response.send_message(content="Please update your role preferences (select from top to bottom)",
-                                                            view=RolePreferenceSelect(), ephemeral=True)
+                    await interaction.response.send_message(
+                        content="Please update your role preferences (select from top to bottom)",
+                        view=RolePreferenceSelect(), ephemeral=True)
                 else:
-                    await interaction.response.send_message(content="Please register before setting roles", ephemeral=True)
+                    await interaction.response.send_message(content="Please register before setting roles",
+                                                            ephemeral=True)
             case "Players":
                 await interaction.response.send_modal(PlayerViewModal())
             case "Ladder":
@@ -319,11 +331,13 @@ class UserChoices(discord.ui.View):
             case "Refresh":
                 await interaction.response.defer()
 
+
 def update_roles(current_user, role_pref):
     user_data = pd.read_csv("../../data/users.csv")
     X = user_data.query(f'disc=={current_user}')
-    user_data.iloc[X.index , [3,4,5,6,7]] = role_pref
-    user_data.to_csv("../../data/users.csv", index = False)
+    user_data.iloc[X.index, [3, 4, 5, 6, 7]] = role_pref
+    user_data.to_csv("../../data/users.csv", index=False)
+
 
 def load_token():
     with open('../../credentials/discord_token.yml') as f:
@@ -351,12 +365,11 @@ def run_discord_bot():
 
     @bot.command()
     async def queue(ctx):
-        await ctx.send("Click here to join the queue", view=QueueButton())
+        await ctx.send("Click here to join the queue", view=InhouseQueue())
 
     @bot.command()
     async def clear(ctx):
         await ctx.channel.purge()
-
 
     bot.run(load_token())
 
