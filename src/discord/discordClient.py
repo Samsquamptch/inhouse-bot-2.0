@@ -3,17 +3,15 @@ from discord.ext import commands
 import yaml
 from yaml.loader import SafeLoader
 import csv
-import fileinput
+import numpy as np
+import pandas as pd
 
 class RolePreferenceSelect(discord.ui.View):
 #Select menu for choosing your role preferences
-
-
-    answer1 = None
-    answer2 = None
-    answer3 = None
-    answer4 = None
-    answer5 = None
+    role_pref = np.empty(5, dtype = int)
+    role_pref.fill(5)
+    role_counter = 0
+    current_user = None
 
     @discord.ui.select(
         placeholder="Carry Preference", max_values=1,
@@ -26,16 +24,8 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        carry_pref = str(select_item.values[0])
-        current_user = str(interaction.user.id)
-        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
-            reader = csv.DictReader(user_database)
-            print(",".join(reader.fieldnames))  # print back the headers
-            for row in reader:
-                if row["disc"] == current_user:
-                    row["pos1"] = carry_pref
-                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
-                                    row["pos4"], row["pos5"]]))
+        self.role_pref[0]= str(select_item.values[0])
+        self.role_counter+=1
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -49,16 +39,8 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        mid_pref = str(select_item.values[0])
-        current_user = str(interaction.user.id)
-        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
-            reader = csv.DictReader(user_database)
-            print(",".join(reader.fieldnames))  # print back the headers
-            for row in reader:
-                if row["disc"] == current_user:
-                    row["pos2"] = mid_pref
-                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
-                                    row["pos4"], row["pos5"]]))
+        self.role_pref[1]= str(select_item.values[0])
+        self.role_counter+=1
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -72,16 +54,8 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        off_pref = str(select_item.values[0])
-        current_user = str(interaction.user.id)
-        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
-            reader = csv.DictReader(user_database)
-            print(",".join(reader.fieldnames))  # print back the headers
-            for row in reader:
-                if row["disc"] == current_user:
-                    row["pos3"] = off_pref
-                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
-                                    row["pos4"], row["pos5"]]))
+        self.role_pref[2]= str(select_item.values[0])
+        self.role_counter+=1
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -95,16 +69,8 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        soft_support_pref = str(select_item.values[0])
-        current_user = str(interaction.user.id)
-        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
-            reader = csv.DictReader(user_database)
-            print(",".join(reader.fieldnames))  # print back the headers
-            for row in reader:
-                if row["disc"] == current_user:
-                    row["pos4"] = soft_support_pref
-                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
-                                    row["pos4"], row["pos5"]]))
+        self.role_pref[3]= str(select_item.values[0])
+        self.role_counter+=1
         await interaction.response.defer()
 
     @discord.ui.select(
@@ -118,18 +84,16 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction:discord.Interaction, select_item : discord.ui.Select):
-        hard_support_pref = str(select_item.values[0])
-        current_user = str(interaction.user.id)
-        with fileinput.input(files=('../../data/users.csv'), inplace=True, mode='r') as user_database:
-            reader = csv.DictReader(user_database)
-            print(",".join(reader.fieldnames))  # print back the headers
-            for row in reader:
-                if row["disc"] == current_user:
-                    row["pos5"] = hard_support_pref
-                    print(",".join([row["disc"], row["steam"], row["mmr"], row["pos1"], row["pos2"], row["pos3"],
-                                    row["pos4"], row["pos5"]]))
-        await interaction.response.defer()
-        await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
+        self.current_user = str(interaction.user.id)
+        self.role_counter+=1
+        self.role_pref[4]= str(select_item.values[0])
+        if self.role_counter == 5:
+            user_data = pd.read_csv("../../data/users.csv")
+            X = user_data.query(f'disc=={self.current_user}')
+            user_data.iloc[X.index , [3,4,5,6,7]] = self.role_pref
+            user_data.to_csv("../../data/users.csv", index = False)
+            await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id, content="Thank you for updating your preferences",
                                                 view=None)
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
@@ -238,7 +202,6 @@ class PlayerViewModal(discord.ui.Modal, title='View Player '):
 class RegisterButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📋",
                        style=discord.ButtonStyle.green)
