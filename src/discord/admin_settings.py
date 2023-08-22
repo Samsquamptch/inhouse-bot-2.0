@@ -79,8 +79,13 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
 class ViewUsersModal(discord.ui.Modal, title='View Users'):
     player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
 
-    def create_embed(self, data_list, player_data):
-        user_embed = discord.Embed(title=f'{player_data.global_name}', description="Registered user's details",
+    def create_embed(self, data_list, player_data, server):
+        role = discord.utils.get(server.roles, name="verified")
+        if role in player_data.roles:
+            verified_status = "User is verified"
+        else:
+            verified_status = "User is not verified"
+        user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{verified_status}',
                                     color=0x00ff00)
         user_embed.set_thumbnail(url=f'{player_data.avatar}')
         user_embed.add_field(name='Dotabuff', value=f'https://www.dotabuff.com/players/{data_list[1]}', inline=True)
@@ -104,7 +109,7 @@ class ViewUsersModal(discord.ui.Modal, title='View Users'):
             check_if_exists = check_user.user_exists(server, user_name)
             if check_if_exists[0]:
                 user_data = data_management.view_user_data(check_if_exists[1].id)
-                await interaction.response.send_message(embed=self.create_embed(user_data, check_if_exists[1]), ephemeral=True)
+                await interaction.response.send_message(embed=self.create_embed(user_data, check_if_exists[1], server), ephemeral=True)
                 await interaction.response.defer()
 
 class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
