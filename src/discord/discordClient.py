@@ -103,7 +103,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         if "players/" in steam:
             steam = steam.split("players/")
             steam = steam[1]
-            player = [disc, steam, mmr, 5, 5, 5, 5, 5]
+            player = [disc,steam,mmr,5,5,5,5,5]
             dataManagement.add_user_data(player)
             await interaction.user.add_roles(role)
             await interaction.response.send_message(
