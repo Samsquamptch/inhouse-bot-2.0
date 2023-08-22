@@ -1,7 +1,8 @@
-#For all functions relating to adding/removing/amending from users.csv
+# For all functions relating to adding/removing/amending from users.csv
 
 import pandas as pd
 import csv
+
 
 def update_user_data(discord_id, columns, new_data):
     user_data = pd.read_csv("../../data/users.csv")
@@ -18,6 +19,7 @@ def check_for_value(value_check):
     else:
         variable = True
         return variable
+
 
 def add_user_data(player):
     with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:

@@ -1,6 +1,6 @@
 import discord
 import numpy as np
-import dataManagement
+import data_management
 
 class RolePreferenceSelect(discord.ui.View):
     # Select menu for choosing your role preferences
@@ -23,7 +23,7 @@ class RolePreferenceSelect(discord.ui.View):
         self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
-            dataManagement.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
@@ -46,7 +46,7 @@ class RolePreferenceSelect(discord.ui.View):
         self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
-            dataManagement.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
@@ -69,7 +69,7 @@ class RolePreferenceSelect(discord.ui.View):
         self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
-            dataManagement.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
@@ -92,7 +92,7 @@ class RolePreferenceSelect(discord.ui.View):
         self.role_counter += 1
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
-            dataManagement.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
@@ -115,7 +115,7 @@ class RolePreferenceSelect(discord.ui.View):
         self.role_pref[4] = str(select_item.values[0])
         if self.role_counter == 5:
             current_user = str(interaction.user.id)
-            dataManagement.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
