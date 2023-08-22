@@ -3,6 +3,7 @@ from discord.ext import commands
 import admin_settings
 import user_settings
 import register_user
+import user_help
 import yaml
 import inhouse_queue
 from yaml.loader import SafeLoader
@@ -35,6 +36,10 @@ def run_discord_bot():
     @bot.command()
     async def queue(ctx):
         await ctx.send("Click here to join the queue", view=inhouse_queue.InhouseQueue())
+
+    @bot.command()
+    async def get_help(ctx):
+        await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
     @bot.command()
     async def clear(ctx):
