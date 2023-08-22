@@ -6,7 +6,6 @@ import register_user
 import user_help
 import yaml
 import inhouse_queue
-import asyncio
 from yaml.loader import SafeLoader
 
 
@@ -49,14 +48,6 @@ def run_discord_bot():
     @bot.command()
     async def clear(ctx):
         await ctx.channel.purge()
-
-    @bot.command()
-    async def send_embed(ctx):
-        array = ["1", "2", "3", "4", "5"]
-        embed = discord.Embed(title="Test embed", description="Test for inhouse queue", color=0x00ff00)
-        for number in array:
-            embed.add_field(name=number, value="this is a number", inline=False)
-        await ctx.send(embed=embed)
 
     bot.run(load_token())
 

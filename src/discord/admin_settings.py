@@ -1,5 +1,6 @@
 import discord
 import check_user
+import data_management
 
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
@@ -78,17 +79,33 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
 class ViewUsersModal(discord.ui.Modal, title='View Users'):
     player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
 
+    def create_embed(self, data_list, player_data):
+        user_embed = discord.Embed(title=f'{player_data.global_name}', description="Registered user's details",
+                                    color=0x00ff00)
+        user_embed.set_thumbnail(url=f'{player_data.avatar}')
+        user_embed.add_field(name='Dotabuff', value=f'https://www.dotabuff.com/players/{data_list[1]}', inline=True)
+        user_embed.add_field(name='MMR', value=f'{data_list[2]}', inline=True)
+        user_embed.add_field(name='Role Preferences', value='', inline=False)
+        user_embed.add_field(name='Carry', value=f'{data_list[3]}', inline=False)
+        user_embed.add_field(name='Midlane', value=f'{data_list[4]}', inline=False)
+        user_embed.add_field(name='Offlane', value=f'{data_list[5]}', inline=False)
+        user_embed.add_field(name='Soft Support', value=f'{data_list[6]}', inline=False)
+        user_embed.add_field(name='Hard Support', value=f'{data_list[7]}', inline=False)
+        return user_embed
+
+
     async def on_submit(self, interaction: discord.Interaction):
-        input_name = str(self.player_name)
-        if input_name == "all":
+        user_name = str(self.player_name)
+        if user_name == "all":
             # for i in CSV file
             await interaction.response.send_message('Showing all registered users', ephemeral=True, delete_after=10)
         else:
-            print(self.player_name)
-            # player_id = discord.utils.get(user.id, nick=self.player_name)
-            await interaction.response.send_message(f'Showing user {self.player_name} details', ephemeral=True,
-                                                    delete_after=10)
-
+            server = interaction.user.guild
+            check_if_exists = check_user.user_exists(server, user_name)
+            if check_if_exists[0]:
+                user_data = data_management.view_user_data(check_if_exists[1].id)
+                await interaction.response.send_message(embed=self.create_embed(user_data, check_if_exists[1]), ephemeral=True)
+                await interaction.response.defer()
 
 class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
     player_name = discord.ui.TextInput(label='User\'s name')

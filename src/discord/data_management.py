@@ -20,6 +20,10 @@ def check_for_value(value_check):
         variable = True
         return variable
 
+def view_user_data(discord_id):
+    user_data = pd.read_csv("../../data/users.csv")
+    user_data_list = user_data.query(f'disc=={discord_id}').values.flatten().tolist()
+    return user_data_list
 
 def add_user_data(player):
     with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
