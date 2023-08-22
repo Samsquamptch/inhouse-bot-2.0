@@ -1,3 +1,5 @@
+#For all functions relating to adding/removing/amending from users.csv
+
 import pandas as pd
 import csv
 
