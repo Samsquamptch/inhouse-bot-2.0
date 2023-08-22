@@ -23,19 +23,19 @@ class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
             check_if_exists = False
         if check_if_exists == True:
             confirm_verification = str(self.verify_user)
-            match confirm_verification:
-                case "y" | "Y":
+            match confirm_verification.lower():
+                case "y":
                     role = discord.utils.get(server.roles, name="verified")
-                    if role in user_account.roles:
-                        await interaction.response.send_message(f'User {self.player_name} is already verified',
-                                                                ephemeral=True,
-                                                                delete_after=10)
-                    else:
+                    if role not in user_account.roles:
                         await user_account.add_roles(role)
                         await interaction.response.send_message(f'User {self.player_name} has been verified',
                                                                 ephemeral=True,
                                                                 delete_after=10)
-                case "n" | "N":
+                    else:
+                        await interaction.response.send_message(f'User {self.player_name} is already verified',
+                                                                ephemeral=True,
+                                                                delete_after=10)
+                case "n":
                     await interaction.response.send_message(f'User {self.player_name} has not been verified',
                                                             ephemeral=True,
                                                             delete_after=10)
@@ -55,15 +55,28 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     ban_user = discord.ui.TextInput(label='Ban user duration? (number = days banned)', max_length=2, required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
+        user_name = str(self.player_name)
+        server = interaction.user.guild
         try:
-            ban_time = str(self.ban_user)
-            int_ban_time = int(ban_time)
-            print(int_ban_time)
+            user_account = discord.utils.get(server.members, global_name=user_name)
+            if user_account == None:
+                 user_account = discord.utils.get(server.members, name=user_name)
+            check_if_exists = dataManagement.check_for_value(user_account.id)
         except:
-            await interaction.response.send_message('Please only input numbers for inhouse bans', ephemeral=True, delete_after=10)
-        await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
-                                                ephemeral=True, delete_after=10)
-
+            check_if_exists = False
+        if check_if_exists == True:
+            try:
+                ban_time = str(self.ban_user)
+                if ban_time != "":
+                    int_ban_time = int(ban_time)
+                    print(int_ban_time)
+            except:
+                await interaction.response.send_message('Please only input numbers for inhouse bans', ephemeral=True, delete_after=10)
+            await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
+                                                    ephemeral=True, delete_after=10)
+        else:
+            await interaction.response.send_message(f'User {self.player_name} does not exist in database', ephemeral=True,
+                                                    delete_after=10)
 
 class ViewUsersModal(discord.ui.Modal, title='View Users'):
     player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')

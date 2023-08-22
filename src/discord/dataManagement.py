@@ -1,20 +1,14 @@
 import pandas as pd
 
-def update_roles(current_user, role_pref):
+def update_user_data(discord_id, columns, new_data):
     user_data = pd.read_csv("../../data/users.csv")
-    user_roles = user_data.query(f'disc=={current_user}')
-    user_data.iloc[user_roles.index, [3, 4, 5, 6, 7]] = role_pref
+    updated_user = user_data.query(f'disc=={discord_id}')
+    user_data.iloc[updated_user.index, columns] = new_data
     user_data.to_csv("../../data/users.csv", index=False)
 
-def update_mmr(current_user, new_mmr):
+def check_for_value(discord_id):
     user_data = pd.read_csv("../../data/users.csv")
-    value_to_change = user_data.query(f'disc=={current_user}')
-    user_data.iloc[value_to_change.index, [2]] = new_mmr
-    user_data.to_csv("../../data/users.csv", index=False)
-
-def check_for_value(value_check):
-    user_data = pd.read_csv("../../data/users.csv")
-    if value_check not in user_data.values:
+    if discord_id not in user_data.values:
         variable = False
         return variable
     else:
