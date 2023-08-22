@@ -1,6 +1,7 @@
 import discord
 import check_user
 
+
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
     verify_user = discord.ui.TextInput(label='Verify user?', max_length=1, placeholder='y/n')
@@ -49,14 +50,22 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         server = interaction.user.guild
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
-            try:
-                ban_time = str(self.ban_user)
-                if ban_time != "":
+            new_mmr = str(self.set_mmr)
+            if new_mmr != "":
+                try:
+                    int_new_mmr = int(new_mmr)
+                except:
+                    await interaction.response.send_message('Please only input numbers for inhouse bans',
+                                                            ephemeral=True,
+                                                            delete_after=10)
+            ban_time = str(self.ban_user)
+            if ban_time != "":
+                try:
                     int_ban_time = int(ban_time)
-                    print(int_ban_time)
-            except:
-                await interaction.response.send_message('Please only input numbers for inhouse bans', ephemeral=True,
-                                                        delete_after=10)
+                except:
+                    await interaction.response.send_message('Please only input numbers for inhouse bans',
+                                                            ephemeral=True,
+                                                            delete_after=10)
             user_account = check_if_exists[1]
             await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
                                                     ephemeral=True, delete_after=10)
@@ -88,6 +97,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
                                                 delete_after=10)
+
 
 class AdminChoices(discord.ui.View):
     def __init__(self):

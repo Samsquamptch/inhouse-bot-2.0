@@ -10,7 +10,6 @@ class PlayerViewModal(discord.ui.Modal, title='View Player '):
         server = interaction.user.guild
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
-        # player_id = discord.utils.get(user.id, nick=self.player_name)
             await interaction.response.send_message(f'Looking for user {self.player_name}', ephemeral=True, delete_after=10)
         else:
             await interaction.response.send_message(f'User {self.player_name} not in database', ephemeral=True, delete_after=10)
