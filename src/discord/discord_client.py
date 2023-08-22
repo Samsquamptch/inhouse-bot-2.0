@@ -36,7 +36,9 @@ def run_discord_bot():
 
     @bot.command()
     async def queue(ctx):
+        queue_list = []
         queue_view = inhouse_queue.InhouseQueue()
+        queue_view.data = queue_list
         await queue_view.send_embed(ctx)
         # await ctx.send("Click here to join the queue", view=inhouse_queue.InhouseQueue())
 
