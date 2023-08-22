@@ -1,4 +1,4 @@
-# For all functions relating to adding/removing/amending from users.csv
+# For all functions relating to adding/removing/amending/viewing from users.csv
 
 import pandas as pd
 import csv
