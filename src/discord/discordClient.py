@@ -49,12 +49,18 @@ class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
 
 
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
-    player_name = discord.ui.TextInput(label='User\'s name')
+    player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
     set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=4, required=False)
     remove_verify_role = discord.ui.TextInput(label='Remove verification from user?', max_length=1, required=False)
     ban_user = discord.ui.TextInput(label='Ban user duration? (number = days banned)', max_length=2, required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
+        try:
+            ban_time = str(self.ban_user)
+            int_ban_time = int(ban_time)
+            print(int_ban_time)
+        except:
+            await interaction.response.send_message('Please only input numbers for inhouse bans', ephemeral=True, delete_after=10)
         await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
                                                 ephemeral=True, delete_after=10)
 
