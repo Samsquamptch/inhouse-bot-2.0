@@ -4,8 +4,6 @@ import setRoles
 import dataManagement
 import yaml
 from yaml.loader import SafeLoader
-import csv
-
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
@@ -14,17 +12,12 @@ class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
-        try:
-            user_account = discord.utils.get(server.members, global_name=user_name)
-            if user_account == None:
-                 user_account = discord.utils.get(server.members, name=user_name)
-            check_if_exists = dataManagement.check_for_value(user_account.id)
-        except:
-            check_if_exists = False
-        if check_if_exists == True:
+        check_if_exists = check_user_exists(server, user_name)
+        if check_if_exists[0] == True:
             confirm_verification = str(self.verify_user)
             match confirm_verification.lower():
                 case "y":
+                    user_account = check_if_exists[1]
                     role = discord.utils.get(server.roles, name="verified")
                     if role not in user_account.roles:
                         await user_account.add_roles(role)
@@ -57,14 +50,8 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
-        try:
-            user_account = discord.utils.get(server.members, global_name=user_name)
-            if user_account == None:
-                 user_account = discord.utils.get(server.members, name=user_name)
-            check_if_exists = dataManagement.check_for_value(user_account.id)
-        except:
-            check_if_exists = False
-        if check_if_exists == True:
+        check_if_exists = check_user_exists(server, user_name)
+        if check_if_exists[0] == True:
             try:
                 ban_time = str(self.ban_user)
                 if ban_time != "":
@@ -72,6 +59,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                     print(int_ban_time)
             except:
                 await interaction.response.send_message('Please only input numbers for inhouse bans', ephemeral=True, delete_after=10)
+            user_account = check_if_exists[1]
             await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
                                                     ephemeral=True, delete_after=10)
         else:
@@ -116,9 +104,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
             steam = steam.split("players/")
             steam = steam[1]
             player = [disc, steam, mmr, 5, 5, 5, 5, 5]
-            with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
-                writer = csv.writer(csv_file)
-                writer.writerow(player)
+            dataManagement.add_user_data(player)
             await interaction.user.add_roles(role)
             await interaction.response.send_message(
                 'You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
@@ -248,6 +234,17 @@ class UserChoices(discord.ui.View):
             case "Refresh":
                 await interaction.response.defer()
 
+
+def check_user_exists(server, user_name):
+    try:
+        user_account = discord.utils.get(server.members, global_name=user_name)
+        if user_account == None:
+            user_account = discord.utils.get(server.members, name=user_name)
+        user_in_database = dataManagement.check_for_value(user_account.id)
+    except:
+        user_in_database = False
+        user_account = None
+    return user_in_database, user_account
 
 def load_token():
     with open('../../credentials/discord_token.yml') as f:
