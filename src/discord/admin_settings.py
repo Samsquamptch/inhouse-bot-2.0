@@ -32,8 +32,6 @@ class VerifyMenu(discord.ui.View):
         for user in registered_users.members:
             if vouched_users not in user.roles and user not in self.data:
                 self.data.append(user)
-            if user in self.data and vouched_users in user.roles:
-                self.data.remove(user)
 
     def update_buttons(self):
         if not self.data:
@@ -50,7 +48,7 @@ class VerifyMenu(discord.ui.View):
         role = discord.utils.get(server.roles, name="verified")
         user_to_verify = self.data[0]
         await user_to_verify.add_roles(role)
-        self.update_register_list(server)
+        del self.data[0]
         await self.update_message(self.data, server)
         await interaction.response.defer()
 
@@ -67,9 +65,10 @@ class VerifyMenu(discord.ui.View):
                        style=discord.ButtonStyle.red)
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        role = discord.utils.get(server.roles, name="verified")
-        print(role)
-        #self.data.append(interaction.user)
+        role = discord.utils.get(server.roles, name="inhouse")
+        user_to_reject = self.data[0]
+        await user_to_reject.remove_roles(role)
+        del self.data[0]
         await self.update_message(self.data, server)
         await interaction.response.defer()
 
