@@ -2,6 +2,75 @@ import discord
 import check_user
 import data_management
 
+class VerifyMenu(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    async def send_embed(self, ctx):
+        self.update_register_list(ctx.guild)
+        self.message = await ctx.send(view=self)
+        await self.update_message(self.data, ctx.guild)
+
+    def empty_embed(self):
+        empty_embed = discord.Embed(title="No unverified users", description=f'There\'s nobody to register!',
+                                    color=0xFF0000)
+        empty_embed.set_image(url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
+        return empty_embed
+
+    async def update_message(self, data, server):
+        self.update_buttons()
+        if data:
+            user = data[0]
+            user_data = data_management.view_user_data(user.id)
+            await self.message.edit(embed=check_user.user_embed(user_data, user, server), view=self)
+        else:
+            await self.message.edit(embed=self.empty_embed(), view=self)
+
+    def update_register_list(self, server):
+        registered_users = discord.utils.get(server.roles, name="inhouse")
+        vouched_users = discord.utils.get(server.roles, name="verified")
+        for user in registered_users.members:
+            if vouched_users not in user.roles:
+                self.data.append(user)
+        print(self.data)
+
+
+    def update_buttons(self):
+        if not self.data:
+            self.verify_user.disabled = True
+            self.edit_user.disabled = True
+            self.reject_user.disabled = True
+        else:
+            self.verify_user.disabled = False
+            self.edit_user.disabled = False
+            self.reject_user.disabled = False
+
+    @discord.ui.button(label="Verify User", emoji="✅",
+                       style=discord.ButtonStyle.green)
+    async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        server = interaction.user.guild
+        role = discord.utils.get(server.roles, name="verified")
+        #self.data.append(interaction.user)
+        await self.update_message(self.data, server)
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Edit And Verify", emoji="🖊️",
+                       style=discord.ButtonStyle.blurple)
+    async def edit_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        #server = interaction.user.guild
+        #role = discord.utils.get(server.roles, name="verified")
+        await interaction.response.defer()
+
+
+    @discord.ui.button(label="Reject User", emoji="❌",
+                       style=discord.ButtonStyle.red)
+    async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        server = interaction.user.guild
+        role = discord.utils.get(server.roles, name="verified")
+        print(role)
+        #self.data.append(interaction.user)
+        await self.update_message(self.data, server)
+        await interaction.response.defer()
 
 class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')

@@ -31,6 +31,11 @@ def run_discord_bot():
 
     @bot.command()
     async def admin(ctx):
+        registered_players = []
+        verify_view = admin_settings.VerifyMenu()
+        verify_view.data = registered_players
+        await ctx.send("Below are registered users who need verification")
+        await verify_view.send_embed(ctx)
         await ctx.send("Admin options are below", view=admin_settings.AdminChoices())
 
     @bot.command()
@@ -39,7 +44,6 @@ def run_discord_bot():
         queue_view = inhouse_queue.InhouseQueue()
         queue_view.data = queue_list
         await queue_view.send_embed(ctx)
-        # await ctx.send("Click here to join the queue", view=inhouse_queue.InhouseQueue())
 
     @bot.command()
     async def get_help(ctx):
