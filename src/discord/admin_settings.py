@@ -12,7 +12,7 @@ class VerifyMenu(discord.ui.View):
         await self.update_message(self.data, ctx.guild)
 
     def empty_embed(self):
-        empty_embed = discord.Embed(title="No unverified users", description=f'There\'s nobody to register!',
+        empty_embed = discord.Embed(title="No unverified users", description=f'There\'s nobody to verify!',
                                     color=0xFF0000)
         empty_embed.set_image(url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
         return empty_embed
@@ -30,19 +30,17 @@ class VerifyMenu(discord.ui.View):
         registered_users = discord.utils.get(server.roles, name="inhouse")
         vouched_users = discord.utils.get(server.roles, name="verified")
         for user in registered_users.members:
-            if vouched_users not in user.roles:
+            if vouched_users not in user.roles and user not in self.data:
                 self.data.append(user)
-        print(self.data)
-
+            if user in self.data and vouched_users in user.roles:
+                self.data.remove(user)
 
     def update_buttons(self):
         if not self.data:
             self.verify_user.disabled = True
-            self.edit_user.disabled = True
             self.reject_user.disabled = True
         else:
             self.verify_user.disabled = False
-            self.edit_user.disabled = False
             self.reject_user.disabled = False
 
     @discord.ui.button(label="Verify User", emoji="✅",
@@ -50,15 +48,18 @@ class VerifyMenu(discord.ui.View):
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="verified")
-        #self.data.append(interaction.user)
+        user_to_verify = self.data[0]
+        await user_to_verify.add_roles(role)
+        self.update_register_list(server)
         await self.update_message(self.data, server)
         await interaction.response.defer()
 
-    @discord.ui.button(label="Edit And Verify", emoji="🖊️",
+    @discord.ui.button(label="Refresh", emoji="♻️",
                        style=discord.ButtonStyle.blurple)
-    async def edit_user(self, interaction: discord.Interaction, button: discord.ui.Button):
-        #server = interaction.user.guild
-        #role = discord.utils.get(server.roles, name="verified")
+    async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        server = interaction.user.guild
+        self.update_register_list(server)
+        await self.update_message(self.data, server)
         await interaction.response.defer()
 
 
@@ -71,42 +72,6 @@ class VerifyMenu(discord.ui.View):
         #self.data.append(interaction.user)
         await self.update_message(self.data, server)
         await interaction.response.defer()
-
-class VerifyUserModal(discord.ui.Modal, title='Verify Registered User'):
-    player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
-    verify_user = discord.ui.TextInput(label='Verify user?', max_length=1, placeholder='y/n')
-
-    async def on_submit(self, interaction: discord.Interaction):
-        user_name = str(self.player_name)
-        server = interaction.user.guild
-        if_exists = check_user.user_exists(server, user_name)
-        if if_exists[0]:
-            confirm_verification = str(self.verify_user)
-            match confirm_verification.lower():
-                case "y":
-                    user_account = if_exists[1]
-                    role = discord.utils.get(server.roles, name="verified")
-                    if role not in user_account.roles:
-                        await user_account.add_roles(role)
-                        await interaction.response.send_message(f'User {self.player_name} has been verified',
-                                                                ephemeral=True,
-                                                                delete_after=10)
-                    else:
-                        await interaction.response.send_message(f'User {self.player_name} is already verified',
-                                                                ephemeral=True,
-                                                                delete_after=10)
-                case "n":
-                    await interaction.response.send_message(f'User {self.player_name} has not been verified',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-                case _:
-                    await interaction.response.send_message(
-                        f'please use y/n to confirm verification of user {self.player_name}', ephemeral=True,
-                        delete_after=10)
-        else:
-            await interaction.response.send_message(f'User {self.player_name} does not exist in database',
-                                                    ephemeral=True,
-                                                    delete_after=10)
 
 
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
@@ -201,7 +166,6 @@ class AdminChoices(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
-        discord.SelectOption(label="Verify", emoji="✅", description="Verify a registered user"),
         discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
         discord.SelectOption(label="View", emoji="👀", description="View all registered or a specific user"),
         discord.SelectOption(label="Remove", emoji="❌", description="Delete a registered user"),
@@ -210,8 +174,6 @@ class AdminChoices(discord.ui.View):
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
         match select.values[0]:
-            case "Verify":
-                await interaction.response.send_modal(VerifyUserModal())
             case "Edit":
                 await interaction.response.send_modal(EditUserModal())
             case "View":
