@@ -79,38 +79,44 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
 class ViewUsersModal(discord.ui.Modal, title='View Users'):
     player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
 
-    def create_embed(self, data_list, player_data, server):
-        role = discord.utils.get(server.roles, name="verified")
-        if role in player_data.roles:
-            verified_status = "User is verified"
-        else:
-            verified_status = "User is not verified"
-        user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{verified_status}',
-                                    color=0x00ff00)
-        user_embed.set_thumbnail(url=f'{player_data.avatar}')
-        user_embed.add_field(name='Dotabuff', value=f'https://www.dotabuff.com/players/{data_list[1]}', inline=True)
-        user_embed.add_field(name='MMR', value=f'{data_list[2]}', inline=True)
-        user_embed.add_field(name='Role Preferences', value='', inline=False)
-        user_embed.add_field(name='Carry', value=f'{data_list[3]}', inline=False)
-        user_embed.add_field(name='Midlane', value=f'{data_list[4]}', inline=False)
-        user_embed.add_field(name='Offlane', value=f'{data_list[5]}', inline=False)
-        user_embed.add_field(name='Soft Support', value=f'{data_list[6]}', inline=False)
-        user_embed.add_field(name='Hard Support', value=f'{data_list[7]}', inline=False)
-        return user_embed
-
+    def registered_embed(self, data_list, server):
+        all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',
+                                  color=0x00ff00)
+        icon_url = server.icon.url
+        all_embed.set_thumbnail(url=f'{icon_url}')
+        for user in data_list:
+            user_data = data_management.view_user_data(user.id)
+            role = discord.utils.get(server.roles, name="verified")
+            if role in user.roles:
+                verified_status = "Yes"
+            else:
+                verified_status = "No"
+            all_embed.add_field(name=user.global_name,
+                                value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Verified: {verified_status})',
+                                inline=False)
+        return all_embed
 
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
+        server = interaction.user.guild
         if user_name == "all":
-            # for i in CSV file
-            await interaction.response.send_message('Showing all registered users', ephemeral=True, delete_after=10)
+            role = discord.utils.get(server.roles, name="inhouse")
+            user_list = []
+            for user in role.members:
+                user_list.append(user)
+            await interaction.response.send_message(embed=self.registered_embed(user_list, server), ephemeral=True)
         else:
-            server = interaction.user.guild
             check_if_exists = check_user.user_exists(server, user_name)
             if check_if_exists[0]:
                 user_data = data_management.view_user_data(check_if_exists[1].id)
-                await interaction.response.send_message(embed=self.create_embed(user_data, check_if_exists[1], server), ephemeral=True)
+                await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
+                                                        ephemeral=True)
                 await interaction.response.defer()
+            else:
+                await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
+                                                        delete_after=10)
+                await interaction.response.defer()
+
 
 class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
     player_name = discord.ui.TextInput(label='User\'s name')

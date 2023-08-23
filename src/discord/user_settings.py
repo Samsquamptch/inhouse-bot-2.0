@@ -1,6 +1,7 @@
 import discord
 import set_roles
 import check_user
+import data_management
 
 class PlayerViewModal(discord.ui.Modal, title='View Player '):
     player_name = discord.ui.TextInput(label='Player name')
@@ -10,9 +11,13 @@ class PlayerViewModal(discord.ui.Modal, title='View Player '):
         server = interaction.user.guild
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
-            await interaction.response.send_message(f'Looking for user {self.player_name}', ephemeral=True, delete_after=10)
+            user_data = data_management.view_user_data(check_if_exists[1].id)
+            await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
+                                                    ephemeral=True)
         else:
-            await interaction.response.send_message(f'User {self.player_name} not in database', ephemeral=True, delete_after=10)
+            await interaction.response.send_message(f'User {self.player_name} not in database', ephemeral=True,
+                                                    delete_after=10)
+
 
 class UserChoices(discord.ui.View):
     def __init__(self):
@@ -20,7 +25,7 @@ class UserChoices(discord.ui.View):
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
         discord.SelectOption(label="Roles", emoji="📄", description="Update what your role preferences are"),
-        discord.SelectOption(label="Players", emoji="👀", description="View a player based on their name or steam ID"),
+        discord.SelectOption(label="Players", emoji="👀", description="View a registered user based on their name"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]

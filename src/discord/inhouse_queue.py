@@ -1,6 +1,7 @@
 import discord
 import data_management
 
+
 class InhouseQueue(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -19,9 +20,17 @@ class InhouseQueue(discord.ui.View):
         queue_embed = discord.Embed(title="Inhouse queue", description=f'{embed_desc}',
                                     color=embed_clr)
         queue_embed.set_thumbnail(url="https://riki.dotabuff.com/leagues/14994/banner.png")
+        mmr_total = 0
         for user in data:
             user_data = data_management.view_user_data(user.id)
-            queue_embed.add_field(name=user.global_name, value=f'MMR: {user_data[2]}', inline=False)
+            mmr_total = mmr_total + user_data[2]
+            queue_embed.add_field(name=user.global_name,
+                                  value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})',
+                                  inline=False)
+        if data:
+            average_mmr = mmr_total/len(data)
+            queue_embed.set_image(url=f'{data[-1].avatar}')
+            queue_embed.set_footer(text=f'Average MMR: {average_mmr}')
         return queue_embed
 
     async def update_message(self, data):
