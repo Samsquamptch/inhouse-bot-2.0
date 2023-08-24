@@ -36,7 +36,6 @@ class InhouseQueue(discord.ui.View):
             average_mmr = mmr_total/len(data)
             queue_embed.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
         else:
-            queue_embed.set_image(url='https://i.kym-cdn.com/entries/icons/original/000/039/674/cover6.jpg')
             queue_embed.set_footer(text=f'Queue updated at: {update_time}')
         return queue_embed
 

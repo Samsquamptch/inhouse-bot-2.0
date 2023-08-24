@@ -3,7 +3,7 @@ import check_user
 import data_management
 
 
-class VerifyMenu(discord.ui.View):
+class AdminEmbed(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.data = []
@@ -25,10 +25,6 @@ class VerifyMenu(discord.ui.View):
         for user in data_list:
             user_data = data_management.view_user_data(user.id)
             role = discord.utils.get(server.roles, name="verified")
-            if role in user.roles:
-                verified_status = "Yes"
-            else:
-                verified_status = "No"
             all_embed.add_field(name=user.global_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                                 inline=False)
@@ -119,6 +115,7 @@ class VerifyMenu(discord.ui.View):
             self.reject_user.style = discord.ButtonStyle.blurple
             self.reject_user.label = "Right"
             self.reject_user.emoji = "➡"
+            self.change_embed.label = "View Unregistered Users"
             if list_length <= self.sep:
                 self.verify_user.disabled = True
                 self.refresh_embed.disabled = True
@@ -182,9 +179,9 @@ class VerifyMenu(discord.ui.View):
             self.current_page += 1
             await self.update_message(self.data, server, interaction)
 
-    @discord.ui.button(label="Switch Panel", emoji="📋",
+    @discord.ui.button(label="View Registered Users", emoji="📋",
                        style=discord.ButtonStyle.grey)
-    async def test_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def change_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
             self.view_status = False
             await self.update_message(self.data, interaction.guild, interaction)
@@ -193,87 +190,3 @@ class VerifyMenu(discord.ui.View):
             self.view_status = True
             await self.update_message(self.data, interaction.guild, interaction)
             await interaction.response.defer()
-
-
-class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
-    player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
-    set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=4, required=False)
-    remove_verify_role = discord.ui.TextInput(label='Remove verification from user?', max_length=1, required=False)
-    ban_user = discord.ui.TextInput(label='Ban user duration? (number = days banned)', max_length=2, required=False)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        user_name = str(self.player_name)
-        server = interaction.user.guild
-        check_if_exists = check_user.user_exists(server, user_name)
-        if check_if_exists[0]:
-            new_mmr = str(self.set_mmr)
-            if new_mmr != "":
-                try:
-                    int_new_mmr = int(new_mmr)
-                except:
-                    await interaction.response.send_message('Please only input numbers for inhouse bans',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-            ban_time = str(self.ban_user)
-            if ban_time != "":
-                try:
-                    int_ban_time = int(ban_time)
-                except:
-                    await interaction.response.send_message('Please only input numbers for inhouse bans',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-            user_account = check_if_exists[1]
-            await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
-                                                    ephemeral=True, delete_after=10)
-        else:
-            await interaction.response.send_message(f'User {self.player_name} does not exist in database',
-                                                    ephemeral=True,
-                                                    delete_after=10)
-
-
-class ViewUsersModal(discord.ui.Modal, title='View Users'):
-    player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
-
-    async def on_submit(self, interaction: discord.Interaction):
-        user_name = str(self.player_name)
-        server = interaction.user.guild
-        check_if_exists = check_user.user_exists(server, user_name)
-        if check_if_exists[0]:
-            user_data = data_management.view_user_data(check_if_exists[1].id)
-            await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
-                                                    ephemeral=True)
-        else:
-            await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
-                                                    delete_after=10)
-
-
-class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
-    player_name = discord.ui.TextInput(label='User\'s name')
-    confirm_deletion = discord.ui.TextInput(label='Confirm deletion?', max_length=1, placeholder='y/n')
-
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
-                                                delete_after=10)
-
-
-class AdminChoices(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
-        discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
-        discord.SelectOption(label="View", emoji="👀", description="View all registered or a specific user"),
-        discord.SelectOption(label="Remove", emoji="❌", description="Delete a registered user"),
-        discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
-    ]
-                       )
-    async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        match select.values[0]:
-            case "Edit":
-                await interaction.response.send_modal(EditUserModal())
-            case "View":
-                await interaction.response.send_modal(ViewUsersModal())
-            case "Remove":
-                await interaction.response.send_modal(RemoveUserModal())
-            case "Refresh":
-                await interaction.response.defer()
