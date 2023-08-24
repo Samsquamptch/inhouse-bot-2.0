@@ -137,7 +137,10 @@ class ViewUsersModal(discord.ui.Modal, title='View Users'):
             user_list = []
             for user in role.members:
                 user_list.append(user)
-            await interaction.response.send_message(embed=self.registered_embed(user_list, server), ephemeral=True)
+            user = interaction.user
+            await user.send(embed=self.registered_embed(user_list, server))
+            await interaction.response.defer()
+            # await interaction.response.send_message(embed=self.registered_embed(user_list, server), ephemeral=True)
         else:
             check_if_exists = check_user.user_exists(server, user_name)
             if check_if_exists[0]:
