@@ -30,11 +30,12 @@ def user_list(list_condition, user=None):
         case "Add":
             registered_list.append(user)
             print(registered_list)
-        case "Get":
-            print()
         case "Remove":
             registered_list.remove(user)
             print(registered_list)
+        case _:
+            pass
+    return registered_list
 
 def user_exists(server, user_name):
     try:

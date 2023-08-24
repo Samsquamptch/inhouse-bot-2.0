@@ -8,7 +8,7 @@ class VerifyMenu(discord.ui.View):
         self.data = []
 
     async def send_embed(self, ctx):
-        self.update_register_list(ctx.guild)
+        self.create_register_list(ctx.guild)
         self.message = await ctx.send(view=self)
         await self.update_message(self.data, ctx.guild)
 
@@ -29,6 +29,18 @@ class VerifyMenu(discord.ui.View):
             await self.message.edit(embed=self.empty_embed(), view=self)
 
     def update_register_list(self, server):
+        registered_list = check_user.user_list("")
+        if registered_list:
+            for user in registered_list:
+                self.data.append(user)
+                check_user.user_list("Remove", user)
+        # registered_users = discord.utils.get(server.roles, name="inhouse")
+        # vouched_users = discord.utils.get(server.roles, name="verified")
+        # for user in registered_users.members:
+        #     if vouched_users not in user.roles and user not in self.data:
+        #         self.data.append(user)
+
+    def create_register_list(self, server):
         registered_users = discord.utils.get(server.roles, name="inhouse")
         vouched_users = discord.utils.get(server.roles, name="verified")
         for user in registered_users.members:
@@ -54,6 +66,7 @@ class VerifyMenu(discord.ui.View):
         user_to_verify = self.data[0]
         await user_to_verify.add_roles(role)
         del self.data[0]
+        self.update_register_list(server)
         await self.update_message(self.data, server)
         await interaction.response.defer()
 
@@ -74,6 +87,7 @@ class VerifyMenu(discord.ui.View):
         user_to_reject = self.data[0]
         await user_to_reject.remove_roles(role)
         del self.data[0]
+        self.update_register_list(server)
         await self.update_message(self.data, server)
         await interaction.response.defer()
 

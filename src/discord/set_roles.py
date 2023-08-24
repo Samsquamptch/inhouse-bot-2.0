@@ -32,6 +32,7 @@ class RolePreferenceSelect(discord.ui.View):
                                                     content="Thank you for updating your preferences",
                                                     view=None)
         else:
+            #self.select_carry_preference.disabled = True
             await interaction.response.defer()
 
     @discord.ui.select(
