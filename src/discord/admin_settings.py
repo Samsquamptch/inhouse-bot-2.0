@@ -9,6 +9,7 @@ class VerifyMenu(discord.ui.View):
 
     view_status = True
     current_page = 1
+    sep = 10
 
     async def send_embed(self, ctx):
         self.create_register_list(ctx.guild)
@@ -58,10 +59,11 @@ class VerifyMenu(discord.ui.View):
             user_list = []
             for user in role.members:
                 user_list.append(user)
-            self.update_buttons()
-            await self.message.edit(embed=self.registered_embed(user_list, server, interaction), view=self)
+            self.update_buttons(len(user_list))
+            user_list_page = self.get_current_page_data(user_list)
+            await self.message.edit(embed=self.registered_embed(user_list_page, server, interaction), view=self)
 
-    def update_register_list(self, server):
+    def update_register_list(self):
         registered_list = check_user.user_list("")
         if registered_list:
             for user in registered_list:
@@ -75,10 +77,18 @@ class VerifyMenu(discord.ui.View):
             if vouched_users not in user.roles and user not in self.data:
                 self.data.append(user)
 
-    def test_func(self):
-        print(self.data)
+    def get_current_page_data(self, user_list):
+        until_item = self.current_page * self.sep
+        from_item = until_item - self.sep
+        if self.current_page == 1:
+            from_item = 0
+            until_item = self.sep
+        if self.current_page == int(len(user_list) / self.sep):
+            from_item = self.current_page * self.sep - self.sep
+            until_item = len(user_list)
+        return user_list[from_item:until_item]
 
-    def update_buttons(self):
+    def update_buttons(self, list_length=None):
         if self.view_status:
             self.verify_user.style=discord.ButtonStyle.green
             self.verify_user.label="Verify User"
@@ -105,11 +115,15 @@ class VerifyMenu(discord.ui.View):
             self.reject_user.style=discord.ButtonStyle.blurple
             self.reject_user.label="Right"
             self.reject_user.emoji="➡"
-            if self.current_page == 1:
+            if list_length <= self.sep:
+                self.verify_user.disabled = True
+                self.refresh_embed.disabled = True
+                self.reject_user.disabled = True
+            elif self.current_page == 1:
                 self.verify_user.disabled = True
                 self.refresh_embed.disabled = True
                 self.reject_user.disabled = False
-            elif self.current_page == int(len(self.data) / self.sep) + 1:
+            elif self.current_page >= (list_length / self.sep):
                 self.reject_user.disabled = True
                 self.verify_user.disabled = False
                 self.refresh_embed.disabled = False
@@ -121,46 +135,60 @@ class VerifyMenu(discord.ui.View):
                        style=discord.ButtonStyle.green)
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        role = discord.utils.get(server.roles, name="verified")
-        user_to_verify = self.data[0]
-        await user_to_verify.add_roles(role)
-        del self.data[0]
-        self.update_register_list(server)
-        await self.update_message(self.data, server, interaction)
-        await interaction.response.defer()
+        if self.view_status:
+            role = discord.utils.get(server.roles, name="verified")
+            user_to_verify = self.data[0]
+            await user_to_verify.add_roles(role)
+            del self.data[0]
+            self.update_register_list()
+            await self.update_message(self.data, server, interaction)
+            await interaction.response.defer()
+        else:
+            await interaction.response.defer()
+            self.current_page -= 1
+            await self.update_message(self.data, server, interaction)
 
     @discord.ui.button(label="Refresh", emoji="♻",
                        style=discord.ButtonStyle.blurple)
     async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        self.update_register_list(server)
-        await self.update_message(self.data, server, interaction)
-        await interaction.response.defer()
+        if self.view_status:
+            self.update_register_list()
+            await self.update_message(self.data, server, interaction)
+            await interaction.response.defer()
+        else:
+            await interaction.response.defer()
+            self.current_page = 1
+            await self.update_message(self.data, server, interaction)
 
 
     @discord.ui.button(label="Reject User", emoji="❌",
                        style=discord.ButtonStyle.red)
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        role = discord.utils.get(server.roles, name="inhouse")
-        user_to_reject = self.data[0]
-        await user_to_reject.remove_roles(role)
-        del self.data[0]
-        self.update_register_list(server)
-        await self.update_message(self.data, server, interaction)
-        await interaction.response.defer()
+        if self.view_status:
+            role = discord.utils.get(server.roles, name="inhouse")
+            user_to_reject = self.data[0]
+            await user_to_reject.remove_roles(role)
+            del self.data[0]
+            self.update_register_list()
+            await self.update_message(self.data, server, interaction)
+            await interaction.response.defer()
+        else:
+            await interaction.response.defer()
+            self.current_page += 1
+            await self.update_message(self.data, server, interaction)
+
 
     @discord.ui.button(label="Switch Panel", emoji="📋",
                        style=discord.ButtonStyle.grey)
     async def test_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
             self.view_status = False
-            self.update_buttons()
             await self.update_message(self.data, interaction.guild, interaction)
             await interaction.response.defer()
         else:
             self.view_status = True
-            self.update_buttons()
             await self.update_message(self.data, interaction.guild, interaction)
             await interaction.response.defer()
 
