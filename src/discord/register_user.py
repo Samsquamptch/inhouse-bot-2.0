@@ -16,16 +16,19 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         mmr = str(self.player_mmr)
         try:
             int_mmr = int(mmr)
+            if int_mmr > 12000:
+                raise Exception('Please enter a valid mmr.')
             if "dotabuff.com/players/" in steam:
                 steam = steam.split("players/")
                 try:
-                    steam = int(steam[1])
+                    steam = steam[1].split('/')
+                    steam = int(steam[0])
                     player = [disc, steam, int_mmr, 5, 5, 5, 5, 5]
                     data_management.add_user_data(player)
                     await interaction.user.add_roles(role)
                     check_user.user_list("Add", interaction.user)
                     await interaction.response.send_message(
-                        'You\'ve been registered, please set your roles (from top to bottom) and wait to be vouched',
+                        'You\'ve been registered, please set your roles and wait to be vouched',
                         view=set_roles.RolePreferenceSelect(), ephemeral=True)
                 except:
                     await interaction.response.send_message(

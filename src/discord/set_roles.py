@@ -8,6 +8,16 @@ class RolePreferenceSelect(discord.ui.View):
     role_pref.fill(5)
     selected = []
 
+    def update_roles(self, number, role_choice, custom_id, user):
+        check = False
+        self.role_pref[number] = role_choice
+        if custom_id not in self.selected:
+            self.selected.append(custom_id)
+        if len(self.selected) == 5:
+            data_management.update_user_data(user.id, [3, 4, 5, 6, 7], self.role_pref)
+            check = True
+        return check
+
     @discord.ui.select(
         placeholder="Carry Preference", max_values=1,
         options=[
@@ -19,21 +29,15 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        self.role_pref[0] = str(select_item.values[0])
-        if "carry" not in self.selected:
-            self.selected.append("carry")
-        else:
-            await interaction.response.defer()
-        if len(self.selected) == 5:
-            current_user = str(interaction.user.id)
-            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+        role_check = self.update_roles(0, select_item.values[0], select_item.custom_id, interaction.user)
+        if role_check:
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
                                                     view=None)
         else:
-            #self.select_carry_preference.disabled = True
             await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
         placeholder="Midlane Preference", max_values=1,
@@ -46,20 +50,15 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        self.role_pref[1] = str(select_item.values[0])
-        if "mid" not in self.selected:
-            self.selected.append("mid")
-        else:
-            await interaction.response.defer()
-        if len(self.selected) == 5:
-            current_user = str(interaction.user.id)
-            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+        role_check = self.update_roles(1, select_item.values[0], select_item.custom_id, interaction.user)
+        if role_check:
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
                                                     view=None)
         else:
             await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
         placeholder="Offlane Preference", max_values=1,
@@ -72,20 +71,15 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        self.role_pref[2] = str(select_item.values[0])
-        if "off" not in self.selected:
-            self.selected.append("off")
-        else:
-            await interaction.response.defer()
-        if len(self.selected) == 5:
-            current_user = str(interaction.user.id)
-            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+        role_check = self.update_roles(2, select_item.values[0], select_item.custom_id, interaction.user)
+        if role_check:
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
                                                     view=None)
         else:
             await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
         placeholder="Soft Support Preference", max_values=1,
@@ -98,23 +92,18 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        self.role_pref[3] = str(select_item.values[0])
-        if "Soft support" not in self.selected:
-            self.selected.append("Soft support")
-        else:
-            await interaction.response.defer()
-        if len(self.selected) == 5:
-            current_user = str(interaction.user.id)
-            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+        role_check = self.update_roles(3, select_item.values[0], select_item.custom_id, interaction.user)
+        if role_check:
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
                                                     view=None)
         else:
             await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
-        placeholder="Hard Support Preference", max_values=1,
+        custom_id="HardPref", placeholder="Hard Support Preference", max_values=1,
         options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
@@ -124,17 +113,12 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        self.role_pref[4] = str(select_item.values[0])
-        if "Hard support" not in self.selected:
-            self.selected.append("Hard support")
-        else:
-            await interaction.response.defer()
-        if len(self.selected) == 5:
-            current_user = str(interaction.user.id)
-            data_management.update_user_data(current_user, [3, 4, 5, 6, 7], self.role_pref)
+        role_check = self.update_roles(4, select_item.values[0], select_item.custom_id, interaction.user)
+        if role_check:
             await interaction.response.defer()
             await interaction.followup.edit_message(interaction.message.id,
                                                     content="Thank you for updating your preferences",
                                                     view=None)
         else:
             await interaction.response.defer()
+            await interaction.followup.edit_message(interaction.message.id)

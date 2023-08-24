@@ -24,7 +24,6 @@ class UserChoices(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
-        discord.SelectOption(label="Roles", emoji="📄", description="Update what your role preferences are"),
         discord.SelectOption(label="Players", emoji="👀", description="View a registered user based on their name"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
@@ -34,14 +33,6 @@ class UserChoices(discord.ui.View):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="inhouse")
         match select.values[0]:
-            case "Roles":
-                if role in interaction.user.roles:
-                    await interaction.response.send_message(
-                        content="Please update your role preferences",
-                        view=set_roles.RolePreferenceSelect(), ephemeral=True)
-                else:
-                    await interaction.response.send_message(content="Please register before setting roles",
-                                                            ephemeral=True)
             case "Players":
                 await interaction.response.send_modal(PlayerViewModal())
             case "Ladder":
