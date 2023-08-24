@@ -1,6 +1,7 @@
 import discord
 import data_management
 import set_roles
+import check_user
 
 
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
@@ -48,3 +49,15 @@ class RegisterButton(discord.ui.View):
                                                     delete_after=10)
         else:
             await interaction.response.send_modal(RegisterUserModal())
+
+    @discord.ui.button(label="Add User to List", emoji="📋",
+                       style=discord.ButtonStyle.blurple)
+    async def add_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        check_user.user_list("Add", interaction.user)
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Remove User from List", emoji="📋",
+                       style=discord.ButtonStyle.red)
+    async def remove_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        check_user.user_list("Remove", interaction.user)
+        await interaction.response.defer()

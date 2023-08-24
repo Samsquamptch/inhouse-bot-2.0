@@ -1,6 +1,8 @@
 import discord
 import data_management
 
+registered_list = []
+
 def user_embed(data_list, player_data, server):
     role = discord.utils.get(server.roles, name="verified")
     if role in player_data.roles:
@@ -22,6 +24,17 @@ def user_embed(data_list, player_data, server):
     user_embed.add_field(name='Hard Support', value=f'{data_list[7]}', inline=False)
     return user_embed
 
+def user_list(list_condition, user=None):
+    global registered_list
+    match list_condition:
+        case "Add":
+            registered_list.append(user)
+            print(registered_list)
+        case "Get":
+            print()
+        case "Remove":
+            registered_list.remove(user)
+            print(registered_list)
 
 def user_exists(server, user_name):
     try:

@@ -5,11 +5,13 @@ import data_management
 class VerifyMenu(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.data = []
 
     async def send_embed(self, ctx):
         self.update_register_list(ctx.guild)
         self.message = await ctx.send(view=self)
         await self.update_message(self.data, ctx.guild)
+
 
     def empty_embed(self):
         empty_embed = discord.Embed(title="No unverified users", description=f'There\'s nobody to verify!',
@@ -32,6 +34,9 @@ class VerifyMenu(discord.ui.View):
         for user in registered_users.members:
             if vouched_users not in user.roles and user not in self.data:
                 self.data.append(user)
+
+    def test_func(self):
+        print(self.data)
 
     def update_buttons(self):
         if not self.data:
