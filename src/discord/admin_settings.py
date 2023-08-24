@@ -2,6 +2,7 @@ import discord
 import check_user
 import data_management
 
+
 class VerifyMenu(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -29,7 +30,7 @@ class VerifyMenu(discord.ui.View):
             else:
                 verified_status = "No"
             all_embed.add_field(name=user.global_name,
-                                value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Verified: {verified_status})',
+                                value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                                 inline=False)
         all_embed.set_footer(text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
         return all_embed
@@ -37,7 +38,8 @@ class VerifyMenu(discord.ui.View):
     def empty_embed(self, interaction):
         empty_embed = discord.Embed(title="No unverified users", description=f'There\'s nobody to verify!',
                                     color=0xFF0000)
-        empty_embed.set_image(url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
+        empty_embed.set_image(
+            url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
         if interaction:
             empty_embed.set_footer(text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
         return empty_embed
@@ -50,7 +52,8 @@ class VerifyMenu(discord.ui.View):
                 user_data = data_management.view_user_data(user.id)
                 update_embed = check_user.user_embed(user_data, user, server)
                 if interaction:
-                    update_embed.set_footer(text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
+                    update_embed.set_footer(
+                        text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
                 await self.message.edit(embed=update_embed, view=self)
             else:
                 await self.message.edit(embed=self.empty_embed(interaction), view=self)
@@ -90,15 +93,16 @@ class VerifyMenu(discord.ui.View):
 
     def update_buttons(self, list_length=None):
         if self.view_status:
-            self.verify_user.style=discord.ButtonStyle.green
-            self.verify_user.label="Verify User"
-            self.verify_user.emoji="✅"
-            self.refresh_embed.style=discord.ButtonStyle.blurple
-            self.refresh_embed.label="Refresh"
-            self.refresh_embed.emoji="♻"
-            self.reject_user.style=discord.ButtonStyle.red
-            self.reject_user.label="Reject User"
-            self.reject_user.emoji="❌"
+            self.verify_user.style = discord.ButtonStyle.green
+            self.verify_user.label = "Verify User"
+            self.verify_user.emoji = "✅"
+            self.refresh_embed.style = discord.ButtonStyle.blurple
+            self.refresh_embed.label = "Refresh"
+            self.refresh_embed.emoji = "♻"
+            self.reject_user.style = discord.ButtonStyle.red
+            self.reject_user.label = "Reject User"
+            self.reject_user.emoji = "❌"
+            self.refresh_embed.disabled = False
             if not self.data:
                 self.verify_user.disabled = True
                 self.reject_user.disabled = True
@@ -106,15 +110,15 @@ class VerifyMenu(discord.ui.View):
                 self.verify_user.disabled = False
                 self.reject_user.disabled = False
         else:
-            self.verify_user.style=discord.ButtonStyle.blurple
-            self.verify_user.label="Left"
-            self.verify_user.emoji="⬅"
-            self.refresh_embed.style=discord.ButtonStyle.blurple
-            self.refresh_embed.label="Reset"
-            self.refresh_embed.emoji="↩"
-            self.reject_user.style=discord.ButtonStyle.blurple
-            self.reject_user.label="Right"
-            self.reject_user.emoji="➡"
+            self.verify_user.style = discord.ButtonStyle.blurple
+            self.verify_user.label = "Left"
+            self.verify_user.emoji = "⬅"
+            self.refresh_embed.style = discord.ButtonStyle.blurple
+            self.refresh_embed.label = "Reset"
+            self.refresh_embed.emoji = "↩"
+            self.reject_user.style = discord.ButtonStyle.blurple
+            self.reject_user.label = "Right"
+            self.reject_user.emoji = "➡"
             if list_length <= self.sep:
                 self.verify_user.disabled = True
                 self.refresh_embed.disabled = True
@@ -161,7 +165,6 @@ class VerifyMenu(discord.ui.View):
             self.current_page = 1
             await self.update_message(self.data, server, interaction)
 
-
     @discord.ui.button(label="Reject User", emoji="❌",
                        style=discord.ButtonStyle.red)
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -178,7 +181,6 @@ class VerifyMenu(discord.ui.View):
             await interaction.response.defer()
             self.current_page += 1
             await self.update_message(self.data, server, interaction)
-
 
     @discord.ui.button(label="Switch Panel", emoji="📋",
                        style=discord.ButtonStyle.grey)
@@ -232,43 +234,17 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
 class ViewUsersModal(discord.ui.Modal, title='View Users'):
     player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
 
-    def registered_embed(self, data_list, server):
-        all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',
-                                  color=0x00ff00)
-        icon_url = server.icon.url
-        all_embed.set_thumbnail(url=f'{icon_url}')
-        for user in data_list:
-            user_data = data_management.view_user_data(user.id)
-            role = discord.utils.get(server.roles, name="verified")
-            if role in user.roles:
-                verified_status = "Yes"
-            else:
-                verified_status = "No"
-            all_embed.add_field(name=user.global_name,
-                                value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Verified: {verified_status})',
-                                inline=False)
-        return all_embed
-
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
-        if user_name == "all":
-            role = discord.utils.get(server.roles, name="inhouse")
-            user_list = []
-            for user in role.members:
-                user_list.append(user)
-            user = interaction.user
-            await user.send(embed=self.registered_embed(user_list, server))
-            await interaction.response.defer()
+        check_if_exists = check_user.user_exists(server, user_name)
+        if check_if_exists[0]:
+            user_data = data_management.view_user_data(check_if_exists[1].id)
+            await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
+                                                    ephemeral=True)
         else:
-            check_if_exists = check_user.user_exists(server, user_name)
-            if check_if_exists[0]:
-                user_data = data_management.view_user_data(check_if_exists[1].id)
-                await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
-                                                        ephemeral=True)
-            else:
-                await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
-                                                        delete_after=10)
+            await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
+                                                    delete_after=10)
 
 
 class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):

@@ -40,7 +40,7 @@ def run_discord_bot():
 
     @bot.command()
     async def queue(ctx):
-        await inhouse_queue.InhouseQueue().queue_view.send_embed(ctx)
+        await inhouse_queue.InhouseQueue().send_embed(ctx)
 
     @bot.command()
     async def get_help(ctx):

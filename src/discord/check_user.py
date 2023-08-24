@@ -47,3 +47,24 @@ def user_exists(server, user_name):
         user_in_database = False
         user_account = None
     return user_in_database, user_account
+
+def check_role_priority(user):
+    core_roles = [user[3], user[4], user[5]]
+    supp_roles = [user[6], user[7]]
+    if 5 in core_roles and 5 not in supp_roles:
+        role_pref = "Core"
+    elif 5 in supp_roles and 5 not in core_roles:
+        role_pref = "Support"
+    else:
+        core_avg = (user[3] + user[4] + user[5])/3
+        supp_avg = (user[6] + user[7])/2
+        role_balance = core_avg - supp_avg
+        print(role_balance)
+        match role_balance:
+            case _ if role_balance > 1:
+                role_pref = "Core"
+            case _ if role_balance < 0:
+                role_pref = "Support"
+            case _:
+                role_pref = "Balanced"
+    return role_pref
