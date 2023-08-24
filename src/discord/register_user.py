@@ -49,7 +49,7 @@ class RegisterButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Click to register for inhouse", emoji="📋",
+    @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
     async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
@@ -73,14 +73,15 @@ class RegisterButton(discord.ui.View):
             await interaction.response.send_message(content="You need to register before you can see your details",
                                                     ephemeral=True)
 
-    @discord.ui.button(label="Update your role preferences", emoji="📋",
+    @discord.ui.button(label="Update your role preferences", emoji="🖋️",
                        style=discord.ButtonStyle.blurple)
     async def set_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.guild
         role = discord.utils.get(server.roles, name="inhouse")
         if role in interaction.user.roles:
-            await interaction.response.send_message(content="Please update your role preferences",
-                                                    view=set_roles.RolePreferenceSelect(), ephemeral=True)
+            await interaction.user.send(content="Please update your role preferences",
+                                                    view=set_roles.RolePreferenceSelect())
+            await interaction.response.defer()
         else:
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)

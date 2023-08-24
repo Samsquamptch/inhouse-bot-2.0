@@ -13,13 +13,16 @@ class RolePreferenceSelect(discord.ui.View):
         self.role_pref[number] = role_choice
         if custom_id not in self.selected:
             self.selected.append(custom_id)
+        print(self.selected)
+        print(len(self.selected))
         if len(self.selected) == 5:
             data_management.update_user_data(user.id, [3, 4, 5, 6, 7], self.role_pref)
             check = True
+            self.selected.clear()
         return check
 
     @discord.ui.select(
-        placeholder="Carry Preference", max_values=1,
+        custom_id="CarryPref", placeholder="Carry Preference", max_values=1,
         options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
@@ -40,7 +43,7 @@ class RolePreferenceSelect(discord.ui.View):
             await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
-        placeholder="Midlane Preference", max_values=1,
+        custom_id="MidPref", placeholder="Midlane Preference", max_values=1,
         options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
@@ -61,7 +64,7 @@ class RolePreferenceSelect(discord.ui.View):
             await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
-        placeholder="Offlane Preference", max_values=1,
+        custom_id="OffPref", placeholder="Offlane Preference", max_values=1,
         options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),
@@ -82,7 +85,7 @@ class RolePreferenceSelect(discord.ui.View):
             await interaction.followup.edit_message(interaction.message.id)
 
     @discord.ui.select(
-        placeholder="Soft Support Preference", max_values=1,
+        custom_id="SoftPref", placeholder="Soft Support Preference", max_values=1,
         options=[
             discord.SelectOption(label="Very high", value="5"),
             discord.SelectOption(label="High", value="4"),

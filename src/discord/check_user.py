@@ -29,10 +29,8 @@ def user_list(list_condition, user=None):
     match list_condition:
         case "Add":
             registered_list.append(user)
-            print(registered_list)
         case "Remove":
             registered_list.remove(user)
-            print(registered_list)
         case _:
             pass
     return registered_list
@@ -59,7 +57,6 @@ def check_role_priority(user):
         core_avg = (user[3] + user[4] + user[5])/3
         supp_avg = (user[6] + user[7])/2
         role_balance = core_avg - supp_avg
-        print(role_balance)
         match role_balance:
             case _ if role_balance > 1:
                 role_pref = "Core"

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import admin_panel
-import user_settings
+import select_menus
 import register_user
 import user_help
 import yaml
@@ -35,12 +35,12 @@ def run_discord_bot():
         verify_view = admin_panel.AdminEmbed()
         verify_view.data = registered_players
         await verify_view.send_embed(ctx)
-        await ctx.send("More options are available via the drop-down menu below", view=admin_panel.AdminChoices())
+        await ctx.send("More options are available via the drop-down menu below", view=select_menus.AdminOptions())
 
     @bot.command()
     async def queue(ctx):
         await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-        await ctx.send("Already registered? More options are available via the drop-down menu below", view=user_settings.UserChoices())
+        await ctx.send("Already registered? More options are available via the drop-down menu below", view=select_menus.UserOptions())
         await inhouse_queue.InhouseQueue().send_embed(ctx)
 
     @bot.command()

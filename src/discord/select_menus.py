@@ -63,7 +63,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
                                                 delete_after=10)
 
 
-class UserChoices(discord.ui.View):
+class UserOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
@@ -83,7 +83,7 @@ class UserChoices(discord.ui.View):
             case "Refresh":
                 await interaction.response.defer()
 
-class AdminChoices(discord.ui.View):
+class AdminOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
