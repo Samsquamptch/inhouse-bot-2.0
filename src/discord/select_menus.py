@@ -2,6 +2,7 @@ import discord
 import check_user
 import data_management
 
+
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
     set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=4, required=False)
@@ -17,7 +18,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             if new_mmr != "":
                 try:
                     int_new_mmr = int(new_mmr)
-                except:
+                except ValueError:
                     await interaction.response.send_message('Please only input numbers for inhouse bans',
                                                             ephemeral=True,
                                                             delete_after=10)
@@ -25,7 +26,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             if ban_time != "":
                 try:
                     int_ban_time = int(ban_time)
-                except:
+                except ValueError:
                     await interaction.response.send_message('Please only input numbers for inhouse bans',
                                                             ephemeral=True,
                                                             delete_after=10)
@@ -82,6 +83,7 @@ class UserOptions(discord.ui.View):
                                                         delete_after=10)
             case "Refresh":
                 await interaction.response.defer()
+
 
 class AdminOptions(discord.ui.View):
     def __init__(self):

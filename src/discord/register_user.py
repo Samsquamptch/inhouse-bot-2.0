@@ -4,6 +4,40 @@ import set_roles
 import check_user
 
 
+class SetRolesModal(discord.ui.Modal, title='Set Role Preferences (1-5)'):
+    pos1 = discord.ui.TextInput(label='Carry Preference', max_length=1)
+    pos2 = discord.ui.TextInput(label='Midlane Preference', max_length=1)
+    pos3 = discord.ui.TextInput(label='Offlane Preference', max_length=1)
+    pos4 = discord.ui.TextInput(label='Soft Support Preference', max_length=1)
+    pos5 = discord.ui.TextInput(label='Hard Support Preference', max_length=1)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        pos1 = str(self.pos1)
+        pos2 = str(self.pos2)
+        pos3 = str(self.pos3)
+        pos4 = str(self.pos4)
+        pos5 = str(self.pos5)
+        try:
+            int_pos1 = int(pos1)
+            int_pos2 = int(pos2)
+            int_pos3 = int(pos3)
+            int_pos4 = int(pos4)
+            int_pos5 = int(pos5)
+            role_list = [int_pos1, int_pos2, int_pos3, int_pos4, int_pos5]
+            x = 0
+            while x < len(role_list):
+                if role_list[x] > 5:
+                    role_list[x] = 5
+                elif role_list[x] == 0:
+                    role_list[x] = 1
+                x += 1
+            data_management.update_user_data(interaction.user.id, [3, 4, 5, 6, 7], role_list)
+            await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True, delete_after=10)
+        except:
+            await interaction.response.send_message('Please only use numbers when setting roles',
+                                                    ephemeral=True, delete_after=10)
+
+
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
@@ -29,7 +63,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                     check_user.user_list("Add", interaction.user)
                     await interaction.response.send_message(
                         'You\'ve been registered, please set your roles and wait to be vouched',
-                        view=set_roles.RolePreferenceSelect(), ephemeral=True)
+                        view=SetRolesModal(), ephemeral=True)
                 except:
                     await interaction.response.send_message(
                         'There was an error with the dotabuff url you provided, please try again',
@@ -79,9 +113,7 @@ class RegisterButton(discord.ui.View):
         server = interaction.guild
         role = discord.utils.get(server.roles, name="inhouse")
         if role in interaction.user.roles:
-            await interaction.user.send(content="Please update your role preferences",
-                                                    view=set_roles.RolePreferenceSelect())
-            await interaction.response.defer()
+            await interaction.response.send_modal(SetRolesModal())
         else:
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
