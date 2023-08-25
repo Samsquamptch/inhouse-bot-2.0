@@ -1,6 +1,5 @@
 import discord
 import data_management
-import set_roles
 import check_user
 
 
