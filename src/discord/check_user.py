@@ -4,13 +4,23 @@ import data_management
 registered_list = []
 
 def user_embed(data_list, player_data, server):
-    role = discord.utils.get(server.roles, name="verified")
-    if role in player_data.roles:
-        verified_status = "User is verified"
-        user_clr = 0x00ff00
+    banned = discord.utils.get(server.roles, name="queue ban")
+    if banned in player_data.roles:
+        verified_status = "User is currently banned 😢"
+        user_clr = 0x000000
     else:
-        verified_status = "User is not verified"
-        user_clr = 0xFF0000
+        champion = discord.utils.get(server.roles, name="current champions")
+        if champion in player_data.roles:
+            verified_status = "User is a champion!"
+            user_clr = 0xFFD700
+        else:
+            role = discord.utils.get(server.roles, name="verified")
+            if role in player_data.roles:
+                verified_status = "User is verified"
+                user_clr = 0x00ff00
+            else:
+                verified_status = "User is not verified"
+                user_clr = 0xFF0000
     user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{verified_status}',
                                color=user_clr)
     user_embed.set_thumbnail(url=f'{player_data.avatar}')
