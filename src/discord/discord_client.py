@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-import admin_settings
-import user_settings
+import admin_panel
+import select_menus
 import register_user
 import user_help
 import yaml
@@ -24,26 +24,24 @@ def run_discord_bot():
     async def on_ready():
         print('bot now running!')
 
-    @bot.command()
-    async def user(ctx):
-        await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-        await ctx.send("Already registered? Please choose from the below options", view=user_settings.UserChoices())
+    # @bot.command()
+    # async def user(ctx):
+    #     await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
+    #     await ctx.send("Already registered? Please choose from the below options", view=user_settings.UserChoices())
 
     @bot.command()
     async def admin(ctx):
         registered_players = []
-        verify_view = admin_settings.VerifyMenu()
+        verify_view = admin_panel.AdminEmbed()
         verify_view.data = registered_players
-        await ctx.send("Below are registered users who need verification")
         await verify_view.send_embed(ctx)
-        await ctx.send("Admin options are below", view=admin_settings.AdminChoices())
+        await ctx.send("More options are available via the drop-down menu below", view=select_menus.AdminOptions())
 
     @bot.command()
     async def queue(ctx):
-        queue_list = []
-        queue_view = inhouse_queue.InhouseQueue()
-        queue_view.data = queue_list
-        await queue_view.send_embed(ctx)
+        await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
+        await ctx.send("Already registered? More options are available via the drop-down menu below", view=select_menus.UserOptions())
+        await inhouse_queue.InhouseQueue().send_embed(ctx)
 
     @bot.command()
     async def get_help(ctx):

@@ -1,10 +1,12 @@
 import discord
 import data_management
-
+import check_user
+from datetime import datetime
 
 class InhouseQueue(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.data = []
 
     async def send_embed(self, ctx):
         self.message = await ctx.send(view=self)
@@ -25,13 +27,16 @@ class InhouseQueue(discord.ui.View):
         for user in data:
             user_data = data_management.view_user_data(user.id)
             mmr_total = mmr_total + user_data[2]
+            role_preference = check_user.check_role_priority(user_data)
             queue_embed.add_field(name=user.global_name,
-                                  value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})',
+                                  value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Preference: {role_preference}',
                                   inline=False)
+        update_time = datetime.now().strftime("%H:%M:%S")
         if data:
             average_mmr = mmr_total/len(data)
-            queue_embed.set_image(url=f'{data[-1].avatar}')
-            queue_embed.set_footer(text=f'Average MMR: {average_mmr}')
+            queue_embed.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
+        else:
+            queue_embed.set_footer(text=f'Queue updated at: {update_time}')
         return queue_embed
 
     async def update_message(self, data, server):
