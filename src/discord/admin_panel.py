@@ -188,5 +188,6 @@ class AdminEmbed(discord.ui.View):
             await interaction.response.defer()
         else:
             self.view_status = True
+            self.update_register_list()
             await self.update_message(self.data, interaction.guild, interaction)
             await interaction.response.defer()

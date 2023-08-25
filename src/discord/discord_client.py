@@ -53,6 +53,5 @@ def run_discord_bot():
 
     bot.run(load_token())
 
-
 if __name__ == '__main__':
     run_discord_bot()

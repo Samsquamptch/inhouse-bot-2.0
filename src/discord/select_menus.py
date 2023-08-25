@@ -5,9 +5,10 @@ import data_management
 
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
-    set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=4, required=False)
-    remove_verify_role = discord.ui.TextInput(label='Remove verification from user?', max_length=1, required=False)
-    ban_user = discord.ui.TextInput(label='Ban user duration? (number = days banned)', max_length=2, required=False)
+    set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=5, required=False)
+    new_dotabuff = discord.ui.TextInput(label='Edit Dotabuff User URL?', required=False)
+    remove_verify = discord.ui.TextInput(label='Remove verification from user?', max_length=1, required=False)
+    ban_user = discord.ui.TextInput(label='Ban or unban a user from inhouse queue?', max_length=1, required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
@@ -18,19 +19,52 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             if new_mmr != "":
                 try:
                     int_new_mmr = int(new_mmr)
+                    data_management.update_user_data(check_if_exists[1].id, [2], int_new_mmr)
                 except ValueError:
-                    await interaction.response.send_message('Please only input numbers for inhouse bans',
+                    await interaction.response.send_message('Please only input numbers for mmr',
+                                                            ephemeral=True,
+                                                            delete_after=10)
+            steam_id = str(self.new_dotabuff)
+            if steam_id != "":
+                try:
+                    steam_id = steam_id.split("players/")
+                    steam_id = steam_id[1].split('/')
+                    int_steam_id = int(steam_id[0])
+                    data_management.update_user_data(check_if_exists[1].id, [1], int_steam_id)
+                except ValueError:
+                    await interaction.response.send_message('Please enter a full Dotabuff URL when updating a user',
+                                                            ephemeral=True,
+                                                            delete_after=10)
+            verify_role = str(self.remove_verify)
+            if verify_role != "":
+                if verify_role.lower() == "y":
+                    role = discord.utils.get(server.roles, name="verified")
+                    await interaction.user.remove_roles(check_if_exists[1])
+                else:
+                    await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
                                                             ephemeral=True,
                                                             delete_after=10)
             ban_time = str(self.ban_user)
             if ban_time != "":
-                try:
-                    int_ban_time = int(ban_time)
-                except ValueError:
-                    await interaction.response.send_message('Please only input numbers for inhouse bans',
+                if ban_time.lower() == "y":
+                    role = discord.utils.get(server.roles, name="queue ban")
+                    if role in check_if_exists[1].roles:
+                        await interaction.user.remove_roles(check_if_exists[1])
+                    else:
+                        await interaction.user.add_roles(check_if_exists[1])
+                else:
+                    await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
                                                             ephemeral=True,
                                                             delete_after=10)
-            user_account = check_if_exists[1]
+            # ban_time = str(self.ban_user)
+            # if ban_time != "":
+            #     try:
+            #         int_ban_time = int(ban_time)
+            #         print(int_ban_time)
+            #     except ValueError:
+            #         await interaction.response.send_message('Please only input numbers for inhouse bans',
+            #                                                 ephemeral=True,
+            #                                                 delete_after=10)
             await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
                                                     ephemeral=True, delete_after=10)
         else:
@@ -39,8 +73,8 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                                                     delete_after=10)
 
 
-class ViewUserModal(discord.ui.Modal, title='View Users'):
-    player_name = discord.ui.TextInput(label='User\'s name (use "all" for full list)')
+class ViewUserModal(discord.ui.Modal, title='View User'):
+    player_name = discord.ui.TextInput(label='User\'s global name or username')
 
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
@@ -60,8 +94,26 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
     confirm_deletion = discord.ui.TextInput(label='Confirm deletion?', max_length=1, placeholder='y/n')
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
-                                                delete_after=10)
+        user_name = str(self.player_name)
+        delete_conf = str(self.confirm_deletion)
+        server = interaction.user.guild
+        check_if_exists = check_user.user_exists(server, user_name)
+        if check_if_exists[0]:
+            if delete_conf.lower() == "y":
+                inhouse = discord.utils.get(server.roles, name="inhouse")
+                verified = discord.utils.get(server.roles, name="verified")
+                await check_if_exists[1].remove_roles(inhouse)
+                await check_if_exists[1].remove_roles(verified)
+                # Delete user goes here
+                await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
+                                                        delete_after=10)
+            else:
+                await interaction.response.send_message(f'Please enter "y" to confirm removal of player',
+                                                        ephemeral=True,
+                                                        delete_after=10)
+        else:
+            await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
+                                                    delete_after=10)
 
 
 class UserOptions(discord.ui.View):
@@ -70,6 +122,7 @@ class UserOptions(discord.ui.View):
 
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user with their name"),
+        discord.SelectOption(label="Update", emoji="❗", description="Notify admins of MMR change (NOT WORKING YET)"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
@@ -78,6 +131,9 @@ class UserOptions(discord.ui.View):
         match select.values[0]:
             case "Search":
                 await interaction.response.send_modal(ViewUserModal())
+            case "Update":
+                await interaction.response.send_message(content="This feature has not yet been added", ephemeral=True,
+                                                        delete_after=10)
             case "Ladder":
                 await interaction.response.send_message(content="This feature has not yet been added", ephemeral=True,
                                                         delete_after=10)
