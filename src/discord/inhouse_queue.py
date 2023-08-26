@@ -98,7 +98,7 @@ class InhouseQueue(discord.ui.View):
                     await self.update_message(self.data, server)
                     await interaction.response.defer()
             else:
-                await interaction.response.send_message(content="You cannot join the queue", ephemeral=True,
+                await interaction.response.send_message(content="Please register and wait to be verified to join the queue", ephemeral=True,
                                                         delete_after=5)
 
     @discord.ui.button(label="Leave Queue", emoji="❌",

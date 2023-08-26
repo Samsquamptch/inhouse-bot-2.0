@@ -2,7 +2,7 @@ import discord
 import check_user
 import data_management
 
-
+# TODO improve variable names for readability
 class AdminEmbed(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -24,7 +24,6 @@ class AdminEmbed(discord.ui.View):
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
             user_data = data_management.view_user_data(user.id)
-            role = discord.utils.get(server.roles, name="verified")
             all_embed.add_field(name=user.global_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                                 inline=False)

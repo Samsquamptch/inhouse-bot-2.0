@@ -30,6 +30,7 @@ class SetRolesModal(discord.ui.Modal, title='Set Role Preferences (1-5)'):
                 elif role_list[x] == 0:
                     role_list[x] = 1
                 x += 1
+            #     TODO tell user they put number outside of 1-5 range in field
             data_management.update_user_data(interaction.user.id, [3, 4, 5, 6, 7], role_list)
             await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True, delete_after=10)
         except:
@@ -44,6 +45,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     async def on_submit(self, interaction: discord.Interaction):
         server = interaction.user.guild
         role = discord.utils.get(server.roles, name="inhouse")
+        # TODO Ensure user isn't already in the database
         disc = interaction.user.id
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
@@ -60,6 +62,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                     data_management.add_user_data(player)
                     await interaction.user.add_roles(role)
                     check_user.user_list("Add", interaction.user)
+                    # TODO Check why modal isn't firing off after completion
                     await interaction.response.send_message(
                         'You\'ve been registered, please set your roles and wait to be vouched',
                         view=SetRolesModal(), ephemeral=True)
