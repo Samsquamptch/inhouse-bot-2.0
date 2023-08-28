@@ -4,6 +4,7 @@ import check_user
 from datetime import datetime
 
 
+# The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
 class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
     def __init__(self):
         super().__init__()
@@ -21,7 +22,7 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
             await interaction.response.defer()
         self.stop()
 
-
+# The modal for users to votekick when the queue is full. Will be left for a later date
 # class VoteKickPlayerModal(discord.ui.Modal, title='Votekick User in Queue'):
 #     def __init__(self):
 #         super().__init__()

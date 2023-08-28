@@ -49,9 +49,9 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                 if ban_time.lower() == "y":
                     role = discord.utils.get(server.roles, name="queue ban")
                     if role in check_if_exists[1].roles:
-                        await interaction.user.remove_roles(check_if_exists[1])
+                        await check_if_exists[1].remove_roles(role)
                     else:
-                        await interaction.user.add_roles(check_if_exists[1])
+                        await check_if_exists[1].add_roles(role)
                 else:
                     await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
                                                             ephemeral=True,

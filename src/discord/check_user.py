@@ -56,6 +56,16 @@ def user_exists(server, user_name):
         user_account = None
     return user_in_database, user_account
 
+# For checking whether details for users are already stored on the database
+def registered_check(check_id):
+    test = data_management.check_for_value(check_id)
+    if test:
+        already_exists = True
+    else:
+        already_exists = False
+    return already_exists
+
+
 def check_role_priority(user):
     core_roles = [user[3], user[4], user[5]]
     supp_roles = [user[6], user[7]]

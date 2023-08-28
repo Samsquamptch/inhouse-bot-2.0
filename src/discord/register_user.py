@@ -24,15 +24,23 @@ class SetRolesModal(discord.ui.Modal, title='Set Role Preferences (1-5)'):
             int_pos5 = int(pos5)
             role_list = [int_pos1, int_pos2, int_pos3, int_pos4, int_pos5]
             x = 0
+            pref_range_exceed = False
             while x < len(role_list):
                 if role_list[x] > 5:
                     role_list[x] = 5
+                    pref_range_exceed = True
                 elif role_list[x] == 0:
                     role_list[x] = 1
+                    pref_range_exceed = True
                 x += 1
-            #     TODO tell user they put number outside of 1-5 range in field
             data_management.update_user_data(interaction.user.id, [3, 4, 5, 6, 7], role_list)
-            await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True, delete_after=10)
+            if pref_range_exceed:
+                await interaction.response.send_message(
+                    'Thank you for updating your role preferences. One or more of your choices were outside the appropriate range and have been amended',
+                    ephemeral=True, delete_after=10)
+            else:
+                await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True,
+                                                        delete_after=10)
         except:
             await interaction.response.send_message('Please only use numbers when setting roles',
                                                     ephemeral=True, delete_after=10)
@@ -43,42 +51,64 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
     async def on_submit(self, interaction: discord.Interaction):
-        server = interaction.user.guild
-        role = discord.utils.get(server.roles, name="inhouse")
-        # TODO Ensure user isn't already in the database
         disc = interaction.user.id
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        try:
-            int_mmr = int(mmr)
-            if int_mmr > 12000:
-                raise Exception('Please enter a valid mmr.')
-            if "dotabuff.com/players/" in steam:
-                steam = steam.split("players/")
-                try:
-                    steam = steam[1].split('/')
-                    steam = int(steam[0])
-                    player = [disc, steam, int_mmr, 5, 5, 5, 5, 5]
-                    data_management.add_user_data(player)
-                    await interaction.user.add_roles(role)
-                    check_user.user_list("Add", interaction.user)
-                    # TODO Check why modal isn't firing off after completion
-                    await interaction.response.send_message(
-                        'You\'ve been registered, please set your roles and wait to be vouched',
-                        view=SetRolesModal(), ephemeral=True)
-                except:
-                    await interaction.response.send_message(
-                        'There was an error with the dotabuff url you provided, please try again',
-                        ephemeral=True,
-                        delete_after=10)
-            else:
-                await interaction.response.send_message('Please enter your full Dotabuff user url when registering',
+        disc_reg = check_user.registered_check(disc)
+        if disc_reg:
+            await interaction.response.send_message(
+                'Your discord account is already registered to the database, please contact an admin for assistance',
+                ephemeral=True,
+                delete_after=10)
+        else:
+            try:
+                int_mmr = int(mmr)
+                if int_mmr > 12000:
+                    await interaction.response.send_message('Please enter a valid MMR',
+                                                            ephemeral=True,
+                                                            delete_after=10)
+                else:
+                    if "dotabuff.com/players/" in steam:
+                        steam = steam.split("players/")
+                        steam = steam[1]
+                        if "/" in steam:
+                            steam = steam.split('/')
+                            steam = steam[0]
+                        try:
+                            steam_int = int(steam)
+                            steam_reg = check_user.registered_check(steam_int)
+                            if steam_reg:
+                                await interaction.response.send_message(
+                                    'Your dotabuff account is already registered to the database, please contact an admin for assistance',
+                                    ephemeral=True,
+                                    delete_after=10)
+                            else:
+                                player = [disc, steam_int, int_mmr, 5, 5, 5, 5, 5]
+                                data_management.add_user_data(player)
+                                # Adds the inhouse role to the user once their details have been added to the register
+                                server = interaction.user.guild
+                                role = discord.utils.get(server.roles, name="inhouse")
+                                await interaction.user.add_roles(role)
+                                check_user.user_list("Add", interaction.user)
+                                # Modals cannot be sent from another modal, meaning users will have to manually set roles
+                                await interaction.response.send_message(
+                                    'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',
+                                    ephemeral=True,
+                                    delete_after=10)
+                        except:
+                            await interaction.response.send_message(
+                                'There was an error with the dotabuff url you provided, please try again',
+                                ephemeral=True,
+                                delete_after=10)
+                    else:
+                        await interaction.response.send_message(
+                            'Please enter your full Dotabuff user url when registering',
+                            ephemeral=True,
+                            delete_after=10)
+            except ValueError:
+                await interaction.response.send_message('Please only enter numbers when providing your MMR',
                                                         ephemeral=True,
                                                         delete_after=10)
-        except ValueError:
-            await interaction.response.send_message('Please only enter numbers when providing your MMR',
-                                                    ephemeral=True,
-                                                    delete_after=10)
 
 
 class RegisterButton(discord.ui.View):
@@ -89,8 +119,8 @@ class RegisterButton(discord.ui.View):
                        style=discord.ButtonStyle.green)
     async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        role = discord.utils.get(server.roles, name="inhouse")
-        if role in interaction.user.roles:
+        registered = discord.utils.get(server.roles, name="inhouse")
+        if registered in interaction.user.roles:
             await interaction.response.send_message(content="You are already registered", ephemeral=True,
                                                     delete_after=10)
         else:

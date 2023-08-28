@@ -2,20 +2,21 @@ import discord
 import check_user
 import data_management
 
-# TODO improve variable names for readability
+
 class AdminEmbed(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.data = []
+        self.unverified_list = []
 
     view_status = True
     current_page = 1
+    # Sep variable must be kept below 25 as embed fields limit is 25
     sep = 10
 
     async def send_embed(self, ctx):
         self.create_register_list(ctx.guild)
         self.message = await ctx.send(view=self)
-        await self.update_message(self.data, ctx.guild)
+        await self.update_message(self.unverified_list, ctx.guild)
 
     def registered_embed(self, data_list, server, interaction):
         all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',
@@ -39,11 +40,11 @@ class AdminEmbed(discord.ui.View):
             empty_embed.set_footer(text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
         return empty_embed
 
-    async def update_message(self, data, server, interaction=None):
+    async def update_message(self, list_data, server, interaction=None):
         if self.view_status:
             self.update_buttons()
-            if data:
-                user = data[0]
+            if list_data:
+                user = list_data[0]
                 user_data = data_management.view_user_data(user.id)
                 update_embed = check_user.user_embed(user_data, user, server)
                 if interaction:
@@ -65,15 +66,15 @@ class AdminEmbed(discord.ui.View):
         registered_list = check_user.user_list("")
         if registered_list:
             for user in registered_list:
-                self.data.append(user)
+                self.unverified_list.append(user)
                 check_user.user_list("Remove", user)
 
     def create_register_list(self, server):
         registered_users = discord.utils.get(server.roles, name="inhouse")
         vouched_users = discord.utils.get(server.roles, name="verified")
         for user in registered_users.members:
-            if vouched_users not in user.roles and user not in self.data:
-                self.data.append(user)
+            if vouched_users not in user.roles and user not in self.unverified_list:
+                self.unverified_list.append(user)
 
     def get_current_page_data(self, user_list):
         until_item = self.current_page * self.sep
@@ -98,7 +99,8 @@ class AdminEmbed(discord.ui.View):
             self.reject_user.label = "Reject User"
             self.reject_user.emoji = "❌"
             self.refresh_embed.disabled = False
-            if not self.data:
+            self.change_embed.label = "View Registered Users"
+            if not self.unverified_list:
                 self.verify_user.disabled = True
                 self.reject_user.disabled = True
             else:
@@ -114,7 +116,7 @@ class AdminEmbed(discord.ui.View):
             self.reject_user.style = discord.ButtonStyle.blurple
             self.reject_user.label = "Right"
             self.reject_user.emoji = "➡"
-            self.change_embed.label = "View Unregistered Users"
+            self.change_embed.label = "View Unverified Users"
             if list_length <= self.sep:
                 self.verify_user.disabled = True
                 self.refresh_embed.disabled = True
@@ -137,16 +139,16 @@ class AdminEmbed(discord.ui.View):
         server = interaction.user.guild
         if self.view_status:
             role = discord.utils.get(server.roles, name="verified")
-            user_to_verify = self.data[0]
+            user_to_verify = self.unverified_list[0]
             await user_to_verify.add_roles(role)
-            del self.data[0]
+            del self.unverified_list[0]
             self.update_register_list()
-            await self.update_message(self.data, server, interaction)
+            await self.update_message(self.unverified_list, server, interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page -= 1
-            await self.update_message(self.data, server, interaction)
+            await self.update_message(self.unverified_list, server, interaction)
 
     @discord.ui.button(label="Refresh", emoji="♻",
                        style=discord.ButtonStyle.blurple)
@@ -154,12 +156,12 @@ class AdminEmbed(discord.ui.View):
         server = interaction.user.guild
         if self.view_status:
             self.update_register_list()
-            await self.update_message(self.data, server, interaction)
+            await self.update_message(self.unverified_list, server, interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page = 1
-            await self.update_message(self.data, server, interaction)
+            await self.update_message(self.unverified_list, server, interaction)
 
     @discord.ui.button(label="Reject User", emoji="❌",
                        style=discord.ButtonStyle.red)
@@ -167,26 +169,26 @@ class AdminEmbed(discord.ui.View):
         server = interaction.user.guild
         if self.view_status:
             role = discord.utils.get(server.roles, name="inhouse")
-            user_to_reject = self.data[0]
+            user_to_reject = self.unverified_list[0]
             await user_to_reject.remove_roles(role)
-            del self.data[0]
+            del self.unverified_list[0]
             self.update_register_list()
-            await self.update_message(self.data, server, interaction)
+            await self.update_message(self.unverified_list, server, interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page += 1
-            await self.update_message(self.data, server, interaction)
+            await self.update_message(self.unverified_list, server, interaction)
 
     @discord.ui.button(label="View Registered Users", emoji="📋",
                        style=discord.ButtonStyle.grey)
     async def change_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
             self.view_status = False
-            await self.update_message(self.data, interaction.guild, interaction)
+            await self.update_message(self.unverified_list, interaction.guild, interaction)
             await interaction.response.defer()
         else:
             self.view_status = True
             self.update_register_list()
-            await self.update_message(self.data, interaction.guild, interaction)
+            await self.update_message(self.unverified_list, interaction.guild, interaction)
             await interaction.response.defer()
