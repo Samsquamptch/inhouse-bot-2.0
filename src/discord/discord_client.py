@@ -6,6 +6,7 @@ import register_user
 import user_help
 import yaml
 import inhouse_queue
+import data_management
 from yaml.loader import SafeLoader
 
 
@@ -56,7 +57,14 @@ def run_discord_bot():
 
     @bot.command()
     async def check(ctx):
-        await ctx.channel.send("Test", view=set_roles.RolePreferenceSelect(), ephemeral=True)
+        queue_ids = [259370592984104960,367058803763445760,1070100769853943859,
+                     376102816151896065,458993646012858368,230389532728492033,
+                     206843167394365440,270954490578862081,128653806723530753,119172828867067906]
+        test_data = data_management.queue_pop(queue_ids)
+        for i in test_data[0]:
+            print(i)
+        for j in test_data[1]:
+            print(j)
         # print(message.id)
 
     bot.run(load_token())
