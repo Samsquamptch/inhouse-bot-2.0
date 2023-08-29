@@ -6,7 +6,7 @@ import register_user
 import user_help
 import yaml
 import inhouse_queue
-import check_user
+import set_roles
 from yaml.loader import SafeLoader
 
 
@@ -55,11 +55,10 @@ def run_discord_bot():
     async def clear(ctx):
         await ctx.channel.purge()
 
-    @bot.command()
-    async def check(ctx):
-        test_variable = check_user.registered_check(28707060)
-        print(test_variable)
-        await ctx.send("test", ephemeral=True)
+    # @bot.command()
+    # async def check(ctx):
+    #     await ctx.channel.send("Test", view=set_roles.RolePreferenceSelect(), ephemeral=True)
+    #     # print(message.id)
 
     bot.run(load_token())
 

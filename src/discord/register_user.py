@@ -1,6 +1,7 @@
 import discord
 import data_management
 import check_user
+import set_roles
 
 
 class SetRolesModal(discord.ui.Modal, title='Set Role Preferences (1-5)'):
@@ -145,7 +146,8 @@ class RegisterButton(discord.ui.View):
         server = interaction.guild
         role = discord.utils.get(server.roles, name="inhouse")
         if role in interaction.user.roles:
-            await interaction.response.send_modal(SetRolesModal())
+            await interaction.response.send_message(content="Test", view=set_roles.RolePreferenceSelect(), ephemeral=True)
+            # await interaction.response.send_modal(SetRolesModal())
         else:
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
