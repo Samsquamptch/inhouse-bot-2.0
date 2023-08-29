@@ -61,8 +61,10 @@ def run_discord_bot():
                      376102816151896065,458993646012858368,230389532728492033,
                      206843167394365440,270954490578862081,128653806723530753,119172828867067906]
         test_data = data_management.queue_pop(queue_ids)
+        print("Team 1")
         for i in test_data[0]:
             print(i)
+        print("Team 2")
         for j in test_data[1]:
             print(j)
         # print(message.id)

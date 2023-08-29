@@ -42,27 +42,22 @@ def remove_user_data(discord_id):
 
 def queue_pop(queue_ids):
     user_data = pd.read_csv("../../data/userstest.csv")
-    queue = user_data.query(f'disc in @queue_ids')
+    queue = user_data.query("disc in @queue_ids")
     queue = queue.sort_values('mmr', ascending=False)
     team_uno = ["Team 1","Team 2","Team 1","Team 2","Team 1","Team 2","Team 1","Team 2","Team 1","Team 2"]
     team_dos = ["Team 1","Team 2","Team 2","Team 1","Team 1","Team 2","Team 2","Team 1","Team 1","Team 2"]
-    queue["teamuno"] = team_uno
-    queue["teamdos"] = team_dos
-    delta1 = queue.loc[queue['teamuno'] == "Team 1", 'mmr'].mean() - queue.loc[queue['teamuno'] == "Team 2", 'mmr'].mean()
-    delta2 =queue.loc[queue['teamdos'] == "Team 1", 'mmr'].mean() - queue.loc[queue['teamdos'] == "Team 2", 'mmr'].mean()
-    print(delta1)
-    print(delta2)
+    queue["team_uno"] = team_uno
+    queue["team_dos"] = team_dos
+    delta1 = queue.loc[queue['team_uno'] == "Team 1", 'mmr'].mean() - queue.loc[queue['team_uno'] == "Team 2", 'mmr'].mean()
+    delta2 =queue.loc[queue['team_dos'] == "Team 1", 'mmr'].mean() - queue.loc[queue['team_dos'] == "Team 2", 'mmr'].mean()
     if delta1 <= delta2:
-        queue.drop(columns=team_dos)
-        queue.rename(columns={"team_uno":"team"})
+        queue = queue.drop(columns="team_dos")
+        queue = queue.rename(columns={"team_uno": "team"})
         queue.to_csv("../../data/match.csv", index=False)
-        team1 = queue.loc[queue['teamuno'] == "Team 1", 'disc'].flatten.tolist()
-        team2 = queue.loc[queue['team'] == "Team 2", 'disc'].flatten.tolist()
-        return team1, team2
+        return queue.loc[queue['team'] == "Team 1", 'disc'].tolist(), queue.loc[queue['team'] == "Team 2", 'disc'].tolist()
     else:
-        queue.drop(columns=team_uno)
-        queue.rename(columns={"team_dos": "team"})
+        queue = queue.drop(columns="team_uno")
+        queue = queue.rename(columns={"team_dos": "team"})
         queue.to_csv("../../data/match.csv", index=False)
-        team1 = queue.loc[queue['teamdos'] == "Team 1", 'disc'].flatten.tolist()
-        team2 = queue.loc[queue['team'] == "Team 2", 'disc'].flatten.tolist()
-        return team1, team2
+        return queue.loc[queue['team'] == "Team 1", 'disc'].tolist(), queue.loc[queue['team'] == "Team 2", 'disc'].tolist()
+
