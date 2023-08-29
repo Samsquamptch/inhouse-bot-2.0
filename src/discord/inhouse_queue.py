@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 # The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
-class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
+class AdminFindPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
     def __init__(self):
         super().__init__()
         self.user_acc = None
@@ -124,7 +124,7 @@ class InhouseQueue(discord.ui.View):
         server = interaction.user.guild
         role_admin = discord.utils.get(server.roles, name="admin")
         if role_admin in interaction.user.roles:
-            admin_modal = AdminKickPlayerModal()
+            admin_modal = AdminFindPlayerModal()
             await interaction.response.send_modal(admin_modal)
             await admin_modal.wait()
             if admin_modal.user_acc in self.queued_players:
@@ -151,3 +151,23 @@ class InhouseQueue(discord.ui.View):
         else:
             await interaction.response.send_message(content="Only admins are able to kick users from the queue (votekick to be added later)",
                                                     ephemeral=True, delete_after=5)
+
+    @discord.ui.button(label="Add User (test)", emoji="🖥️",
+                       style=discord.ButtonStyle.blurple)
+    async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
+        server = interaction.user.guild
+        role_admin = discord.utils.get(server.roles, name="admin")
+        if role_admin in interaction.user.roles:
+            admin_modal = AdminFindPlayerModal()
+            await interaction.response.send_modal(admin_modal)
+            await admin_modal.wait()
+            if admin_modal.user_acc:
+                if admin_modal.user_acc not in self.queued_players:
+                    self.queued_players.append(admin_modal.user_acc)
+                    await self.update_message(self.queued_players, server)
+                    await interaction.followup.send(content=f'{admin_modal.user_name} has been added to the queue',
+                                                    ephemeral=True)
+                else:
+                    await interaction.followup.send(content=f'{admin_modal.user_name} is already in the queue', ephemeral=True)
+            else:
+                await interaction.followup.send(content=f'{admin_modal.user_name} doesn\'t exist', ephemeral=True)

@@ -67,7 +67,7 @@ def run_discord_bot():
         print("Team 2")
         for j in test_data[1]:
             print(j)
-        # print(message.id)
+
 
     bot.run(load_token())
 

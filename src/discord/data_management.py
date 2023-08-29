@@ -41,7 +41,7 @@ def remove_user_data(discord_id):
     user_data.to_csv("../../data/users.csv", index=False)
 
 def queue_pop(queue_ids):
-    user_data = pd.read_csv("../../data/userstest.csv")
+    user_data = pd.read_csv("../../data/users.csv")
     queue = user_data.query("disc in @queue_ids")
     queue = queue.sort_values('mmr', ascending=False)
     team_uno = ["Team 1","Team 2","Team 1","Team 2","Team 1","Team 2","Team 1","Team 2","Team 1","Team 2"]
