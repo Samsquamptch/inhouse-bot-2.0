@@ -32,3 +32,10 @@ def add_user_data(player):
     with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(player)
+
+
+def remove_user_data(discord_id):
+    user_data = pd.read_csv("../../data/users.csv")
+    updated_user = user_data.query(f'disc=={discord_id}')
+    user_data = user_data.drop(updated_user.index)
+    user_data.to_csv("../../data/users.csv", index=False)
