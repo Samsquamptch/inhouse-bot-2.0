@@ -88,8 +88,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                 data_management.add_user_data(player)
                                 # Adds the inhouse role to the user once their details have been added to the register
                                 server = interaction.user.guild
-                                role = discord.utils.get(server.roles, name="inhouse")
-                                await interaction.user.add_roles(role)
+                                role_inhouse = discord.utils.get(server.roles, name="inhouse")
+                                await interaction.user.add_roles(role_inhouse)
                                 check_user.user_list("Add", interaction.user)
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
                                 await interaction.response.send_message(
@@ -131,8 +131,8 @@ class RegisterButton(discord.ui.View):
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.guild
-        role = discord.utils.get(server.roles, name="inhouse")
-        if role in interaction.user.roles:
+        role_inhouse = discord.utils.get(server.roles, name="inhouse")
+        if role_inhouse in interaction.user.roles:
             user_data = data_management.view_user_data(interaction.user.id)
             await interaction.response.send_message(embed=check_user.user_embed(user_data, interaction.user, server),
                                                     ephemeral=True)
@@ -144,9 +144,9 @@ class RegisterButton(discord.ui.View):
                        style=discord.ButtonStyle.blurple)
     async def set_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.guild
-        role = discord.utils.get(server.roles, name="inhouse")
-        if role in interaction.user.roles:
-            await interaction.response.send_message(content="Test", view=set_roles.RolePreferenceSelect(), ephemeral=True)
+        role_inhouse = discord.utils.get(server.roles, name="inhouse")
+        if role_inhouse in interaction.user.roles:
+            await interaction.response.send_message(content="Please set your role preferences", view=set_roles.RolePreferenceSelect(), ephemeral=True)
             # await interaction.response.send_modal(SetRolesModal())
         else:
             await interaction.response.send_message(content="Please register before setting roles",

@@ -54,9 +54,9 @@ class AdminEmbed(discord.ui.View):
             else:
                 await self.message.edit(embed=self.empty_embed(interaction), view=self)
         else:
-            role = discord.utils.get(server.roles, name="inhouse")
+            role_inhouse = discord.utils.get(server.roles, name="inhouse")
             user_list = []
-            for user in role.members:
+            for user in role_inhouse.members:
                 user_list.append(user)
             self.update_buttons(len(user_list))
             user_list_page = self.get_current_page_data(user_list)
@@ -70,10 +70,10 @@ class AdminEmbed(discord.ui.View):
                 check_user.user_list("Remove", user)
 
     def create_register_list(self, server):
-        registered_users = discord.utils.get(server.roles, name="inhouse")
-        vouched_users = discord.utils.get(server.roles, name="verified")
-        for user in registered_users.members:
-            if vouched_users not in user.roles and user not in self.unverified_list:
+        role_inhouse = discord.utils.get(server.roles, name="inhouse")
+        role_verified = discord.utils.get(server.roles, name="verified")
+        for user in role_inhouse.members:
+            if role_verified not in user.roles and user not in self.unverified_list:
                 self.unverified_list.append(user)
 
     def get_current_page_data(self, user_list):
@@ -138,9 +138,9 @@ class AdminEmbed(discord.ui.View):
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            role = discord.utils.get(server.roles, name="verified")
+            role_verified = discord.utils.get(server.roles, name="verified")
             user_to_verify = self.unverified_list[0]
-            await user_to_verify.add_roles(role)
+            await user_to_verify.add_roles(role_verified)
             del self.unverified_list[0]
             self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)
@@ -168,9 +168,9 @@ class AdminEmbed(discord.ui.View):
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            role = discord.utils.get(server.roles, name="inhouse")
+            role_inhouse = discord.utils.get(server.roles, name="inhouse")
             user_to_reject = self.unverified_list[0]
-            await user_to_reject.remove_roles(role)
+            await user_to_reject.remove_roles(role_inhouse)
             del self.unverified_list[0]
             self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)

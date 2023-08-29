@@ -20,6 +20,11 @@ def check_for_value(value_check):
         variable = True
         return variable
 
+# def delete_user_data(discord_id):
+#     user_data = pd.read_csv("../../data/users.csv")
+#     deleted_user = user_data.drop(f'disc=={discord_id}')
+#     deleted_user.to_csv("../../data/users.csv", index=False)
+
 def view_user_data(discord_id):
     user_data = pd.read_csv("../../data/users.csv")
     user_data_list = user_data.query(f'disc=={discord_id}').values.flatten().tolist()

@@ -2,9 +2,9 @@ import discord
 import data_management
 import check_user
 
-
+# Select menus for choosing your role preferences
 class RolePreferenceSelect(discord.ui.View):
-    # Select menu for choosing your role preferences
+
 
     test_list = []
 

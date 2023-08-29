@@ -6,7 +6,6 @@ import register_user
 import user_help
 import yaml
 import inhouse_queue
-import set_roles
 from yaml.loader import SafeLoader
 
 
