@@ -54,10 +54,10 @@ def run_discord_bot():
     async def clear(ctx):
         await ctx.channel.purge()
 
-    # @bot.command()
-    # async def check(ctx):
-    #     await ctx.channel.send("Test", view=set_roles.RolePreferenceSelect(), ephemeral=True)
-    #     # print(message.id)
+    @bot.command()
+    async def check(ctx):
+        await ctx.channel.send("Test", view=set_roles.RolePreferenceSelect(), ephemeral=True)
+        # print(message.id)
 
     bot.run(load_token())
 
