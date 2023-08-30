@@ -25,6 +25,9 @@ class AdminEmbed(discord.ui.View):
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
             user_data = data_management.view_user_data(user.id)
+            # Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to
+            # (which is higher number = more pref and lower number = less pref). This swap shows what users expect to see,
+            # instead of what is actually happening behind the scenes (low num = more pref and high num = less pref)
             data_numbers = [3, 4, 5, 6, 7]
             for n in data_numbers:
                 match user_data[n]:

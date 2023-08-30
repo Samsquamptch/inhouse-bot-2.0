@@ -19,6 +19,9 @@ def user_embed(data_list, player_data, server):
     else:
         user_status = "User is not verified"
         user_clr = 0xFF0000
+    # Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to
+    # (which is higher number = more pref and lower number = less pref). This swap shows what users expect to see,
+    # instead of what is actually happening behind the scenes (low num = more pref and high num = less pref)
     data_numbers = [3, 4, 5, 6, 7]
     for n in data_numbers:
         match data_list[n]:

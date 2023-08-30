@@ -84,6 +84,9 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                     ephemeral=True,
                                     delete_after=10)
                             else:
+                                # Due to how the role balancer calculations work, number weighting is saved the opposite
+                                # to how users are used to (which is higher number = more pref and lower number = less pref).
+                                # Swaps have been implemented where required for user output to avoid confusion
                                 player = [disc, steam_int, int_mmr, 1, 1, 1, 1, 1]
                                 data_management.add_user_data(player)
                                 # Adds the inhouse role to the user once their details have been added to the register
