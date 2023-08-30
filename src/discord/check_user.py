@@ -5,23 +5,34 @@ registered_list = []
 
 def user_embed(data_list, player_data, server):
     role_banned = discord.utils.get(server.roles, name="queue ban")
+    role_champion = discord.utils.get(server.roles, name="current champions")
+    role_verified = discord.utils.get(server.roles, name="verified")
     if role_banned in player_data.roles:
-        verified_status = "User is currently banned 😢"
+        user_status = "User is currently banned 😢"
         user_clr = 0x000000
+    elif role_champion in player_data.roles:
+        user_status = "User is a champion!"
+        user_clr = 0xFFD700
+    elif role_verified in player_data.roles:
+        user_status = "User is verified"
+        user_clr = 0x00ff00
     else:
-        role_champion = discord.utils.get(server.roles, name="current champions")
-        if role_champion in player_data.roles:
-            verified_status = "User is a champion!"
-            user_clr = 0xFFD700
-        else:
-            role_verified = discord.utils.get(server.roles, name="verified")
-            if role_verified in player_data.roles:
-                verified_status = "User is verified"
-                user_clr = 0x00ff00
-            else:
-                verified_status = "User is not verified"
-                user_clr = 0xFF0000
-    user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{verified_status}',
+        user_status = "User is not verified"
+        user_clr = 0xFF0000
+    data_numbers = [3, 4, 5, 6, 7]
+    for n in data_numbers:
+        match data_list[n]:
+            case 1:
+                data_list[n] = 5
+            case 2:
+                data_list[n] = 4
+            case 3:
+                data_list[n] = 3
+            case 4:
+                data_list[n] = 2
+            case 5:
+                data_list[n] = 1
+    user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{user_status}',
                                color=user_clr)
     user_embed.set_thumbnail(url=f'{player_data.avatar}')
     user_embed.add_field(name='Dotabuff', value=f'https://www.dotabuff.com/players/{data_list[1]}', inline=True)
@@ -69,9 +80,9 @@ def registered_check(check_id):
 def check_role_priority(user):
     core_roles = [user[3], user[4], user[5]]
     supp_roles = [user[6], user[7]]
-    if 5 in core_roles and 5 not in supp_roles:
+    if 1 in core_roles and 1 not in supp_roles:
         role_pref = "Core"
-    elif 5 in supp_roles and 5 not in core_roles:
+    elif 1 in supp_roles and 1 not in core_roles:
         role_pref = "Support"
     else:
         core_avg = (user[3] + user[4] + user[5])/3
@@ -79,9 +90,9 @@ def check_role_priority(user):
         role_balance = core_avg - supp_avg
         match role_balance:
             case _ if role_balance > 1:
-                role_pref = "Core"
-            case _ if role_balance < 0:
                 role_pref = "Support"
+            case _ if role_balance < 0:
+                role_pref = "Core"
             case _:
                 role_pref = "Balanced"
     return role_pref

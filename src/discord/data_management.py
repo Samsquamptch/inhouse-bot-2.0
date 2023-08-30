@@ -42,16 +42,75 @@ def remove_user_data(discord_id):
     user_data = user_data.drop(updated_user.index)
     user_data.to_csv("../../data/users.csv", index=False)
 
+def team_draft_balancer(list_mmr):
+    team_order = []
+    total = 0
+    for mmr in list_mmr:
+        total = total + mmr
+    mmr_avg = total / 10
+    print(total)
+    print(mmr_avg)
+    radiant = 0
+    dire = 0
+    radiant = radiant + list_mmr[0] + list_mmr[-1]
+    team_order.append("Team 1")
+    dire = dire + list_mmr[1] + list_mmr[-2]
+    team_order.append("Team 2")
+    if radiant > dire:
+        dire = dire + list_mmr[2]
+        radiant = radiant + list_mmr[3]
+        team_order.append("Team 2")
+        team_order.append("Team 1")
+    else:
+        radiant = radiant + list_mmr[2]
+        dire = dire + list_mmr[3]
+        team_order.append("Team 1")
+        team_order.append("Team 2")
+    if radiant > dire:
+        dire = dire + list_mmr[4]
+        radiant = radiant + list_mmr[5]
+        team_order.append("Team 2")
+        team_order.append("Team 1")
+    else:
+        radiant = radiant + list_mmr[4]
+        dire = dire + list_mmr[5]
+        team_order.append("Team 1")
+        team_order.append("Team 2")
+    if radiant > dire:
+        dire = dire + list_mmr[6]
+        radiant = radiant + list_mmr[7]
+        team_order.append("Team 2")
+        team_order.append("Team 1")
+    else:
+        radiant = radiant + list_mmr[6]
+        dire = dire + list_mmr[7]
+        team_order.append("Team 1")
+        team_order.append("Team 2")
+    team_order.append("Team 2")
+    team_order.append("Team 1")
+    radiant_avg = radiant / 5
+    dire_avg = dire / 5
+    print(radiant_avg)
+    print(dire_avg)
+    return team_order
+
 def queue_pop(queue_ids):
-    user_data = pd.read_csv("../../data/userstest.csv")
+    user_data = pd.read_csv("../../data/users.csv")
     queue = user_data.query("disc in @queue_ids")
     queue = queue.sort_values('mmr', ascending=False)
-    team_uno = ["Team 1","Team 2","Team 1","Team 2","Team 1","Team 2","Team 1","Team 2","Team 1","Team 2"]
-    team_dos = ["Team 1","Team 2","Team 2","Team 1","Team 1","Team 2","Team 2","Team 1","Team 1","Team 2"]
+    team_uno = ["Team 1", "Team 2", "Team 1", "Team 2", "Team 1", "Team 2", "Team 1", "Team 2", "Team 1", "Team 2"]
+    team_dos = ["Team 1", "Team 2", "Team 2", "Team 1", "Team 1", "Team 2", "Team 2", "Team 1", "Team 1", "Team 2"]
+    team_tres = team_draft_balancer(queue['mmr'].tolist())
     queue["team_uno"] = team_uno
     queue["team_dos"] = team_dos
+    queue["team_tres"] = team_tres
     delta1 = queue.loc[queue['team_uno'] == "Team 1", 'mmr'].mean() - queue.loc[queue['team_uno'] == "Team 2", 'mmr'].mean()
     delta2 =queue.loc[queue['team_dos'] == "Team 1", 'mmr'].mean() - queue.loc[queue['team_dos'] == "Team 2", 'mmr'].mean()
+    delta3 = queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[queue['team_tres'] == "Team 2", 'mmr'].mean()
+    if delta3 <= delta1 and delta3 <= delta2:
+        queue = queue.drop(columns="team_uno")
+        queue = queue.drop(columns="team_dos")
+        queue = queue.rename(columns={"team_tres": "team"})
     if delta1 <= delta2:
         queue = queue.drop(columns="team_dos")
         queue = queue.rename(columns={"team_uno": "team"})
@@ -65,7 +124,6 @@ def queue_pop(queue_ids):
         team1.at[pos1[14], 'pos'] = 4
         team1.at[pos1[15], 'pos'] = 5
         team1 = team1.sort_values('pos')
-        print(team1)
         pos2 = pos_graph(team2)
         team2["pos"] = [11, 12, 13, 14, 15]
         team2.at[pos2[11], 'pos'] = 1
@@ -74,7 +132,6 @@ def queue_pop(queue_ids):
         team2.at[pos2[14], 'pos'] = 4
         team2.at[pos2[15], 'pos'] = 5
         team2 = team2.sort_values('pos')
-        print(team2)
         queue = pd.concat([team1, team2])
         queue.to_csv("../../data/match.csv", index=False)
         return team1['disc'].tolist(), team2['disc'].tolist()
@@ -91,7 +148,6 @@ def queue_pop(queue_ids):
         team1.at[pos1[14], 'pos'] = 4
         team1.at[pos1[15], 'pos'] = 5
         team1 = team1.sort_values('pos')
-        print(team1)
         pos2 = pos_graph(team2)
         team2["pos"] = [11, 12, 13, 14, 15]
         team2.at[pos2[11], 'pos'] = 1
@@ -100,7 +156,6 @@ def queue_pop(queue_ids):
         team2.at[pos2[14], 'pos'] = 4
         team2.at[pos2[15], 'pos'] = 5
         team2 = team2.sort_values('pos')
-        print(team2)
         queue = pd.concat([team1,team2])
         queue.to_csv("../../data/match.csv", index=False)
         return team1['disc'].tolist(), team2['disc'].tolist()

@@ -84,7 +84,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                     ephemeral=True,
                                     delete_after=10)
                             else:
-                                player = [disc, steam_int, int_mmr, 5, 5, 5, 5, 5]
+                                player = [disc, steam_int, int_mmr, 1, 1, 1, 1, 1]
                                 data_management.add_user_data(player)
                                 # Adds the inhouse role to the user once their details have been added to the register
                                 server = interaction.user.guild

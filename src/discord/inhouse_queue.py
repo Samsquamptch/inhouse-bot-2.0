@@ -58,7 +58,9 @@ class InhouseQueue(discord.ui.View):
 
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
-        queue_roles = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
+        queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
+        for i in queue_list:
+            print(i)
         queue_teams = data_management.queue_pop(queue_ids)
         queue_embed = discord.Embed(title="Inhouse queue", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
@@ -86,10 +88,12 @@ class InhouseQueue(discord.ui.View):
             mmr_total_dire = mmr_total_dire + user_dire[2]
             queue_embed.add_field(name=f'{queue_roles[x]}', value='', inline=True)
             queue_embed.add_field(name=user_acc_radiant.global_name,
-                                  value=f'MMR: {user_radiant[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]}) \u1CBC\u1CBC\u1CBC\u1CBC ',
+                                  value=f'MMR: {user_radiant[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
+                                        f'[Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]})',
                                   inline=True)
             queue_embed.add_field(name=user_acc_dire.global_name,
-                                  value=f'MMR: {user_dire[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_dire[1]}) \u1CBC\u1CBC\u1CBC\u1CBC',
+                                  value=f'MMR: {user_dire[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
+                                        f'[Dotabuff](https://www.dotabuff.com/players/{user_dire[1]})',
                                   inline=True)
             x += 1
         mmr_avg_radiant = mmr_total_radiant / 5

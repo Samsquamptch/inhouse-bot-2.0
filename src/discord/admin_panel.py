@@ -25,6 +25,19 @@ class AdminEmbed(discord.ui.View):
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
             user_data = data_management.view_user_data(user.id)
+            data_numbers = [3, 4, 5, 6, 7]
+            for n in data_numbers:
+                match user_data[n]:
+                    case 1:
+                        user_data[n] = 5
+                    case 2:
+                        user_data[n] = 4
+                    case 3:
+                        user_data[n] = 3
+                    case 4:
+                        user_data[n] = 2
+                    case 5:
+                        user_data[n] = 1
             all_embed.add_field(name=user.global_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                                 inline=False)
