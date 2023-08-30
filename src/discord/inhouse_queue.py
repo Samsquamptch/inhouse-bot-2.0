@@ -1,11 +1,12 @@
 import discord
 import data_management
 import check_user
+import random
 from datetime import datetime
 
 
 # The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
-class AdminFindPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
+class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
     def __init__(self):
         super().__init__()
         self.user_acc = None
@@ -21,6 +22,7 @@ class AdminFindPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
             self.user_acc = check_if_exists[1]
             await interaction.response.defer()
         self.stop()
+
 
 # The modal for users to votekick when the queue is full. Will be left for a later date
 # class VoteKickPlayerModal(discord.ui.Modal, title='Votekick User in Queue'):
@@ -41,9 +43,63 @@ class InhouseQueue(discord.ui.View):
         super().__init__(timeout=None)
         self.queued_players = []
 
+    async def test_add_user(self, interaction: discord.Interaction):
+        server = interaction.guild
+        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Owley", "Teky"]
+        for user in test_list:
+            check_if_exists = check_user.user_exists(server, user)
+            if user not in self.queued_players:
+                self.queued_players.append(check_if_exists[1])
+
+
     async def send_embed(self, ctx):
         self.message = await ctx.send(view=self)
         await self.update_message(self.queued_players, ctx.guild)
+
+    def full_queue_embed(self, queue_list, server):
+        queue_ids = [user.id for user in queue_list]
+        queue_roles = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
+        queue_teams = data_management.queue_pop(queue_ids)
+        queue_embed = discord.Embed(title="Inhouse queue", description=f'Queue is full, please join the lobby!',
+                                    color=0x00ff00)
+        icon_url = server.icon.url
+        queue_embed.set_thumbnail(url=f'{icon_url}')
+        queue_embed.add_field(name='Roles', value='', inline=True)
+        queue_embed.add_field(name='Radiant', value='', inline=True)
+        queue_embed.add_field(name='Dire', value='', inline=True)
+        coin = random.randint(1, 2)
+        if coin == 1:
+            radiant_team = queue_teams[0]
+            dire_team = queue_teams[1]
+        elif coin == 2:
+            radiant_team = queue_teams[1]
+            dire_team = queue_teams[0]
+        x = 0
+        mmr_total_radiant = 0
+        mmr_total_dire = 0
+        while x < 5:
+            user_acc_radiant = discord.utils.get(server.members, id=radiant_team[x])
+            user_acc_dire = discord.utils.get(server.members, id=dire_team[x])
+            user_radiant = data_management.view_user_data(radiant_team[x])
+            user_dire = data_management.view_user_data(dire_team[x])
+            mmr_total_radiant = mmr_total_radiant + user_radiant[2]
+            mmr_total_dire = mmr_total_dire + user_dire[2]
+            queue_embed.add_field(name=f'{queue_roles[x]}', value='', inline=True)
+            queue_embed.add_field(name=user_acc_radiant.global_name,
+                                  value=f'MMR: {user_radiant[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]}) \u1CBC\u1CBC\u1CBC\u1CBC ',
+                                  inline=True)
+            queue_embed.add_field(name=user_acc_dire.global_name,
+                                  value=f'MMR: {user_dire[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_dire[1]}) \u1CBC\u1CBC\u1CBC\u1CBC',
+                                  inline=True)
+            x += 1
+        mmr_avg_radiant = mmr_total_radiant / 5
+        mmr_avg_dire = mmr_total_dire / 5
+        queue_embed.add_field(name=f'Average MMR', value='', inline=True)
+        queue_embed.add_field(name=f'{mmr_avg_radiant}', value='', inline=True)
+        queue_embed.add_field(name=f'{mmr_avg_dire}', value='', inline=True)
+        update_time = datetime.now().strftime("%H:%M:%S")
+        queue_embed.set_footer(text=f'Teams created at: {update_time}')
+        return queue_embed
 
     # Creates the embed used for displaying the inhouse queue
     def create_embed(self, queue_list, server):
@@ -80,7 +136,10 @@ class InhouseQueue(discord.ui.View):
         return queue_embed
 
     async def update_message(self, queue_list, server):
-        await self.message.edit(embed=self.create_embed(queue_list, server), view=self)
+        if len(queue_list) == 10:
+            await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
+        else:
+            await self.message.edit(embed=self.create_embed(queue_list, server), view=self)
 
     # Button to join the inhouse queue
     @discord.ui.button(label="Join Queue", emoji="✅",
@@ -102,8 +161,9 @@ class InhouseQueue(discord.ui.View):
                     await self.update_message(self.queued_players, server)
                     await interaction.response.defer()
             else:
-                await interaction.response.send_message(content="Please register and wait to be verified to join the queue", ephemeral=True,
-                                                        delete_after=5)
+                await interaction.response.send_message(
+                    content="Please register and wait to be verified to join the queue", ephemeral=True,
+                    delete_after=5)
 
     # Button to leave the inhouse queue
     @discord.ui.button(label="Leave Queue", emoji="❌",
@@ -124,7 +184,7 @@ class InhouseQueue(discord.ui.View):
         server = interaction.user.guild
         role_admin = discord.utils.get(server.roles, name="admin")
         if role_admin in interaction.user.roles:
-            admin_modal = AdminFindPlayerModal()
+            admin_modal = AdminKickPlayerModal()
             await interaction.response.send_modal(admin_modal)
             await admin_modal.wait()
             if admin_modal.user_acc in self.queued_players:
@@ -149,8 +209,9 @@ class InhouseQueue(discord.ui.View):
         # else:
         #     await interaction.response.send_message(content="You can't initiate a votekick if you're not in the queue!", ephemeral=True, delete_after=5)
         else:
-            await interaction.response.send_message(content="Only admins are able to kick users from the queue (votekick to be added later)",
-                                                    ephemeral=True, delete_after=5)
+            await interaction.response.send_message(
+                content="Only admins are able to kick users from the queue (votekick to be added later)",
+                ephemeral=True, delete_after=5)
 
     @discord.ui.button(label="Add User (test)", emoji="🖥️",
                        style=discord.ButtonStyle.blurple)
@@ -158,16 +219,21 @@ class InhouseQueue(discord.ui.View):
         server = interaction.user.guild
         role_admin = discord.utils.get(server.roles, name="admin")
         if role_admin in interaction.user.roles:
-            admin_modal = AdminFindPlayerModal()
-            await interaction.response.send_modal(admin_modal)
-            await admin_modal.wait()
-            if admin_modal.user_acc:
-                if admin_modal.user_acc not in self.queued_players:
-                    self.queued_players.append(admin_modal.user_acc)
-                    await self.update_message(self.queued_players, server)
-                    await interaction.followup.send(content=f'{admin_modal.user_name} has been added to the queue',
-                                                    ephemeral=True)
-                else:
-                    await interaction.followup.send(content=f'{admin_modal.user_name} is already in the queue', ephemeral=True)
-            else:
-                await interaction.followup.send(content=f'{admin_modal.user_name} doesn\'t exist', ephemeral=True)
+            await self.test_add_user(interaction)
+            await self.update_message(self.queued_players, server)
+            await interaction.response.defer()
+            # admin_modal = AdminFindPlayerModal()
+            # await interaction.response.send_modal(admin_modal)
+            # await admin_modal.wait()
+            # if admin_modal.user_acc:
+            #     if admin_modal.user_acc not in self.queued_players:
+            #         self.queued_players.append(admin_modal.user_acc)
+            #         await self.update_message(self.queued_players, server)
+            #         # await interaction.followup.send(content=f'{admin_modal.user_name} has been added to the queue',
+            #         #                                 ephemeral=True)
+            #         await interaction.response.defer()
+            #     else:
+            #         await interaction.followup.send(content=f'{admin_modal.user_name} is already in the queue',
+            #                                         ephemeral=True)
+            # else:
+            #     await interaction.followup.send(content=f'{admin_modal.user_name} doesn\'t exist', ephemeral=True)
