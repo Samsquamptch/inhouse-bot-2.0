@@ -132,7 +132,6 @@ def team_balancer(queue_ids):
     queue.to_csv("../../data/match.csv", index=False)
     return team1['disc'].tolist(), team2['disc'].tolist()
 
-
 def pos_graph(team):
     G = nx.Graph()
     for i in range(0, 5):

@@ -85,7 +85,7 @@ class InhouseQueue(discord.ui.View):
 
     async def test_add_user(self, interaction: discord.Interaction):
         server = interaction.guild
-        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Owley",
+        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
                      "Teky", "Rock Bottom"]
         for user in test_list:
             check_if_exists = check_user.user_exists(server, user)
@@ -203,15 +203,14 @@ class InhouseQueue(discord.ui.View):
                 self.queued_players.append(user)
                 self.preload_modal.waiting_list.remove(user)
                 await self.preload_modal.update_message()
-                if len(self.queued_players) == 10 and not self.preload_modal.waiting_list:
+                if len(self.queued_players) == 10:
                     await self.preload_modal.delete_message()
-                    break
-                elif len(self.queued_players) == 10:
+                    await self.update_message(self.queued_players, server)
                     break
                 elif not self.preload_modal.waiting_list:
                     await self.preload_modal.delete_message()
+                    await self.update_message(self.queued_players, server)
                     break
-            await self.update_message(self.queued_players, server)
         else:
             await self.preload_modal.delete_message()
 
@@ -231,6 +230,10 @@ class InhouseQueue(discord.ui.View):
                                                         delete_after=5)
             elif len(self.queued_players) == 10 and interaction.user not in self.preload_modal.waiting_list:
                 self.preload_modal.waiting_list.append(interaction.user)
+                check_if_exists = check_user.user_exists(server, "Owley")
+                if check_if_exists[1] not in self.queued_players:
+                    print("test")
+                    self.preload_modal.waiting_list.append(check_if_exists[1])
                 await self.preload_modal.update_message()
                 await interaction.response.defer()
             else:
@@ -282,9 +285,9 @@ class InhouseQueue(discord.ui.View):
             elif admin_modal.user_acc in self.queued_players:
                 self.queued_players.remove(admin_modal.user_acc)
                 await self.update_message(self.queued_players, server)
+                await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'{admin_modal.user_name} has been kicked from the queue',
                                                 ephemeral=True)
-                await self.waiting_room_transfer(server)
             else:
                 await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
         # # elif len(self.queued_players) == 10 and interaction.user in self.queued_players:
