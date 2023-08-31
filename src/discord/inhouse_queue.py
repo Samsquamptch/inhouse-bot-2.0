@@ -5,18 +5,34 @@ from datetime import datetime
 
 
 class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
-    player_name = discord.ui.TextInput(label='User\'s global name or username')
+    def __init__(self):
+        super().__init__()
+        self.user_acc = None
+        self.user_name = ""
+
+    player_name = discord.ui.TextInput(label='User\'s global name or username', min_length=3)
 
     async def on_submit(self, interaction: discord.Interaction):
-        user_name = str(self.player_name)
-        await interaction.response.defer()
+        server = interaction.guild
+        self.user_name = str(self.player_name)
+        check_if_exists = check_user.user_exists(server, self.user_name)
+        if check_if_exists[0]:
+            self.user_acc = check_if_exists[1]
+            await interaction.response.defer()
+        self.stop()
 
-class VoteKickPlayerModal(discord.ui.Modal, title='Votekick User in Queue'):
-    player_name = discord.ui.TextInput(label='User\'s global name or username')
 
-    async def on_submit(self, interaction: discord.Interaction):
-        user_name = str(self.player_name)
-        await interaction.response.defer()
+# class VoteKickPlayerModal(discord.ui.Modal, title='Votekick User in Queue'):
+#     def __init__(self):
+#         super().__init__()
+#         self.user_name = ""
+#
+#     player_name = discord.ui.TextInput(label='User\'s global name or username')
+#
+#     async def on_submit(self, interaction: discord.Interaction):
+#         self.user_name = str(self.player_name)
+#         self.stop()
+
 
 class InhouseQueue(discord.ui.View):
     def __init__(self):
@@ -54,7 +70,7 @@ class InhouseQueue(discord.ui.View):
                                   inline=False)
         update_time = datetime.now().strftime("%H:%M:%S")
         if data:
-            average_mmr = mmr_total/len(data)
+            average_mmr = mmr_total / len(data)
             queue_embed.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
         else:
             queue_embed.set_footer(text=f'Queue updated at: {update_time}')
@@ -70,7 +86,8 @@ class InhouseQueue(discord.ui.View):
         verify = discord.utils.get(server.roles, name="verified")
         banned = discord.utils.get(server.roles, name="queue ban")
         if banned in interaction.user.roles:
-            await interaction.response.send_message(content="You are currently banned from joining the queue", ephemeral=True, delete_after=5)
+            await interaction.response.send_message(content="You are currently banned from joining the queue",
+                                                    ephemeral=True, delete_after=5)
         else:
             if verify in interaction.user.roles:
                 if interaction.user in self.data:
@@ -81,7 +98,8 @@ class InhouseQueue(discord.ui.View):
                     await self.update_message(self.data, server)
                     await interaction.response.defer()
             else:
-                await interaction.response.send_message(content="You cannot join the queue", ephemeral=True, delete_after=5)
+                await interaction.response.send_message(content="You cannot join the queue", ephemeral=True,
+                                                        delete_after=5)
 
     @discord.ui.button(label="Leave Queue", emoji="❌",
                        style=discord.ButtonStyle.red)
@@ -100,8 +118,27 @@ class InhouseQueue(discord.ui.View):
         server = interaction.user.guild
         admin = discord.utils.get(server.roles, name="admin")
         if admin in interaction.user.roles:
-            await interaction.response.send_modal(AdminKickPlayerModal())
-        elif len(self.data) == 10 and interaction.user in self.data:
-            await interaction.response.send_modal(VoteKickPlayerModal())
+            admin_modal = AdminKickPlayerModal()
+            await interaction.response.send_modal(admin_modal)
+            await admin_modal.wait()
+            if admin_modal.user_acc in self.data:
+                self.data.remove(admin_modal.user_acc)
+                await self.update_message(self.data, server)
+                await interaction.followup.send(content=f'{admin_modal.user_name} has been kicked from the queue',
+                                                ephemeral=True)
+        #     else:
+        #         await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
+        # # elif len(self.data) == 10 and interaction.user in self.data:
+        # elif interaction.user in self.data:
+        #     votekick_modal = VoteKickPlayerModal()
+        #     await interaction.response.send_modal(votekick_modal)
+        #     await votekick_modal.wait()
+        #     for user in self.data:
+        #         if votekick_modal.user_name in user.global_name:
+        #             number = 1
+        #             await interaction.channel.send(content=f'{interaction.user.global_name} wants to kick {user.global_name} from the queue! {3 - number} votes left to kick')
+        #         # await interaction.followup.send(content=f'{votekick_modal.user_name} isn\'t in the queue', ephemeral=True)
+        # elif len(self.data) < 10 and interaction.user in self.data:
+        #     await interaction.response.send_message(content="Votekick can only be held once queue is full", ephemeral=True, delete_after=5)
         else:
-            await interaction.response.defer()
+            await interaction.response.send_message(content="You can't initiate a votekick if you're not in the queue!", ephemeral=True, delete_after=5)
