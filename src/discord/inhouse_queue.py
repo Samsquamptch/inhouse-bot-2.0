@@ -40,17 +40,57 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
 #         self.user_name = str(self.player_name)
 #         self.stop()
 
+class WaitingRoom(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.waiting_list = []
+
+    async def send_embed(self, server):
+        channel = discord.utils.get(server.channels, name="inhouse-queue")
+        self.message = await channel.send(content="Users in the waiting room are below", view=self)
+        await self.update_message()
+
+    def create_embed(self, queue_list):
+        if queue_list:
+            embed_desc = "People currently in waiting list"
+            embed_clr = 0x00ff00
+        else:
+            embed_desc = "Waiting list is currently empty"
+            embed_clr = 0xFF0000
+        queue_embed = discord.Embed(title="Inhouse Waiting List", description=f'{embed_desc}',
+                                    color=embed_clr)
+        for user in queue_list:
+            user_data = data_management.view_user_data(user.id)
+            queue_embed.add_field(name=user.global_name, value=f'MMR: {user_data[2]}', inline=True)
+        update_time = datetime.now().strftime("%H:%M:%S")
+        queue_embed.set_footer(text=f'Waiting list updated at: {update_time}')
+        return queue_embed
+
+    async def delete_message(self):
+        await self.message.delete()
+
+
+    async def update_message(self):
+        # if purpose == "add":
+        #     self.waiting_list.append(user)
+        # elif purpose == "remove":
+        #     self.waiting_list.remove(user)
+        await self.message.edit(embed=self.create_embed(self.waiting_list), view=self)
+
+
+
 
 # Embed and buttons for the inhouse queue
 class InhouseQueue(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.queued_players = []
+        self.preload_modal = WaitingRoom()
 
     async def test_add_user(self, interaction: discord.Interaction):
         server = interaction.guild
         test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Owley",
-                     "Teky"]
+                     "Teky", "Rock Bottom"]
         for user in test_list:
             check_if_exists = check_user.user_exists(server, user)
             if user not in self.queued_players:
@@ -63,8 +103,6 @@ class InhouseQueue(discord.ui.View):
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        for i in queue_list:
-            print(i)
         queue_teams = data_management.queue_pop(queue_ids)
         queue_embed = discord.Embed(title="Inhouse queue", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
@@ -94,7 +132,7 @@ class InhouseQueue(discord.ui.View):
                                   value='\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
                                   inline=True)
             queue_embed.add_field(name=user_acc_radiant.global_name,
-                                  value=f'MMR: {user_radiant[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
+                                  value=f'MMR: {user_radiant[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
                                         f'[Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]})',
                                   inline=True)
             queue_embed.add_field(name=user_acc_dire.global_name,
@@ -152,8 +190,9 @@ class InhouseQueue(discord.ui.View):
     async def update_message(self, queue_list, server):
         if len(queue_list) == 10:
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
-            channel = discord.utils.get(server.channels, name="inhouse-queue")
+            await self.preload_modal.send_embed(server)
             # TODO uncomment when going live
+            # channel = discord.utils.get(server.channels, name="inhouse-queue")
             # await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
             #                    f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
             #                    f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
@@ -161,6 +200,23 @@ class InhouseQueue(discord.ui.View):
             #                    f'<@{queue_list[9].id}>', delete_after=600)
         else:
             await self.message.edit(embed=self.create_embed(queue_list, server), view=self)
+
+    async def waiting_room_transfer(self, server):
+        if self.preload_modal.waiting_list:
+            print("test1")
+            for user in self.preload_modal.waiting_list:
+                self.queued_players.append(user)
+                self.preload_modal.waiting_list.remove(user)
+                await self.preload_modal.update_message()
+                if len(self.queued_players) == 10 and not self.preload_modal.waiting_list:
+                    await self.preload_modal.delete_message()
+                    break
+                elif len(self.queued_players) == 10:
+                    break
+            await self.update_message(self.queued_players, server)
+        else:
+            print("test2")
+            await self.preload_modal.delete_message()
 
     # Button to join the inhouse queue
     @discord.ui.button(label="Join Queue", emoji="✅",
@@ -172,19 +228,22 @@ class InhouseQueue(discord.ui.View):
         if role_banned in interaction.user.roles:
             await interaction.response.send_message(content="You are currently banned from joining the queue",
                                                     ephemeral=True, delete_after=5)
-        else:
-            if role_verify in interaction.user.roles:
-                if interaction.user in self.queued_players:
-                    await interaction.response.send_message(content="You are already queued", ephemeral=True,
-                                                            delete_after=5)
-                else:
-                    self.queued_players.append(interaction.user)
-                    await self.update_message(self.queued_players, server)
-                    await interaction.response.defer()
+        elif role_verify in interaction.user.roles:
+            if interaction.user in self.queued_players:
+                await interaction.response.send_message(content="You are already queued", ephemeral=True,
+                                                        delete_after=5)
+            elif len(self.queued_players) == 10 and interaction.user not in self.preload_modal.waiting_list:
+                self.preload_modal.waiting_list.append(interaction.user)
+                await self.preload_modal.update_message()
+                await interaction.response.defer()
             else:
-                await interaction.response.send_message(
-                    content="Please register and wait to be verified to join the queue", ephemeral=True,
-                    delete_after=5)
+                self.queued_players.append(interaction.user)
+                await self.update_message(self.queued_players, server)
+                await interaction.response.defer()
+        else:
+            await interaction.response.send_message(
+                content="Please register and wait to be verified to join the queue", ephemeral=True,
+                delete_after=5)
 
     # Button to leave the inhouse queue
     @discord.ui.button(label="Leave Queue", emoji="❌",
@@ -195,11 +254,18 @@ class InhouseQueue(discord.ui.View):
             if len(self.queued_players) == 10:
                 await interaction.response.send_message(content="You cannot leave a full queue!", ephemeral=True,
                                                         delete_after=5)
-            self.queued_players.remove(interaction.user)
-            await self.update_message(self.queued_players, server)
-            await interaction.response.defer()
+            else:
+                self.queued_players.remove(interaction.user)
+                await self.update_message(self.queued_players, server)
+                await interaction.response.defer()
         else:
-            await interaction.response.send_message(content="You aren't in the queue", ephemeral=True, delete_after=5)
+            if len(self.queued_players) == 10 and interaction.user in self.preload_modal.waiting_list:
+                self.preload_modal.waiting_list.remove(interaction.user)
+                await self.preload_modal.update_message()
+                await interaction.response.defer()
+            else:
+                await interaction.response.send_message(content="You aren't in the queue", ephemeral=True,
+                                                        delete_after=5)
 
     # Button to kick players from the inhouse queue
     @discord.ui.button(label="Kick User", emoji="🥾",
@@ -214,12 +280,14 @@ class InhouseQueue(discord.ui.View):
             if admin_modal.user_acc == "clear":
                 self.queued_players.clear()
                 await self.update_message(self.queued_players, server)
+                await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
             elif admin_modal.user_acc in self.queued_players:
                 self.queued_players.remove(admin_modal.user_acc)
                 await self.update_message(self.queued_players, server)
                 await interaction.followup.send(content=f'{admin_modal.user_name} has been kicked from the queue',
                                                 ephemeral=True)
+                await self.waiting_room_transfer(server)
             else:
                 await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
         # # elif len(self.queued_players) == 10 and interaction.user in self.queued_players:
