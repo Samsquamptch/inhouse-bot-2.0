@@ -5,6 +5,7 @@ import dota2
 import os
 import sys
 sys.path.append(f'{os.getcwd()}/src/utils')
+import connections
 from connections import getCredentialsSteam
 import logging
 from eventemitter import EventEmitter
