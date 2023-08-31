@@ -103,9 +103,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
             if delete_conf.lower() == "y":
                 role_inhouse = discord.utils.get(server.roles, name="inhouse")
                 role_verified = discord.utils.get(server.roles, name="verified")
-                await check_if_exists[1].remove_roles(role_inhouse)
-                await check_if_exists[1].remove_roles(role_verified)
-                #TODO make function that deletes user data from CSV
+                await check_if_exists[1].remove_roles(role_inhouse, role_verified)
                 data_management.remove_user_data(check_if_exists[1].id)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
                                                         delete_after=10)

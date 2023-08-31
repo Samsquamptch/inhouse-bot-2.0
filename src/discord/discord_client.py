@@ -6,7 +6,6 @@ import register_user
 import user_help
 import yaml
 import inhouse_queue
-import data_management
 from yaml.loader import SafeLoader
 
 
@@ -41,7 +40,8 @@ def run_discord_bot():
     # Used to post the regiser/view self/set roles buttons, additional user options, and inhouse queue
     async def queue(ctx):
         await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-        await ctx.send("Already registered? More options are available via the drop-down menu below", view=select_menus.UserOptions())
+        await ctx.send("Already registered? More options are available via the drop-down menu below",
+                       view=select_menus.UserOptions())
         await inhouse_queue.InhouseQueue().send_embed(ctx)
 
     @bot.command()
@@ -58,8 +58,8 @@ def run_discord_bot():
     # @bot.command()
     # async def check(ctx):
 
-
     bot.run(load_token())
+
 
 if __name__ == '__main__':
     run_discord_bot()

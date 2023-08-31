@@ -1,50 +1,141 @@
 import discord
 import data_management
 import check_user
-import set_roles
+from collections import defaultdict
 
 
-class SetRolesModal(discord.ui.Modal, title='Set Role Preferences (1-5)'):
-    pos1 = discord.ui.TextInput(label='Carry Preference', max_length=1)
-    pos2 = discord.ui.TextInput(label='Midlane Preference', max_length=1)
-    pos3 = discord.ui.TextInput(label='Offlane Preference', max_length=1)
-    pos4 = discord.ui.TextInput(label='Soft Support Preference', max_length=1)
-    pos5 = discord.ui.TextInput(label='Hard Support Preference', max_length=1)
+# Select menus for choosing your role preferences
+class RolePreferenceSelect(discord.ui.View):
 
-    async def on_submit(self, interaction: discord.Interaction):
-        pos1 = str(self.pos1)
-        pos2 = str(self.pos2)
-        pos3 = str(self.pos3)
-        pos4 = str(self.pos4)
-        pos5 = str(self.pos5)
-        try:
-            int_pos1 = int(pos1)
-            int_pos2 = int(pos2)
-            int_pos3 = int(pos3)
-            int_pos4 = int(pos4)
-            int_pos5 = int(pos5)
-            role_list = [int_pos1, int_pos2, int_pos3, int_pos4, int_pos5]
-            x = 0
-            pref_range_exceed = False
-            while x < len(role_list):
-                if role_list[x] > 5:
-                    role_list[x] = 5
-                    pref_range_exceed = True
-                elif role_list[x] == 0:
-                    role_list[x] = 1
-                    pref_range_exceed = True
-                x += 1
-            data_management.update_user_data(interaction.user.id, [3, 4, 5, 6, 7], role_list)
-            if pref_range_exceed:
-                await interaction.response.send_message(
-                    'Thank you for updating your role preferences. One or more of your choices were outside the appropriate range and have been amended',
-                    ephemeral=True, delete_after=10)
-            else:
-                await interaction.response.send_message('Thank you for updating your role preferences', ephemeral=True,
-                                                        delete_after=10)
-        except:
-            await interaction.response.send_message('Please only use numbers when setting roles',
-                                                    ephemeral=True, delete_after=10)
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.roles_dict = defaultdict(list)
+
+    def preference_counter(self, message_id, role):
+        if message_id not in self.roles_dict:
+            self.roles_dict[message_id].append(role)
+        elif message_id in self.roles_dict and role not in self.roles_dict[message_id]:
+            self.roles_dict[message_id].append(role)
+        else:
+            pass
+        for key, value in self.roles_dict.items():
+            items_len = len([item for item in value if item])
+            if key == message_id and items_len == 5:
+                del self.roles_dict[message_id]
+                all_roles_updated = True
+                return all_roles_updated
+        all_roles_updated = False
+        return all_roles_updated
+
+    @discord.ui.select(
+        custom_id="CarryPref", placeholder="Carry Preference", min_values=1, max_values=1,
+        options=[
+            discord.SelectOption(label="Very high", value="1"),
+            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="4"),
+            discord.SelectOption(label="Very low", value="5"),
+        ]
+    )
+    async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        data_management.update_user_data(interaction.user.id, [3], select_item.values[0])
+        message_id = interaction.message.id
+        counter_check = self.preference_counter(message_id, "Carry")
+        if counter_check:
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.select(
+        custom_id="MidPref", placeholder="Midlane Preference", min_values=1, max_values=1,
+        options=[
+            discord.SelectOption(label="Very high", value="1"),
+            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="4"),
+            discord.SelectOption(label="Very low", value="5"),
+        ]
+    )
+    async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        data_management.update_user_data(interaction.user.id, [4], select_item.values[0])
+        message_id = interaction.message.id
+        counter_check = self.preference_counter(message_id, "Midlane")
+        if counter_check:
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.select(
+        custom_id="OffPref", placeholder="Offlane Preference", min_values=1, max_values=1,
+        options=[
+            discord.SelectOption(label="Very high", value="1"),
+            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="4"),
+            discord.SelectOption(label="Very low", value="5"),
+        ]
+    )
+    async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        data_management.update_user_data(interaction.user.id, [5], select_item.values[0])
+        message_id = interaction.message.id
+        counter_check = self.preference_counter(message_id, "Offlane")
+        if counter_check:
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.select(
+        custom_id="SoftPref", placeholder="Soft Support Preference", min_values=1, max_values=1,
+        options=[
+            discord.SelectOption(label="Very high", value="1"),
+            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="4"),
+            discord.SelectOption(label="Very low", value="5"),
+        ]
+    )
+    async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        data_management.update_user_data(interaction.user.id, [6], select_item.values[0])
+        message_id = interaction.message.id
+        counter_check = self.preference_counter(message_id, "Soft Support")
+        if counter_check:
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
+        else:
+            await interaction.response.defer()
+
+    @discord.ui.select(
+        custom_id="HardPref", placeholder="Hard Support Preference", min_values=1, max_values=1,
+        options=[
+            discord.SelectOption(label="Very high", value="1"),
+            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Moderate", value="3"),
+            discord.SelectOption(label="Low", value="4"),
+            discord.SelectOption(label="Very low", value="5"),
+        ]
+    )
+    async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
+        data_management.update_user_data(interaction.user.id, [7], select_item.values[0])
+        message_id = interaction.message.id
+        counter_check = self.preference_counter(message_id, "Hard Support")
+        if counter_check:
+            await interaction.response.defer()
+            await interaction.followup.edit_message(message_id,
+                                                    content="Thank you for updating your preferences",
+                                                    view=None)
+        else:
+            await interaction.response.defer()
 
 
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
@@ -97,9 +188,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
                                 await interaction.response.send_message(
                                     'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',
-                                    ephemeral=True,
-                                    delete_after=10)
-                        except:
+                                    view=RolePreferenceSelect(), ephemeral=True)
+                        except ValueError:
                             await interaction.response.send_message(
                                 'There was an error with the dotabuff url you provided, please try again',
                                 ephemeral=True,
@@ -149,8 +239,8 @@ class RegisterButton(discord.ui.View):
         server = interaction.guild
         role_inhouse = discord.utils.get(server.roles, name="inhouse")
         if role_inhouse in interaction.user.roles:
-            await interaction.response.send_message(content="Please set your role preferences", view=set_roles.RolePreferenceSelect(), ephemeral=True)
-            # await interaction.response.send_modal(SetRolesModal())
+            await interaction.response.send_message(content="Please set your role preferences",
+                                                    view=RolePreferenceSelect(), ephemeral=True)
         else:
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)

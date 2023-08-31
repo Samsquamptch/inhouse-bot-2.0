@@ -71,9 +71,7 @@ class AdminEmbed(discord.ui.View):
                 await self.message.edit(embed=self.empty_embed(interaction), view=self)
         else:
             role_inhouse = discord.utils.get(server.roles, name="inhouse")
-            user_list = []
-            for user in role_inhouse.members:
-                user_list.append(user)
+            user_list = [user for user in role_inhouse.members]
             self.update_buttons(len(user_list))
             user_list_page = self.get_current_page_data(user_list)
             await self.message.edit(embed=self.registered_embed(user_list_page, server, interaction), view=self)
@@ -98,7 +96,7 @@ class AdminEmbed(discord.ui.View):
         if self.current_page == 1:
             from_item = 0
             until_item = self.sep
-        if self.current_page == int(len(user_list) / self.sep):
+        elif self.current_page == int(len(user_list) / self.sep):
             from_item = self.current_page * self.sep - self.sep
             until_item = len(user_list)
         return user_list[from_item:until_item]

@@ -67,17 +67,13 @@ class WaitingRoom(discord.ui.View):
         return queue_embed
 
     async def delete_message(self):
-        await self.message.delete()
-
+        try:
+            await self.message.delete()
+        except discord.errors.NotFound:
+            pass
 
     async def update_message(self):
-        # if purpose == "add":
-        #     self.waiting_list.append(user)
-        # elif purpose == "remove":
-        #     self.waiting_list.remove(user)
         await self.message.edit(embed=self.create_embed(self.waiting_list), view=self)
-
-
 
 
 # Embed and buttons for the inhouse queue
@@ -103,7 +99,7 @@ class InhouseQueue(discord.ui.View):
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = data_management.queue_pop(queue_ids)
+        queue_teams = data_management.team_balancer(queue_ids)
         queue_embed = discord.Embed(title="Inhouse queue", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
         icon_url = server.icon.url
@@ -203,7 +199,6 @@ class InhouseQueue(discord.ui.View):
 
     async def waiting_room_transfer(self, server):
         if self.preload_modal.waiting_list:
-            print("test1")
             for user in self.preload_modal.waiting_list:
                 self.queued_players.append(user)
                 self.preload_modal.waiting_list.remove(user)
@@ -213,9 +208,11 @@ class InhouseQueue(discord.ui.View):
                     break
                 elif len(self.queued_players) == 10:
                     break
+                elif not self.preload_modal.waiting_list:
+                    await self.preload_modal.delete_message()
+                    break
             await self.update_message(self.queued_players, server)
         else:
-            print("test2")
             await self.preload_modal.delete_message()
 
     # Button to join the inhouse queue
