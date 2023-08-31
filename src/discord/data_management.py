@@ -113,19 +113,19 @@ def team_balancer(queue_ids):
     team2 = queue.loc[queue['team'] == "Team 2"]
     pos1 = pos_graph(team1)
     team1["pos"] = [11, 12, 13, 14, 15]
-    team1.at[pos1[51], 'pos'] = 1
-    team1.at[pos1[52], 'pos'] = 2
-    team1.at[pos1[53], 'pos'] = 3
-    team1.at[pos1[54], 'pos'] = 4
-    team1.at[pos1[55], 'pos'] = 5
+    team1.at[pos1[5001], 'pos'] = 1
+    team1.at[pos1[5002], 'pos'] = 2
+    team1.at[pos1[5003], 'pos'] = 3
+    team1.at[pos1[5004], 'pos'] = 4
+    team1.at[pos1[5005], 'pos'] = 5
     team1 = team1.sort_values('pos')
     pos2 = pos_graph(team2)
     team2["pos"] = [11, 12, 13, 14, 15]
-    team2.at[pos2[51], 'pos'] = 1
-    team2.at[pos2[52], 'pos'] = 2
-    team2.at[pos2[53], 'pos'] = 3
-    team2.at[pos2[54], 'pos'] = 4
-    team2.at[pos2[55], 'pos'] = 5
+    team2.at[pos2[5001], 'pos'] = 1
+    team2.at[pos2[5002], 'pos'] = 2
+    team2.at[pos2[5003], 'pos'] = 3
+    team2.at[pos2[5004], 'pos'] = 4
+    team2.at[pos2[5005], 'pos'] = 5
     team2 = team2.sort_values('pos')
     queue = pd.concat([team1, team2])
     queue.to_csv("../../data/match.csv", index=False)
@@ -137,6 +137,6 @@ def pos_graph(team):
     for i in range(0, 5):
         G.add_node(team.index[i])
         for j in range(1, 6):
-            G.add_node(j + 50)
-            G.add_edge(team.index[i], j + 50, weight=team.iloc[[i], [j + 2]].values.min())
+            G.add_node(j + 5000)
+            G.add_edge(team.index[i], j + 5000, weight=team.iloc[[i], [j + 2]].values.min())
     return bipartite.minimum_weight_full_matching(G, top_nodes=None, weight='weight')
