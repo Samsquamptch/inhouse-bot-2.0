@@ -4,7 +4,7 @@ import multiprocessing
 import dota2
 import os
 import sys
-sys.path.append(f'{os.getcwd()}/src/utils')
+import connections
 from connections import getCredentialsSteam
 import logging
 from eventemitter import EventEmitter
@@ -37,7 +37,7 @@ def create_base_lobby(filler):
 
     dota.destroy_lobby()
     opt = {
-            'game_name': 'Doghouse Test Lobby2',
+            'game_name': 'Nest Test Lobby2',
             'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
             'fill_with_bots': False,
             'allow_spectating': True,
@@ -46,7 +46,7 @@ def create_base_lobby(filler):
             'dota_tv_delay': 0,  # TODO: this is LobbyDotaTV_10
             'pause_setting': 0,  # TODO: LobbyDotaPauseSetting_Unlimited
         }
-    dota.create_practice_lobby(password="sttsq1", options=opt)
+    dota.create_practice_lobby(password="1", options=opt)
     dota.channels.join_lobby_channel()
     Manager.join_lobby_channel()
     dota.join_practice_lobby_team()  # jump to unassigned players
@@ -64,6 +64,10 @@ def do_queue(lobby, idList):
 @dota.on('queue_full')
 def dota_invite(ids):    
     print('Inviting...')
+    with open('../../data/activate.txt', 'r+') as f:
+        f.truncate(0)
+        f.write('no')
+    f.close()
     for i in ids:
         print(f'inviting {i}')
         dota.invite_to_lobby(i)
@@ -73,14 +77,13 @@ def change_lobby(lobby):
     pass
 @event.on('check_queue')
 def check_queue():
-    with open('data/activate.txt', 'r+') as f:
+    with open('../../data/activate.txt', 'r+') as f:
         lines = f.read()
         if lines.strip() == 'yes':
             print('Ready to send invites...')
-            df = pd.DataFrame(pd.read_csv('data/users.csv'))
-            ids = list(df['id'])
+            df = pd.DataFrame(pd.read_csv('../../data/match.csv'))
+            ids = list(df['steam'])
             dota.emit('queue_full', ids)
-            f.write('no')
         else:
             pass
     f.close()

@@ -3,6 +3,7 @@ import check_user
 import data_management
 
 
+#Modal for editing user details (accessed via admin select menu)
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
     set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=5, required=False)
@@ -38,8 +39,8 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             verify_role = str(self.remove_verify)
             if verify_role != "":
                 if verify_role.lower() == "y":
-                    role = discord.utils.get(server.roles, name="verified")
-                    await interaction.user.remove_roles(check_if_exists[1])
+                    role_verified = discord.utils.get(server.roles, name="verified")
+                    await check_if_exists[1].remove_roles(role_verified)
                 else:
                     await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
                                                             ephemeral=True,
@@ -47,11 +48,11 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             ban_time = str(self.ban_user)
             if ban_time != "":
                 if ban_time.lower() == "y":
-                    role = discord.utils.get(server.roles, name="queue ban")
-                    if role in check_if_exists[1].roles:
-                        await interaction.user.remove_roles(check_if_exists[1])
+                    role_banned = discord.utils.get(server.roles, name="queue ban")
+                    if role_banned in check_if_exists[1].roles:
+                        await check_if_exists[1].remove_roles(role_banned)
                     else:
-                        await interaction.user.add_roles(check_if_exists[1])
+                        await check_if_exists[1].add_roles(role_banned)
                 else:
                     await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
                                                             ephemeral=True,
@@ -100,11 +101,10 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             if delete_conf.lower() == "y":
-                inhouse = discord.utils.get(server.roles, name="inhouse")
-                verified = discord.utils.get(server.roles, name="verified")
-                await check_if_exists[1].remove_roles(inhouse)
-                await check_if_exists[1].remove_roles(verified)
-                # Delete user goes here
+                role_inhouse = discord.utils.get(server.roles, name="inhouse")
+                role_verified = discord.utils.get(server.roles, name="verified")
+                await check_if_exists[1].remove_roles(role_inhouse, role_verified)
+                data_management.remove_user_data(check_if_exists[1].id)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
                                                         delete_after=10)
             else:
@@ -116,6 +116,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
                                                     delete_after=10)
 
 
+# Select menu for users (above inhouse queue)
 class UserOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -141,6 +142,7 @@ class UserOptions(discord.ui.View):
                 await interaction.response.defer()
 
 
+# Select menu for administrators
 class AdminOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -148,7 +150,7 @@ class AdminOptions(discord.ui.View):
     @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
         discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user"),
-        discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user"),
+        discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user (NOT WORKING YET"),
         discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
                        )
