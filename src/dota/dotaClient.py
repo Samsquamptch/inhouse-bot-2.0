@@ -1,4 +1,4 @@
-from steam.client import SteamClient
+from steam.client import SteamClient, SteamID
 from dota2.client import Dota2Client
 import multiprocessing
 import dota2
@@ -11,6 +11,14 @@ from eventemitter import EventEmitter
 from multiprocessing.connection import Client
 import time
 import pandas as pd
+class Status:
+    def __init__(self):
+        self.gameIDs = []
+    def set_game(self, ids):
+        self.gameIDs = ids
+    def get_game(self):
+        return self.gameIDs
+stat = Status()
 event = EventEmitter()
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
@@ -18,6 +26,7 @@ logging.basicConfig(format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', 
 client = SteamClient()
 dota = Dota2Client(client)
 Manager = dota2.features.chat.ChannelManager(dota, 'logger')
+
     
 @client.on('logged_on')
 def start_dota():
@@ -64,33 +73,48 @@ def do_queue(lobby, idList):
 @dota.on('queue_full')
 def dota_invite(ids):    
     print('Inviting...')
-    with open('../../data/activate.txt', 'r+') as f:
-        f.truncate(0)
-        f.write('no')
-    f.close()
     for i in ids:
+        print(SteamID(i))
         print(f'inviting {i}')
-        dota.invite_to_lobby(i)
+        print(i+76561197960265728)
+        dota.invite_to_lobby(i+76561197960265728)
 
 @dota.on('lobby_changed')
 def change_lobby(lobby):
     pass
 @event.on('check_queue')
 def check_queue():
-    with open('../../data/activate.txt', 'r+') as f:
-        lines = f.read()
-        if lines.strip() == 'yes':
-            print('Ready to send invites...')
-            df = pd.DataFrame(pd.read_csv('../../data/match.csv'))
-            ids = list(df['steam'])
-            dota.emit('queue_full', ids)
-        else:
-            pass
-    f.close()
+    if os.path.isfile('data/activate.txt'):
+        dota.join_practice_lobby_team() 
+        df = pd.DataFrame(pd.read_csv('data/match.csv'))
+        ids = list(df['steam']) 
+        stat.set_game(ids)
+        os.remove('data/activate.txt')
+        dota.emit('queue_full', ids)
     time.sleep(0.1)
     event.emit('check_queue')
 @Manager.on('message')
-def test(c, l):
-    print(l)
+def message_check(c, message):
+    if message.text.startswith('!'):
+        if message.text == '!start':
+            players = []
+            users = dota.lobby.all_members
+            for user in users:
+                if user.team == 1 or user.team == 0:
+                    players.append(user)
+            if players == []:
+                print('No Players')
+                return False
+            for player in players:
+                print(SteamID(player.id).as_32)
+                print(stat.get_game())
+                if SteamID(player.id).as_32 not in stat.get_game():
+                    return False
+            if len(players) == 10:
+                dota.launch_practice_lobby()
+
+def check_users():
+    pass
+
 client.cli_login(username=user, password=password)
 client.run_forever()
