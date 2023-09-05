@@ -1,0 +1,8 @@
+Welcome to the doghouse inhouse bot setup! By using this command, you'll be able to set what roles and channels your inhouse bot uses.
+There are three options for you to choose from:
+-Automated setup does everything for you, creating the default roles and channels (you may need to reorganise these afterwards).
+-Mixed setup allows you to specify role and channel names, which will be created if they don't already exist on the server.
+-Manual setup allows you to choose which roles and channels the bot will use and requires these to already exist in order to proceed.
+Please select the option which best suits your needs:
+
+Test test test.

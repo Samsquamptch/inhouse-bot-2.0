@@ -6,6 +6,7 @@ import register_user
 import user_help
 import yaml
 import inhouse_queue
+import initialisation
 from yaml.loader import SafeLoader
 
 
@@ -24,10 +25,12 @@ def run_discord_bot():
     async def on_ready():
         print('bot now running!')
 
-    # @bot.command()
-    # async def user(ctx):
-    #     await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-    #     await ctx.send("Already registered? Please choose from the below options", view=user_settings.UserChoices())
+    @bot.command()
+    @commands.is_owner()
+    async def setup(ctx):
+        await ctx.send("Beginning setup of inhouse bot")
+        await initialisation.ConfigButtons().config_start(ctx)
+
 
     @bot.command()
     # Used to post the admin panel and admin options menu

@@ -39,8 +39,13 @@ def user_embed(data_list, player_data, server):
     view_user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{user_status}',
                                     color=user_clr)
     view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
-    view_user_embed.add_field(name='Dotabuff', value=f'https://www.dotabuff.com/players/{data_list[1]}', inline=True)
-    view_user_embed.add_field(name='MMR', value=f'{data_list[2]}', inline=True)
+    view_user_embed.add_field(name='Dotabuff', value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
+                                                     f'\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='Rank', value=f'N/A \u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='Matches', value=f'0', inline=True)
+    view_user_embed.add_field(name='Wins', value=f'0', inline=True)
+    view_user_embed.add_field(name='Losses', value=f'0', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
     view_user_embed.add_field(name='Carry', value=f'{data_list[3]}', inline=False)
     view_user_embed.add_field(name='Midlane', value=f'{data_list[4]}', inline=False)

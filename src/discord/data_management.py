@@ -111,7 +111,7 @@ def team_balancer(queue_ids):
         queue = queue.rename(columns={"team_dos": "team"})
     team1 = queue.loc[queue['team'] == "Team 1"]
     team2 = queue.loc[queue['team'] == "Team 2"]
-    pos1 = pos_graph(team1)
+    pos1 = role_allocation(team1)
     team1["pos"] = [11, 12, 13, 14, 15]
     team1.at[pos1[5001], 'pos'] = 1
     team1.at[pos1[5002], 'pos'] = 2
@@ -119,7 +119,7 @@ def team_balancer(queue_ids):
     team1.at[pos1[5004], 'pos'] = 4
     team1.at[pos1[5005], 'pos'] = 5
     team1 = team1.sort_values('pos')
-    pos2 = pos_graph(team2)
+    pos2 = role_allocation(team2)
     team2["pos"] = [11, 12, 13, 14, 15]
     team2.at[pos2[5001], 'pos'] = 1
     team2.at[pos2[5002], 'pos'] = 2
@@ -131,11 +131,12 @@ def team_balancer(queue_ids):
     queue.to_csv("../../data/match.csv", index=False)
     return team1['disc'].tolist(), team2['disc'].tolist()
 
-def pos_graph(team):
-    G = nx.Graph()
+
+def role_allocation(team):
+    graph = nx.Graph()
     for i in range(0, 5):
-        G.add_node(team.index[i])
+        graph.add_node(team.index[i])
         for j in range(1, 6):
-            G.add_node(j + 5000)
-            G.add_edge(team.index[i], j + 5000, weight=team.iloc[[i], [j + 2]].values.min())
-    return bipartite.minimum_weight_full_matching(G, top_nodes=None, weight='weight')
+            graph.add_node(j + 5000)
+            graph.add_edge(team.index[i], j + 5000, weight=team.iloc[[i], [j + 2]].values.min())
+    return bipartite.minimum_weight_full_matching(graph, top_nodes=None, weight='weight')

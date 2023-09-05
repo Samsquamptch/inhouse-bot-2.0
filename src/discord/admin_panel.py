@@ -86,9 +86,7 @@ class AdminEmbed(discord.ui.View):
     def create_register_list(self, server):
         role_inhouse = discord.utils.get(server.roles, name="inhouse")
         role_verified = discord.utils.get(server.roles, name="verified")
-        for user in role_inhouse.members:
-            if role_verified not in user.roles and user not in self.unverified_list:
-                self.unverified_list.append(user)
+        self.unverified_list = [user for user in role_inhouse.members if role_verified not in user.roles]
 
     def get_current_page_data(self, user_list):
         until_item = self.current_page * self.sep
