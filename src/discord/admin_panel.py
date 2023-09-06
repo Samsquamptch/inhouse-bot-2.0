@@ -70,7 +70,8 @@ class AdminEmbed(discord.ui.View):
             else:
                 await self.message.edit(embed=self.empty_embed(interaction), view=self)
         else:
-            role_inhouse = discord.utils.get(server.roles, name="inhouse")
+            inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+            role_inhouse = discord.utils.get(server.roles, id=inhouse_id)
             user_list = [user for user in role_inhouse.members]
             self.update_buttons(len(user_list))
             user_list_page = self.get_current_page_data(user_list)
@@ -84,8 +85,10 @@ class AdminEmbed(discord.ui.View):
                 check_user.user_list("Remove", user)
 
     def create_register_list(self, server):
-        role_inhouse = discord.utils.get(server.roles, name="inhouse")
-        role_verified = discord.utils.get(server.roles, name="verified")
+        inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+        role_inhouse = discord.utils.get(server.roles, id=inhouse_id)
+        verified_id = data_management.load_config_data(server, 'ROLES', 'verified_role')
+        role_verified = discord.utils.get(server.roles, id=verified_id)
         self.unverified_list = [user for user in role_inhouse.members if role_verified not in user.roles]
 
     def get_current_page_data(self, user_list):
@@ -150,7 +153,8 @@ class AdminEmbed(discord.ui.View):
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            role_verified = discord.utils.get(server.roles, name="verified")
+            verified_id = data_management.load_config_data(server, 'ROLES', 'verified_role')
+            role_verified = discord.utils.get(server.roles, id=verified_id)
             user_to_verify = self.unverified_list[0]
             await user_to_verify.add_roles(role_verified)
             del self.unverified_list[0]
@@ -180,7 +184,8 @@ class AdminEmbed(discord.ui.View):
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            role_inhouse = discord.utils.get(server.roles, name="inhouse")
+            inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+            role_inhouse = discord.utils.get(server.roles, id=inhouse_id)
             user_to_reject = self.unverified_list[0]
             await user_to_reject.remove_roles(role_inhouse)
             del self.unverified_list[0]

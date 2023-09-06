@@ -4,8 +4,6 @@ import admin_panel
 import register_user
 import select_menus
 import inhouse_queue
-import yaml
-from yaml.loader import SafeLoader
 
 
 class SetRolesModal(discord.ui.Modal, title='User Roles Configuration'):
@@ -169,7 +167,7 @@ class YesNoButtons(discord.ui.View):
                     data_management.update_config(interaction, 'CONFIG', 'setup_complete', 'Yes')
                     await interaction.response.send_message(
                         "Thank you for completing setup. The bot will now run automatically on start.")
-                    await config_complete_run(interaction)
+                    await run_user_modules(interaction.guild)
             await interaction.message.delete()
         else:
             await interaction.response.defer()
@@ -260,21 +258,20 @@ class ConfigButtons(discord.ui.View):
             await interaction.response.defer()
 
 
-async def config_complete_run(interaction):
-    admin_role_id = data_management.load_config_data(interaction, 'ROLES', 'admin_role')
-    admin_role = discord.utils.get(interaction.guild.roles, id=admin_role_id)
-    if admin_role in interaction.user.roles:
-        admin_channel_id = data_management.load_config_data(interaction, 'CHANNELS', 'admin_channel')
-        queue_channel_id = data_management.load_config_data(interaction, 'CHANNELS', 'queue_channel')
-        admin_channel = discord.utils.get(interaction.guild.channels, id=admin_channel_id)
-        queue_channel = discord.utils.get(interaction.guild.channels, id=queue_channel_id)
-        # Send admin panel to admin channel
-        verify_view = admin_panel.AdminEmbed()
-        await verify_view.send_embed(admin_channel, interaction.guild)
-        await admin_channel.send("More options are available via the drop-down menu below",
-                                 view=select_menus.AdminOptions())
-        # Send queue buttons and panel to queue channel
-        await queue_channel.send("New user? Please register here:", view=register_user.RegisterButton())
-        await queue_channel.send("Already registered? More options are available via the drop-down menu below",
-                                 view=select_menus.UserOptions())
-        await inhouse_queue.InhouseQueue().send_embed(queue_channel, interaction.guild)
+async def run_user_modules(server):
+    admin_channel_id = data_management.load_config_data(server, 'CHANNELS', 'admin_channel')
+    queue_channel_id = data_management.load_config_data(server, 'CHANNELS', 'queue_channel')
+    admin_channel = discord.utils.get(server.channels, id=admin_channel_id)
+    queue_channel = discord.utils.get(server.channels, id=queue_channel_id)
+    # Send admin panel to admin channel
+    await admin_channel.purge()
+    verify_view = admin_panel.AdminEmbed()
+    await verify_view.send_embed(admin_channel, server)
+    await admin_channel.send("More options are available via the drop-down menu below",
+                             view=select_menus.AdminOptions())
+    # Send queue buttons and panel to queue channel
+    await queue_channel.purge()
+    await queue_channel.send("New user? Please register here:", view=register_user.RegisterButton())
+    await queue_channel.send("Already registered? More options are available via the drop-down menu below",
+                             view=select_menus.UserOptions())
+    await inhouse_queue.InhouseQueue().send_embed(queue_channel, server)

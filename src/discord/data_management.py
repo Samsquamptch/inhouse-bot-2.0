@@ -1,5 +1,3 @@
-# For all functions relating to adding/removing/amending/viewing from users.csv
-
 import pandas as pd
 import csv
 import yaml
@@ -14,17 +12,17 @@ def load_token():
     return data['TOKEN']
 
 
-def load_config_data(source, category, sub_category):
-    with open(f'../../data/{source.guild.id}_config.yml') as f:
+def load_config_data(server, category, sub_category):
+    with open(f'../../data/{server.id}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
     return data[category][sub_category]
 
 
-def update_config(source, category, sub_category, new_value):
-    with open(f'../../data/{source.guild.id}_config.yml') as f:
+def update_config(server, category, sub_category, new_value):
+    with open(f'../../data/{server.id}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
     data[category][sub_category] = new_value
-    with open(f'../../data/{source.guild.id}_config.yml', 'w') as f:
+    with open(f'../../data/{server.id}_config.yml', 'w') as f:
         yaml.dump(data, f)
 
 
