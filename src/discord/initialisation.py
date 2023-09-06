@@ -1,4 +1,14 @@
 import discord
+import yaml
+from yaml.loader import SafeLoader
+
+
+def update_config(interaction, category, sub_category, new_value):
+    with open(f'../../data/{interaction.guild.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    data[category][sub_category] = new_value
+    with open(f'../../data/{interaction.guild.id}_config.yml', 'w') as f:
+        yaml.dump(data, f)
 
 
 class SetRolesModal(discord.ui.Modal, title='User Roles Configuration'):
@@ -12,7 +22,31 @@ class SetRolesModal(discord.ui.Modal, title='User Roles Configuration'):
     champions_role = discord.ui.TextInput(label='Set champions role')
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        admin_str = str(self.admin_role)
+        inhouse_str = str(self.inhouse_role)
+        verified_str = str(self.verified_role)
+        banned_str = str(self.banned_role)
+        champions_str = str(self.champions_role)
+        roles_dict = {'admin_role': admin_str, 'registered_role': inhouse_str, 'verified_role': verified_str,
+                        'champions_role': champions_str, 'banned_role': banned_str}
+        role_list = [admin_str, inhouse_str, verified_str, banned_str, champions_str]
+        premade_roles = []
+        for role in roles_dict:
+            check_user = discord.utils.get(interaction.guild.roles, name=roles_dict[role])
+            if not check_user:
+                await interaction.guild.create_role(name=roles_dict[role])
+                check_user = discord.utils.get(interaction.guild.roles, name=roles_dict[role])
+            else:
+              premade_roles.append(roles_dict[role])
+            update_config(interaction, 'ROLES', role, check_user.id)
+        yes_no = YesNoButtons()
+        yes_no.config_user = interaction.user
+        yes_no.setup_position = 4
+        yes_no.clear_channel_list = [i for i in role_list if i not in premade_roles]
+        await interaction.response.send_message(
+            f'You\'ve created the following roles: \n'
+            f'{role_list[0]} \n {role_list[1]} \n {role_list[2]} \n {role_list[3]} \n {role_list[4]} \n'
+            f'Do you wish to keep these?', view=yes_no)
 
 
 class SetupChannelsModal(discord.ui.Modal, title='Text Channels Configuration'):
@@ -31,20 +65,44 @@ class SetupChannelsModal(discord.ui.Modal, title='Text Channels Configuration'):
         queue_str = str(self.queue_channel)
         notif_str = str(self.notif_channel)
         chat_channel = str(self.chat_channel)
+        channel_dict = {'admin_channel': admin_str, 'queue_channel': queue_str, 'notification_channel': notif_str,
+                        'chat_channel': chat_channel}
         channel_list = [admin_str, queue_str, notif_str, chat_channel]
-        check_cat = discord.utils.get(interaction.guild.categories, name=cat_str)
-        if not check_cat:
+        check_categ = discord.utils.get(interaction.guild.categories, name=cat_str)
+        if not check_categ:
             await interaction.guild.create_category(name=cat_str)
+            check_categ = discord.utils.get(interaction.guild.categories, name=cat_str)
+        update_config(interaction, 'CHANNELS', 'inhouse_category', check_categ.id)
         set_category = discord.utils.get(interaction.guild.categories, name=cat_str)
-        for channel in channel_list:
-            check_chann = discord.utils.get(set_category.text_channels, name=channel)
+        premade_channels = []
+        for channel in channel_dict:
+            check_chann = discord.utils.get(set_category.text_channels, name=channel_dict[channel])
             if not check_chann:
-                await interaction.guild.create_text_channel(name=channel, category=set_category)
+                match channel:
+                    case 'admin_channel':
+                        overwrites = {
+                            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                            interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
+                        }
+                    case 'queue_channel' | 'notification_channel':
+                        overwrites = {
+                            interaction.guild.default_role: discord.PermissionOverwrite(send_messages=False),
+                            interaction.guild.me: discord.PermissionOverwrite(send_messages=True)
+                        }
+                    case _:
+                        overwrites = {
+                            interaction.guild.me: discord.PermissionOverwrite(send_messages=True)
+                        }
+                await interaction.guild.create_text_channel(name=channel_dict[channel], category=set_category, overwrites=overwrites)
+                check_chann = discord.utils.get(set_category.text_channels, name=channel_dict[channel])
+            else:
+                premade_channels.append(channel_dict[channel])
+            update_config(interaction, 'CHANNELS', channel, check_chann.id)
         yes_no = YesNoButtons()
         yes_no.config_user = interaction.user
         yes_no.setup_position = 3
         yes_no.category = set_category
-        yes_no.channel_list = channel_list
+        yes_no.clear_channel_list = [i for i in channel_list if i not in premade_channels]
         await interaction.response.send_message(
             f'You\'ve created the category {cat_str} with the channels: \n'
             f'{channel_list[0]} \n {channel_list[1]} \n {channel_list[2]} \n {channel_list[3]} \n'
@@ -55,24 +113,30 @@ class VoiceChannelButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.voice_category = None
+        self.config_user = None
 
     @discord.ui.button(label="Yes", emoji="👍",
                        style=discord.ButtonStyle.green)
     async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        channel_list = ["Casting Channel", "Waiting Room", "Radiant Voice", "Dire Voice"]
-        for channel in channel_list:
-            check_chann = discord.utils.get(self.voice_category.voice_channels, name=channel)
-            if not check_chann:
-                await interaction.guild.create_voice_channel(name=channel, category=self.voice_category)
-        await interaction.response.send_modal(SetRolesModal())
-        await interaction.message.delete()
+        if interaction.user == self.config_user:
+            channel_list = ["Casting Channel", "Waiting Room", "Radiant Voice", "Dire Voice"]
+            for channel in channel_list:
+                check_chann = discord.utils.get(self.voice_category.voice_channels, name=channel)
+                if not check_chann:
+                    await interaction.guild.create_voice_channel(name=channel, category=self.voice_category)
+            await interaction.response.send_modal(SetRolesModal())
+            await interaction.message.delete()
+        else:
+            await interaction.response.defer()
 
     @discord.ui.button(label="No", emoji="👎",
                        style=discord.ButtonStyle.green)
     async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(SetRolesModal())
-        await interaction.message.delete()
-
+        if interaction.user == self.config_user:
+            await interaction.response.send_modal(SetRolesModal())
+            await interaction.message.delete()
+        else:
+            await interaction.response.defer()
 
 class YesNoButtons(discord.ui.View):
     def __init__(self):
@@ -80,7 +144,7 @@ class YesNoButtons(discord.ui.View):
         self.setup_position = 0
         self.config_user = None
         self.category = None
-        self.channel_list = []
+        self.clear_list = []
 
     @discord.ui.button(label="Yes", emoji="👍",
                        style=discord.ButtonStyle.green)
@@ -93,6 +157,7 @@ class YesNoButtons(discord.ui.View):
                     await interaction.response.send_modal(SetupChannelsModal())
                 case 3:
                     voice_buttons = VoiceChannelButtons()
+                    voice_buttons.config_user = interaction.user
                     voice_buttons.voice_category = self.category
                     await interaction.response.send_message("Do you want to add voice channels?", view=voice_buttons)
         else:
@@ -107,12 +172,17 @@ class YesNoButtons(discord.ui.View):
                 self.setup_position = 0
                 await interaction.response.defer()
             case 3:
-                for channel in self.channel_list:
-                    del_channel = discord.utils.get(interaction.guild.channels, name=channel)
-                    await del_channel.delete(reason="inhouse bot instructed")
-                del_category = self.category
-                await del_category.delete()
+                if self.clear_list:
+                    for channel in self.clear_list:
+                        del_channel = discord.utils.get(interaction.guild.channels, name=channel)
+                        await del_channel.delete(reason="inhouse bot instructed")
                 await interaction.response.send_modal(SetupChannelsModal())
+            case 4:
+                if self.clear_list:
+                    for role in self.clear_list:
+                        del_role = discord.utils.get(interaction.guild.roles, name=role)
+                        await del_role.delete(reason="inhouse bot instructed")
+                await interaction.response.send_modal(SetRolesModal())
         await interaction.message.delete()
         self.stop()
 

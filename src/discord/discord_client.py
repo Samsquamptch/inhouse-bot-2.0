@@ -7,6 +7,8 @@ import user_help
 import yaml
 import inhouse_queue
 import initialisation
+from os.path import isfile
+from shutil import copyfile
 from yaml.loader import SafeLoader
 
 
@@ -29,6 +31,8 @@ def run_discord_bot():
     @commands.is_owner()
     async def setup(ctx):
         await ctx.send("Beginning setup of inhouse bot")
+        if not isfile(f'../../data/{ctx.guild.id}_config.yml'):
+            copyfile(f'../../data/default_config.yml', f'../../data/{ctx.guild.id}_config.yml')
         await initialisation.ConfigButtons().config_start(ctx)
 
 
