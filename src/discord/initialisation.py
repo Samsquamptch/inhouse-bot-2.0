@@ -259,19 +259,25 @@ class ConfigButtons(discord.ui.View):
 
 
 async def run_user_modules(server):
-    admin_channel_id = data_management.load_config_data(server, 'CHANNELS', 'admin_channel')
-    queue_channel_id = data_management.load_config_data(server, 'CHANNELS', 'queue_channel')
-    admin_channel = discord.utils.get(server.channels, id=admin_channel_id)
-    queue_channel = discord.utils.get(server.channels, id=queue_channel_id)
+    channel_id = data_management.load_config_data(server, 'CHANNELS')
+    admin_channel = discord.utils.get(server.channels, id=channel_id['admin_channel'])
+    queue_channel = discord.utils.get(server.channels, id=channel_id['queue_channel'])
     # Send admin panel to admin channel
     await admin_channel.purge()
     verify_view = admin_panel.AdminEmbed()
+    verify_view.roles_id = data_management.load_config_data(server, 'ROLES')
     await verify_view.send_embed(admin_channel, server)
     await admin_channel.send("More options are available via the drop-down menu below",
                              view=select_menus.AdminOptions())
     # Send queue buttons and panel to queue channel
     await queue_channel.purge()
-    await queue_channel.send("New user? Please register here:", view=register_user.RegisterButton())
+    regiser_view = register_user.RegisterButton()
+    inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+    regiser_view.role_inhouse = discord.utils.get(server.roles, id=inhouse_id)
+    await queue_channel.send("New user? Please register here:", view=regiser_view)
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions())
-    await inhouse_queue.InhouseQueue().send_embed(queue_channel, server)
+    inhouse_view = inhouse_queue.InhouseQueue()
+    inhouse_view.roles_id = data_management.load_config_data(server, 'ROLES')
+    inhouse_view.channel_id = data_management.load_config_data(server, 'CHANNELS', 'queue_channel')
+    await inhouse_view.send_embed(queue_channel, server)

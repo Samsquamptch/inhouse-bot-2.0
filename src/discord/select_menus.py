@@ -14,6 +14,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
+        roles_id = data_management.load_config_data(server, 'ROLES')
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             new_mmr = str(self.set_mmr)
@@ -39,7 +40,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             verify_role = str(self.remove_verify)
             if verify_role != "":
                 if verify_role.lower() == "y":
-                    role_verified = discord.utils.get(server.roles, name="verified")
+                    role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                     await check_if_exists[1].remove_roles(role_verified)
                 else:
                     await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
@@ -48,7 +49,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             ban_time = str(self.ban_user)
             if ban_time != "":
                 if ban_time.lower() == "y":
-                    role_banned = discord.utils.get(server.roles, name="queue ban")
+                    role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
                     if role_banned in check_if_exists[1].roles:
                         await check_if_exists[1].remove_roles(role_banned)
                     else:
@@ -57,15 +58,6 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                     await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
                                                             ephemeral=True,
                                                             delete_after=10)
-            # ban_time = str(self.ban_user)
-            # if ban_time != "":
-            #     try:
-            #         int_ban_time = int(ban_time)
-            #         print(int_ban_time)
-            #     except ValueError:
-            #         await interaction.response.send_message('Please only input numbers for inhouse bans',
-            #                                                 ephemeral=True,
-            #                                                 delete_after=10)
             await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
                                                     ephemeral=True, delete_after=10)
         else:
@@ -101,8 +93,9 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             if delete_conf.lower() == "y":
-                role_inhouse = discord.utils.get(server.roles, name="inhouse")
-                role_verified = discord.utils.get(server.roles, name="verified")
+                roles_id = data_management.load_config_data(server, 'ROLES')
+                role_inhouse = discord.utils.get(server.roles, id=roles_id['registered_role'])
+                role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                 await check_if_exists[1].remove_roles(role_inhouse, role_verified)
                 data_management.remove_user_data(check_if_exists[1].id)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,

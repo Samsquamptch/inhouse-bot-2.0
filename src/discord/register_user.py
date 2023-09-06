@@ -182,7 +182,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                 data_management.add_user_data(player)
                                 # Adds the inhouse role to the user once their details have been added to the register
                                 server = interaction.user.guild
-                                role_inhouse = discord.utils.get(server.roles, name="inhouse")
+                                inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+                                role_inhouse = discord.utils.get(server.roles, id=inhouse_id)
                                 await interaction.user.add_roles(role_inhouse)
                                 check_user.user_list("Add", interaction.user)
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
@@ -208,13 +209,12 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 class RegisterButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.role_inhouse = None
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
     async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.user.guild
-        registered = discord.utils.get(server.roles, name="inhouse")
-        if registered in interaction.user.roles:
+        if self.role_inhouse in interaction.user.roles:
             await interaction.response.send_message(content="You are already registered", ephemeral=True,
                                                     delete_after=10)
         else:
@@ -223,11 +223,9 @@ class RegisterButton(discord.ui.View):
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.guild
-        role_inhouse = discord.utils.get(server.roles, name="inhouse")
-        if role_inhouse in interaction.user.roles:
+        if self.role_inhouse in interaction.user.roles:
             user_data = data_management.view_user_data(interaction.user.id)
-            await interaction.response.send_message(embed=check_user.user_embed(user_data, interaction.user, server),
+            await interaction.response.send_message(embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
                                                     ephemeral=True)
         else:
             await interaction.response.send_message(content="You need to register before you can see your details",
@@ -236,9 +234,7 @@ class RegisterButton(discord.ui.View):
     @discord.ui.button(label="Update your role preferences", emoji="🖋️",
                        style=discord.ButtonStyle.blurple)
     async def set_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.guild
-        role_inhouse = discord.utils.get(server.roles, name="inhouse")
-        if role_inhouse in interaction.user.roles:
+        if self.role_inhouse in interaction.user.roles:
             await interaction.response.send_message(content="Please set your role preferences",
                                                     view=RolePreferenceSelect(), ephemeral=True)
         else:

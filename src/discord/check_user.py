@@ -2,9 +2,10 @@ import discord
 import data_management
 
 def user_embed(data_list, player_data, server):
-    role_banned = discord.utils.get(server.roles, name="queue ban")
-    role_champion = discord.utils.get(server.roles, name="current champions")
-    role_verified = discord.utils.get(server.roles, name="verified")
+    roles_id = data_management.load_config_data(server, 'ROLES')
+    role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
+    role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
+    role_champion = discord.utils.get(server.roles, id=roles_id['champions_role'])
     if role_banned in player_data.roles:
         user_status = "User is currently banned 😢"
         user_clr = 0x000000

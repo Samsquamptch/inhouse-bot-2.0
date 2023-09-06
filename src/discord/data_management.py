@@ -12,10 +12,13 @@ def load_token():
     return data['TOKEN']
 
 
-def load_config_data(server, category, sub_category):
+def load_config_data(server, category, sub_category=None):
     with open(f'../../data/{server.id}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
-    return data[category][sub_category]
+    if sub_category is None:
+        return data[category]
+    else:
+        return data[category][sub_category]
 
 
 def update_config(server, category, sub_category, new_value):
