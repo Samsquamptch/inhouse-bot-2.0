@@ -3,14 +3,6 @@ import yaml
 from yaml.loader import SafeLoader
 
 
-def update_config(interaction, category, sub_category, new_value):
-    with open(f'../../data/{interaction.guild.id}_config.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    data[category][sub_category] = new_value
-    with open(f'../../data/{interaction.guild.id}_config.yml', 'w') as f:
-        yaml.dump(data, f)
-
-
 class SetRolesModal(discord.ui.Modal, title='User Roles Configuration'):
     def __init__(self):
         super().__init__(timeout=None)
@@ -160,32 +152,43 @@ class YesNoButtons(discord.ui.View):
                     voice_buttons.config_user = interaction.user
                     voice_buttons.voice_category = self.category
                     await interaction.response.send_message("Do you want to add voice channels?", view=voice_buttons)
+                case 4:
+                    channel_id = load_config(interaction, 'CHANNELS', 'admin_channel')
+                    role_id = load_config(interaction, 'ROLES', 'admin_role')
+                    admin_channel = discord.utils.get(interaction.guild.channels, id=channel_id)
+                    admin_role = discord.utils.get(interaction.guild.roles, id=role_id)
+                    await admin_channel.set_permissions(admin_role, read_messages=True)
+                    update_config(interaction, 'CONFIG', 'server_id', interaction.guild.id)
+                    update_config(interaction, 'CONFIG', 'setup_complete', 'Yes')
+                    await interaction.response.send_message("Thank you for completing setup. The bot will now run automatically on start.")
+            await interaction.message.delete()
         else:
             await interaction.response.defer()
-        await interaction.message.delete()
+
 
     @discord.ui.button(label="No", emoji="👎",
                        style=discord.ButtonStyle.green)
     async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        match self.setup_position:
-            case 1 | 2:
-                self.setup_position = 0
-                await interaction.response.defer()
-            case 3:
-                if self.clear_list:
-                    for channel in self.clear_list:
-                        del_channel = discord.utils.get(interaction.guild.channels, name=channel)
-                        await del_channel.delete(reason="inhouse bot instructed")
-                await interaction.response.send_modal(SetupChannelsModal())
-            case 4:
-                if self.clear_list:
-                    for role in self.clear_list:
-                        del_role = discord.utils.get(interaction.guild.roles, name=role)
-                        await del_role.delete(reason="inhouse bot instructed")
-                await interaction.response.send_modal(SetRolesModal())
-        await interaction.message.delete()
-        self.stop()
-
+        if interaction.user == self.config_user:
+            match self.setup_position:
+                case 1 | 2:
+                    self.setup_position = 0
+                    await interaction.response.defer()
+                case 3:
+                    if self.clear_list:
+                        for channel in self.clear_list:
+                            del_channel = discord.utils.get(interaction.guild.channels, name=channel)
+                            await del_channel.delete(reason="inhouse bot instructed")
+                    await interaction.response.send_modal(SetupChannelsModal())
+                case 4:
+                    if self.clear_list:
+                        for role in self.clear_list:
+                            del_role = discord.utils.get(interaction.guild.roles, name=role)
+                            await del_role.delete(reason="inhouse bot instructed")
+                    await interaction.response.send_modal(SetRolesModal())
+            await interaction.message.delete()
+        else:
+            await interaction.response.defer()
 
 class ConfigButtons(discord.ui.View):
     def __init__(self):
@@ -244,3 +247,19 @@ class ConfigButtons(discord.ui.View):
                 await interaction.response.defer()
         else:
             await interaction.response.defer()
+
+def load_config(interaction, category, sub_category):
+    with open(f'../../data/{interaction.guild.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data[category][sub_category]
+
+def update_config(interaction, category, sub_category, new_value):
+    with open(f'../../data/{interaction.guild.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    data[category][sub_category] = new_value
+    with open(f'../../data/{interaction.guild.id}_config.yml', 'w') as f:
+        yaml.dump(data, f)
+
+async def config_complete_run(interaction):
+    with open(f'../../data/{interaction.guild.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
