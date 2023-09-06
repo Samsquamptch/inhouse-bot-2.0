@@ -1,9 +1,6 @@
 import discord
 import data_management
 
-registered_list = []
-
-
 def user_embed(data_list, player_data, server):
     role_banned = discord.utils.get(server.roles, name="queue ban")
     role_champion = discord.utils.get(server.roles, name="current champions")
@@ -55,18 +52,6 @@ def user_embed(data_list, player_data, server):
     return view_user_embed
 
 
-def user_list(list_condition, user=None):
-    global registered_list
-    match list_condition:
-        case "Add":
-            registered_list.append(user)
-        case "Remove":
-            registered_list.remove(user)
-        case _:
-            pass
-    return registered_list
-
-
 def user_exists(server, user_name):
     try:
         user_account = discord.utils.get(server.members, global_name=user_name)
@@ -108,3 +93,19 @@ def check_role_priority(user):
             case _:
                 role_pref = "Balanced"
     return role_pref
+
+
+def user_list(list_condition, user=None):
+    match list_condition:
+        case "Add":
+            UnverifiedUserList().registered_list.append(user)
+        case "Remove":
+            UnverifiedUserList().registered_list.remove(user)
+        case _:
+            pass
+    return UnverifiedUserList().registered_list
+
+
+class UnverifiedUserList:
+    def __init__(self):
+        self.registered_list = []

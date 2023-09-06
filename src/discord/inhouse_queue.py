@@ -52,7 +52,7 @@ class WaitingRoom(discord.ui.View):
 
     def create_embed(self, queue_list):
         if queue_list:
-            embed_desc = "People currently in waiting list"
+            embed_desc = f"{len(queue_list)} People currently in waiting list"
             embed_clr = 0x00ff00
         else:
             embed_desc = "Waiting list is currently empty"
@@ -155,10 +155,10 @@ class InhouseQueue(discord.ui.View):
             role_champions = discord.utils.get(server.roles, name="current champions")
             champion_check = any(check in queue_list for check in role_champions.members)
             if champion_check:
-                embed_desc = "A champion is in the queue!"
+                embed_desc = f"A champion is in the queue! {len(queue_list)} People currently in the inhouse queue"
                 embed_clr = 0xFFD700
             else:
-                embed_desc = "People currently in the inhouse queue"
+                embed_desc = f"{len(queue_list)} People currently in the inhouse queue"
                 embed_clr = 0x00ff00
         else:
             embed_desc = "Inhouse queue is currently empty"
