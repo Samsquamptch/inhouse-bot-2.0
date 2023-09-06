@@ -13,10 +13,10 @@ class AdminEmbed(discord.ui.View):
     # Sep variable must be kept below 25 as embed fields limit is 25
     sep = 10
 
-    async def send_embed(self, ctx):
-        self.create_register_list(ctx.guild)
-        self.message = await ctx.send(view=self)
-        await self.update_message(self.unverified_list, ctx.guild)
+    async def send_embed(self, channel, server):
+        self.create_register_list(server)
+        self.message = await channel.send(view=self)
+        await self.update_message(self.unverified_list, server)
 
     def registered_embed(self, data_list, server, interaction):
         all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',

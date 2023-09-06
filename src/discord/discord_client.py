@@ -4,18 +4,11 @@ import admin_panel
 import select_menus
 import register_user
 import user_help
-import yaml
 import inhouse_queue
 import initialisation
+import data_management
 from os.path import isfile
 from shutil import copyfile
-from yaml.loader import SafeLoader
-
-
-def load_token():
-    with open('../../credentials/discord_token.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    return data['TOKEN']
 
 
 def run_discord_bot():
@@ -35,12 +28,35 @@ def run_discord_bot():
             copyfile(f'../../data/default_config.yml', f'../../data/{ctx.guild.id}_config.yml')
         await initialisation.ConfigButtons().config_start(ctx)
 
+    @bot.command()
+    async def run(ctx):
+        check_config = data_management.load_config_data(ctx, 'CONFIG', 'setup_complete')
+        admin_role_id = data_management.load_config_data(ctx, 'ROLES', 'admin_role')
+        admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
+        if check_config != 'Yes':
+            await ctx.send(
+                content="Config setup has not been completed. Please run !setup and follow the instructions to use this command")
+        elif admin_role in ctx.author.roles:
+            admin_channel_id = data_management.load_config_data(ctx, 'CHANNELS', 'admin_channel')
+            queue_channel_id = data_management.load_config_data(ctx, 'CHANNELS', 'queue_channel')
+            admin_channel = discord.utils.get(ctx.guild.channels, id=admin_channel_id)
+            queue_channel = discord.utils.get(ctx.guild.channels, id=queue_channel_id)
+            # Send admin panel to admin channel
+            verify_view = admin_panel.AdminEmbed()
+            await verify_view.send_embed(admin_channel, ctx.guild)
+            await admin_channel.send("More options are available via the drop-down menu below",
+                                     view=select_menus.AdminOptions())
+            # Send queue buttons and panel to queue channel
+            await queue_channel.send("New user? Please register here:", view=register_user.RegisterButton())
+            await queue_channel.send("Already registered? More options are available via the drop-down menu below",
+                                     view=select_menus.UserOptions())
+            await inhouse_queue.InhouseQueue().send_embed(queue_channel, ctx.guild)
 
     @bot.command()
     # Used to post the admin panel and admin options menu
     async def admin(ctx):
         verify_view = admin_panel.AdminEmbed()
-        await verify_view.send_embed(ctx)
+        await verify_view.send_embed(ctx.channel, ctx.guild)
         await ctx.send("More options are available via the drop-down menu below", view=select_menus.AdminOptions())
 
     @bot.command()
@@ -49,7 +65,7 @@ def run_discord_bot():
         await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
         await ctx.send("Already registered? More options are available via the drop-down menu below",
                        view=select_menus.UserOptions())
-        await inhouse_queue.InhouseQueue().send_embed(ctx)
+        await inhouse_queue.InhouseQueue().send_embed(ctx.channel, ctx.guild)
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)
@@ -65,7 +81,7 @@ def run_discord_bot():
     # @bot.command()
     # async def check(ctx):
 
-    bot.run(load_token())
+    bot.run(data_management.load_token())
 
 
 if __name__ == '__main__':

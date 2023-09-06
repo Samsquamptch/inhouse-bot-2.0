@@ -2,8 +2,30 @@
 
 import pandas as pd
 import csv
+import yaml
+from yaml.loader import SafeLoader
 import networkx as nx
 from networkx.algorithms import bipartite
+
+
+def load_token():
+    with open('../../credentials/discord_token.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data['TOKEN']
+
+
+def load_config_data(source, category, sub_category):
+    with open(f'../../data/{source.guild.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data[category][sub_category]
+
+
+def update_config(source, category, sub_category, new_value):
+    with open(f'../../data/{source.guild.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    data[category][sub_category] = new_value
+    with open(f'../../data/{source.guild.id}_config.yml', 'w') as f:
+        yaml.dump(data, f)
 
 
 def update_user_data(discord_id, columns, new_data):

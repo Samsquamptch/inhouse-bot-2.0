@@ -92,9 +92,9 @@ class InhouseQueue(discord.ui.View):
             if user not in self.queued_players:
                 self.queued_players.append(check_if_exists[1])
 
-    async def send_embed(self, ctx):
-        self.message = await ctx.send(view=self)
-        await self.update_message(self.queued_players, ctx.guild)
+    async def send_embed(self, channel, server):
+        self.message = await channel.send(view=self)
+        await self.update_message(self.queued_players, server)
 
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
