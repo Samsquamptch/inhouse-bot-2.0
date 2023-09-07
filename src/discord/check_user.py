@@ -1,6 +1,7 @@
 import discord
 import data_management
 
+register_list = []
 
 def user_embed(data_list, player_data, server):
     roles_id = data_management.load_config_data(server, 'ROLES')
@@ -100,16 +101,12 @@ def check_role_priority(user):
 
 
 def user_list(list_condition, user=None):
+    global register_list
     match list_condition:
         case "Add":
-            UnverifiedUserList().registered_list.append(user)
+            register_list.append(user)
         case "Remove":
-            UnverifiedUserList().registered_list.remove(user)
+            register_list.registered_list.remove(user)
         case _:
             pass
-    return UnverifiedUserList().registered_list
-
-
-class UnverifiedUserList:
-    def __init__(self):
-        self.registered_list = []
+    return register_list
