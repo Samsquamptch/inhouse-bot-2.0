@@ -16,9 +16,10 @@ def run_discord_bot():
     async def on_ready():
         print('bot now running!')
         for server in bot.guilds:
-            check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
-            if check_config == 'Yes':
-                await initialisation.run_user_modules(server)
+            if isfile(f'../../data/{server.id}_config.yml'):
+                check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
+                if check_config == 'Yes':
+                    await initialisation.run_user_modules(server)
 
     @bot.command()
     @commands.is_owner()
