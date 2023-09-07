@@ -61,7 +61,7 @@ def run_discord_bot():
     #     await inhouse_queue.InhouseQueue().send_embed(ctx.channel, ctx.guild)
     #
     # @bot.command()
-    # # Used to clear the channel of text (helps de-clutter during testing
+    # # Used to clear the channel of text (helps de-clutter during testing)
     # async def clear(ctx):
     #     await ctx.channel.purge()
 

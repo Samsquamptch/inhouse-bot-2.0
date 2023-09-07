@@ -113,16 +113,18 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
 class UserOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.last_value = None
 
-    @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
+    @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user with their name"),
         discord.SelectOption(label="Update", emoji="❗", description="Notify admins of MMR change (NOT WORKING YET)"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
-        discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        match select.values[0]:
+        if select.values:
+            self.last_value = select.values[0]
+        match self.last_value:
             case "Search":
                 await interaction.response.send_modal(ViewUserModal())
             case "Update":
@@ -139,21 +141,21 @@ class UserOptions(discord.ui.View):
 class AdminOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.last_value = None
 
-    @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
+    @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user"),
         discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user (NOT WORKING YET"),
-        discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        match select.values[0]:
+        if select.values:
+            self.last_value = select.values[0]
+        match self.last_value:
             case "Edit":
                 await interaction.response.send_modal(EditUserModal())
             case "Search":
                 await interaction.response.send_modal(ViewUserModal())
             case "Remove":
                 await interaction.response.send_modal(RemoveUserModal())
-            case "Refresh":
-                await interaction.response.defer()

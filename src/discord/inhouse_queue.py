@@ -305,7 +305,7 @@ class InhouseQueue(discord.ui.View):
         #         if votekick_modal.user_name in user.global_name:
         #             number = 1
         #             await interaction.channel.send(content=f'{interaction.user.global_name} wants to kick {user.global_name} from the queue! {3 - number} votes left to kick')
-        #         # await interaction.followup.send(content=f'{votekick_modal.user_name} isn\'t in the queue', ephemeral=True)
+        #         # await interaction.followup.send(content=f'{votekick_modal.user_name} isn't in the queue', ephemeral=True)
         # elif len(self.queued_players) < 10 and interaction.user in self.queued_players:
         #     await interaction.response.send_message(content="Votekick can only be held once queue is full", ephemeral=True, delete_after=5)
         # else:

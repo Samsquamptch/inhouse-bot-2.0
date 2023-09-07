@@ -24,16 +24,8 @@ class SetRolesModal(discord.ui.Modal, title='User Roles Configuration'):
         champions_str = str(self.champions_role)
         roles_dict = {'admin_role': admin_str, 'registered_role': inhouse_str, 'verified_role': verified_str,
                       'champions_role': champions_str, 'banned_role': banned_str}
+        premade_roles = await create_roles(interaction, roles_dict)
         role_list = [admin_str, inhouse_str, verified_str, banned_str, champions_str]
-        premade_roles = []
-        for role in roles_dict:
-            check_user = discord.utils.get(interaction.guild.roles, name=roles_dict[role])
-            if not check_user:
-                await interaction.guild.create_role(name=roles_dict[role])
-                check_user = discord.utils.get(interaction.guild.roles, name=roles_dict[role])
-            else:
-                premade_roles.append(roles_dict[role])
-            data_management.update_config(interaction, 'ROLES', role, check_user.id)
         yes_no = YesNoButtons()
         yes_no.config_user = interaction.user
         yes_no.setup_position = 4
@@ -63,42 +55,12 @@ class SetupChannelsModal(discord.ui.Modal, title='Text Channels Configuration'):
         channel_dict = {'admin_channel': admin_str, 'queue_channel': queue_str, 'notification_channel': notif_str,
                         'chat_channel': chat_channel}
         channel_list = [admin_str, queue_str, notif_str, chat_channel]
-        check_categ = discord.utils.get(interaction.guild.categories, name=cat_str)
-        if not check_categ:
-            await interaction.guild.create_category(name=cat_str)
-            check_categ = discord.utils.get(interaction.guild.categories, name=cat_str)
-        data_management.update_config(interaction, 'CHANNELS', 'inhouse_category', check_categ.id)
-        set_category = discord.utils.get(interaction.guild.categories, name=cat_str)
-        premade_channels = []
-        for channel in channel_dict:
-            check_chann = discord.utils.get(set_category.text_channels, name=channel_dict[channel])
-            if not check_chann:
-                match channel:
-                    case 'admin_channel':
-                        overwrites = {
-                            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                            interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
-                        }
-                    case 'queue_channel' | 'notification_channel':
-                        overwrites = {
-                            interaction.guild.default_role: discord.PermissionOverwrite(send_messages=False),
-                            interaction.guild.me: discord.PermissionOverwrite(send_messages=True)
-                        }
-                    case _:
-                        overwrites = {
-                            interaction.guild.me: discord.PermissionOverwrite(send_messages=True)
-                        }
-                await interaction.guild.create_text_channel(name=channel_dict[channel], category=set_category,
-                                                            overwrites=overwrites)
-                check_chann = discord.utils.get(set_category.text_channels, name=channel_dict[channel])
-            else:
-                premade_channels.append(channel_dict[channel])
-            data_management.update_config(interaction, 'CHANNELS', channel, check_chann.id)
+        category_and_channels = await create_channels(interaction, cat_str, channel_dict)
         yes_no = YesNoButtons()
         yes_no.config_user = interaction.user
         yes_no.setup_position = 3
-        yes_no.category = set_category
-        yes_no.clear_channel_list = [i for i in channel_list if i not in premade_channels]
+        yes_no.category = category_and_channels[0]
+        yes_no.clear_channel_list = [i for i in channel_list if i not in category_and_channels[1]]
         await interaction.response.send_message(
             f'You\'ve created the category {cat_str} with the channels: \n'
             f'{channel_list[0]} \n {channel_list[1]} \n {channel_list[2]} \n {channel_list[3]} \n'
@@ -115,11 +77,7 @@ class VoiceChannelButtons(discord.ui.View):
                        style=discord.ButtonStyle.green)
     async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user == self.config_user:
-            channel_list = ["Casting Channel", "Waiting Room", "Radiant Voice", "Dire Voice"]
-            for channel in channel_list:
-                check_chann = discord.utils.get(self.voice_category.voice_channels, name=channel)
-                if not check_chann:
-                    await interaction.guild.create_voice_channel(name=channel, category=self.voice_category)
+            await create_voice(interaction, self.voice_category)
             await interaction.response.send_modal(SetRolesModal())
             await interaction.message.delete()
         else:
@@ -143,6 +101,19 @@ class YesNoButtons(discord.ui.View):
         self.category = None
         self.clear_list = []
 
+    async def automated_setup(self, interaction):
+        channel_dict = data_management.load_default_config('CHANNELS')
+        cat_str = channel_dict['inhouse_category']
+        del channel_dict['inhouse_category']
+        voice_category = await create_channels(interaction, cat_str, channel_dict)
+        await create_voice(interaction, voice_category[0])
+        roles_dict = data_management.load_default_config('ROLES')
+        await create_roles(interaction, roles_dict)
+        await confirm_configuration(interaction)
+        await interaction.channel.send(
+            "Automated setup has now finished. The bot will now run automatically on start.")
+        await run_user_modules(interaction.guild)
+
     @discord.ui.button(label="Yes", emoji="👍",
                        style=discord.ButtonStyle.green)
     async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -150,6 +121,9 @@ class YesNoButtons(discord.ui.View):
             match self.setup_position:
                 case 1:
                     await interaction.response.send_message(content="Proceeding with automated setup")
+                    # An issue with the next function means the message doesn't get deleted later. this delete solves that
+                    await interaction.message.delete()
+                    await self.automated_setup(interaction)
                 case 2:
                     await interaction.response.send_modal(SetupChannelsModal())
                 case 3:
@@ -158,17 +132,14 @@ class YesNoButtons(discord.ui.View):
                     voice_buttons.voice_category = self.category
                     await interaction.response.send_message("Do you want to add voice channels?", view=voice_buttons)
                 case 4:
-                    channel_id = data_management.load_config_data(interaction, 'CHANNELS', 'admin_channel')
-                    role_id = data_management.load_config_data(interaction, 'ROLES', 'admin_role')
-                    admin_channel = discord.utils.get(interaction.guild.channels, id=channel_id)
-                    admin_role = discord.utils.get(interaction.guild.roles, id=role_id)
-                    await admin_channel.set_permissions(admin_role, read_messages=True)
-                    data_management.update_config(interaction, 'CONFIG', 'server_id', interaction.guild.id)
-                    data_management.update_config(interaction, 'CONFIG', 'setup_complete', 'Yes')
+                    await confirm_configuration(interaction)
                     await interaction.response.send_message(
                         "Thank you for completing setup. The bot will now run automatically on start.")
                     await run_user_modules(interaction.guild)
-            await interaction.message.delete()
+            try:
+                await interaction.message.delete()
+            except discord.errors.NotFound:
+                print("Message already deleted")
         else:
             await interaction.response.defer()
 
@@ -258,6 +229,72 @@ class ConfigButtons(discord.ui.View):
             await interaction.response.defer()
 
 
+async def confirm_configuration(interaction):
+    channel_id = data_management.load_config_data(interaction.guild, 'CHANNELS', 'admin_channel')
+    role_id = data_management.load_config_data(interaction.guild, 'ROLES', 'admin_role')
+    admin_channel = discord.utils.get(interaction.guild.channels, id=channel_id)
+    admin_role = discord.utils.get(interaction.guild.roles, id=role_id)
+    await admin_channel.set_permissions(admin_role, read_messages=True)
+    data_management.update_config(interaction.guild, 'CONFIG', 'server_id', interaction.guild.id)
+    data_management.update_config(interaction.guild, 'CONFIG', 'setup_complete', 'Yes')
+
+
+async def create_voice(interaction, voice_category):
+    channel_list = ["Casting Channel", "Waiting Room", "Radiant Voice", "Dire Voice"]
+    for channel in channel_list:
+        check_chann = discord.utils.get(voice_category.voice_channels, name=channel)
+        if not check_chann:
+            await interaction.guild.create_voice_channel(name=channel, category=voice_category)
+
+
+async def create_roles(interaction, roles_dict):
+    premade_roles = []
+    for role in roles_dict:
+        check_user = discord.utils.get(interaction.guild.roles, name=roles_dict[role])
+        if not check_user:
+            await interaction.guild.create_role(name=roles_dict[role])
+            check_user = discord.utils.get(interaction.guild.roles, name=roles_dict[role])
+        else:
+            premade_roles.append(roles_dict[role])
+        data_management.update_config(interaction.guild, 'ROLES', role, check_user.id)
+    return premade_roles
+
+
+async def create_channels(interaction, cat_str, channel_dict):
+    check_categ = discord.utils.get(interaction.guild.categories, name=cat_str)
+    if not check_categ:
+        await interaction.guild.create_category(name=cat_str)
+        check_categ = discord.utils.get(interaction.guild.categories, name=cat_str)
+    data_management.update_config(interaction.guild, 'CHANNELS', 'inhouse_category', check_categ.id)
+    set_category = discord.utils.get(interaction.guild.categories, name=cat_str)
+    premade_channels = []
+    for channel in channel_dict:
+        check_chann = discord.utils.get(set_category.text_channels, name=channel_dict[channel])
+        if not check_chann:
+            match channel:
+                case 'admin_channel':
+                    overwrites = {
+                        interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                        interaction.guild.me: discord.PermissionOverwrite(read_messages=True)
+                    }
+                case 'queue_channel' | 'notification_channel':
+                    overwrites = {
+                        interaction.guild.default_role: discord.PermissionOverwrite(send_messages=False),
+                        interaction.guild.me: discord.PermissionOverwrite(send_messages=True)
+                    }
+                case _:
+                    overwrites = {
+                        interaction.guild.me: discord.PermissionOverwrite(send_messages=True)
+                    }
+            await interaction.guild.create_text_channel(name=channel_dict[channel], category=set_category,
+                                                        overwrites=overwrites)
+            check_chann = discord.utils.get(set_category.text_channels, name=channel_dict[channel])
+        else:
+            premade_channels.append(channel_dict[channel])
+        data_management.update_config(interaction.guild, 'CHANNELS', channel, check_chann.id)
+    return set_category, premade_channels
+
+
 async def run_user_modules(server):
     channel_id = data_management.load_config_data(server, 'CHANNELS')
     admin_channel = discord.utils.get(server.channels, id=channel_id['admin_channel'])
@@ -269,6 +306,7 @@ async def run_user_modules(server):
     await verify_view.send_embed(admin_channel, server)
     await admin_channel.send("More options are available via the drop-down menu below",
                              view=select_menus.AdminOptions())
+    print("Admin settings created")
     # Send queue buttons and panel to queue channel
     await queue_channel.purge()
     regiser_view = register_user.RegisterButton()
@@ -281,3 +319,4 @@ async def run_user_modules(server):
     inhouse_view.roles_id = data_management.load_config_data(server, 'ROLES')
     inhouse_view.channel_id = data_management.load_config_data(server, 'CHANNELS', 'queue_channel')
     await inhouse_view.send_embed(queue_channel, server)
+    print("User settings created")
