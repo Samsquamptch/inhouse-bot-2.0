@@ -1,0 +1,13 @@
+CHANNELS:
+  inhouse_category: "inhouse"
+  admin_channel: "admin-settings"
+  queue_channel: "inhouse-queue"
+  notification_channel: "inhouse-notifications"
+  chat_channel: "inhouse-chat"
+
+ROLES:
+  admin_role: "admin"
+  registered_role: "inhouse"
+  verified_role: "verified"
+  banned_role: "queue ban"
+  champions_role: "current champions"
