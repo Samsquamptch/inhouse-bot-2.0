@@ -106,7 +106,7 @@ def user_list(list_condition, user=None):
         case "Add":
             register_list.append(user)
         case "Remove":
-            register_list.registered_list.remove(user)
+            register_list.remove(user)
         case _:
             pass
     return register_list
