@@ -37,7 +37,7 @@ def run_discord_bot():
             await ctx.send(
                 content="Config setup has not been completed. Please run !setup and follow the instructions to use this command")
         elif admin_role in ctx.author.roles:
-            initialisation.run_user_modules(ctx.guild)
+            await initialisation.run_user_modules(ctx.guild)
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)
