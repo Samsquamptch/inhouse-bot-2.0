@@ -4,10 +4,12 @@ CHANNELS:
   queue_channel: "inhouse-queue"
   notification_channel: "inhouse-notifications"
   chat_channel: "inhouse-chat"
-
 ROLES:
   admin_role: "admin"
   registered_role: "inhouse"
   verified_role: "verified"
   banned_role: "queue ban"
   champions_role: "current champions"
+CONFIG:
+  server_id: None
+  setup_complete: 'No'

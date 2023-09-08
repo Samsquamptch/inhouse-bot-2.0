@@ -23,9 +23,10 @@ def load_config_data(server, category, sub_category=None):
         data = yaml.load(f, Loader=SafeLoader)
     if sub_category is None:
         return data[category]
-    else:
+    elif data[category][sub_category]:
         return data[category][sub_category]
-
+    else:
+        return None
 
 def update_config(server, category, sub_category, new_value):
     with open(f'../../data/{server.id}_config.yml') as f:

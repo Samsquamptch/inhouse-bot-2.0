@@ -17,7 +17,9 @@ def run_discord_bot():
         print('bot now running!')
         for server in bot.guilds:
             check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
-            if check_config == 'Yes':
+            if not check_config:
+                print(f'No config file found for {server}')
+            elif check_config == 'Yes':
                 await initialisation.run_user_modules(server)
 
     @bot.command()
