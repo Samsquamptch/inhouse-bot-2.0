@@ -16,11 +16,13 @@ def run_discord_bot():
     async def on_ready():
         print('bot now running!')
         for server in bot.guilds:
-            check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
-            if not check_config:
+            if not isfile(f'../../data/{server.id}_config.yml'):
                 print(f'No config file found for {server}')
-            elif check_config == 'Yes':
-                await initialisation.run_user_modules(server)
+            else:
+                check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
+                if check_config == 'Yes':
+                    await initialisation.run_user_modules(server)
+
 
     @bot.command()
     @commands.is_owner()
@@ -40,6 +42,13 @@ def run_discord_bot():
                 content="Config setup has not been completed. Please run !setup and follow the instructions to use this command")
         elif admin_role in ctx.author.roles:
             await initialisation.run_user_modules(ctx.guild)
+
+    @bot.command()
+    async def test(ctx):
+        role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
+        notif_id = data_management.load_config_data(ctx.guild, 'CHANNELS', 'notification_channel')
+        notif_channel = discord.utils.get(ctx.guild.channels, id=notif_id)
+        await notif_channel.send(f'<@&{role_id}> user <@{ctx.author.id}> has registered for the inhouse')
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)

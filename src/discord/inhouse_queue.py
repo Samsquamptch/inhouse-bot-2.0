@@ -1,8 +1,8 @@
 import discord
 import data_management
 import check_user
-import random
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 # The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
@@ -64,7 +64,7 @@ class WaitingRoom(discord.ui.View):
         for user in queue_list:
             user_data = data_management.view_user_data(user.id)
             queue_embed.add_field(name=user.global_name, value=f'MMR: {user_data[2]}', inline=True)
-        update_time = datetime.now().strftime("%H:%M:%S")
+        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         queue_embed.set_footer(text=f'Waiting list updated at: {update_time}')
         return queue_embed
 
@@ -72,6 +72,8 @@ class WaitingRoom(discord.ui.View):
         try:
             await self.message.delete()
         except discord.errors.NotFound:
+            pass
+        except AttributeError:
             pass
 
     async def update_message(self):
@@ -105,7 +107,7 @@ class InhouseQueue(discord.ui.View):
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = data_management.team_balancer(queue_ids)
+        queue_teams = data_management.assign_teams(queue_ids)
         queue_embed = discord.Embed(title="Inhouse queue", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
         icon_url = server.icon.url
@@ -113,13 +115,8 @@ class InhouseQueue(discord.ui.View):
         queue_embed.add_field(name='Roles', value='', inline=True)
         queue_embed.add_field(name='Radiant', value='', inline=True)
         queue_embed.add_field(name='Dire', value='', inline=True)
-        coin = random.randint(1, 2)
-        if coin == 1:
-            radiant_team = queue_teams[0]
-            dire_team = queue_teams[1]
-        elif coin == 2:
-            radiant_team = queue_teams[1]
-            dire_team = queue_teams[0]
+        radiant_team = queue_teams[0]
+        dire_team = queue_teams[1]
         x = 0
         mmr_total_radiant = 0
         mmr_total_dire = 0
@@ -147,7 +144,7 @@ class InhouseQueue(discord.ui.View):
         queue_embed.add_field(name=f'Average MMR', value='', inline=True)
         queue_embed.add_field(name=f'{mmr_avg_radiant}', value='', inline=True)
         queue_embed.add_field(name=f'{mmr_avg_dire}', value='', inline=True)
-        update_time = datetime.now().strftime("%H:%M:%S")
+        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         queue_embed.add_field(name='Players',
                               value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
                                     f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
@@ -156,7 +153,7 @@ class InhouseQueue(discord.ui.View):
         return queue_embed
 
     # Creates the embed used for displaying the inhouse queue
-    def create_embed(self, queue_list, server):
+    def create_embed(self, queue_list, server, action=None, user=None):
         if queue_list:
             role_champions = discord.utils.get(server.roles, id=self.roles_id['champions_role'])
             champion_check = any(check in queue_list for check in role_champions.members)
@@ -181,27 +178,37 @@ class InhouseQueue(discord.ui.View):
             queue_embed.add_field(name=user.global_name,
                                   value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Preference: {role_preference}',
                                   inline=False)
-        update_time = datetime.now().strftime("%H:%M:%S")
+        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        match action:
+            case 'Join':
+                queue_embed.add_field(name='', value=f'{user.global_name} joined the queue')
+            case 'Leave':
+                queue_embed.add_field(name='', value=f'{user.global_name} left the queue')
+            case 'Kick':
+                queue_embed.add_field(name='', value=f'{user.global_name} was kicked from queue')
+            case 'Clear':
+                queue_embed.add_field(name='', value=f'Queue was cleared by {user.global_name}')
+            case _:
+                pass
         if queue_list:
-            average_mmr = mmr_total / len(queue_list)
+            average_mmr = int(mmr_total / len(queue_list))
             queue_embed.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
         else:
             queue_embed.set_footer(text=f'Queue updated at: {update_time}')
         return queue_embed
 
-    async def update_message(self, queue_list, server):
+    async def update_message(self, queue_list, server, action=None, user=None):
         if len(queue_list) == 10:
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
-            # TODO uncomment when going live
-            # channel = discord.utils.get(server.channels, id=self.channel_id)
-            # await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
-            #                    f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
-            #                    f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
-            #                    f'<@{queue_list[6].id}> <@{queue_list[7].id}> <@{queue_list[8].id}>'
-            #                    f'<@{queue_list[9].id}>', delete_after=600)
+            channel = discord.utils.get(server.channels, id=self.channel_id)
+            await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
+                               f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
+                               f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
+                               f'<@{queue_list[6].id}> <@{queue_list[7].id}> <@{queue_list[8].id}>'
+                               f'<@{queue_list[9].id}>', delete_after=600)
         else:
-            await self.message.edit(embed=self.create_embed(queue_list, server), view=self)
+            await self.message.edit(embed=self.create_embed(queue_list, server, action, user), view=self)
 
     async def waiting_room_transfer(self, server):
         if not self.queued_players and self.preload_modal.waiting_list:
@@ -244,7 +251,7 @@ class InhouseQueue(discord.ui.View):
                 await interaction.response.defer()
             else:
                 self.queued_players.append(interaction.user)
-                await self.update_message(self.queued_players, server)
+                await self.update_message(self.queued_players, server, 'Join', interaction.user)
                 await interaction.response.defer()
         else:
             await interaction.response.send_message(
@@ -262,7 +269,7 @@ class InhouseQueue(discord.ui.View):
                                                         delete_after=5)
             else:
                 self.queued_players.remove(interaction.user)
-                await self.update_message(self.queued_players, server)
+                await self.update_message(self.queued_players, server, 'Leave', interaction.user)
                 await interaction.response.defer()
         else:
             if len(self.queued_players) == 10 and interaction.user in self.preload_modal.waiting_list:
@@ -285,12 +292,12 @@ class InhouseQueue(discord.ui.View):
             await admin_modal.wait()
             if admin_modal.user_acc == "clear":
                 self.queued_players.clear()
-                await self.update_message(self.queued_players, server)
+                await self.update_message(self.queued_players, server, 'Clear', interaction.user)
                 await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
             elif admin_modal.user_acc in self.queued_players:
                 self.queued_players.remove(admin_modal.user_acc)
-                await self.update_message(self.queued_players, server)
+                await self.update_message(self.queued_players, server, 'Kick', admin_modal.user_acc)
                 await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'{admin_modal.user_name} has been kicked from the queue',
                                                 ephemeral=True)
