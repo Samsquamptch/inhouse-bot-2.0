@@ -198,7 +198,7 @@ class InhouseQueue(discord.ui.View):
         return queue_embed
 
     async def update_message(self, queue_list, server, action=None, user=None):
-        if len(queue_list) == 10:
+        if len(queue_list) >= 10:
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
             channel = discord.utils.get(server.channels, id=self.channel_id)
@@ -245,13 +245,16 @@ class InhouseQueue(discord.ui.View):
             if interaction.user in self.queued_players:
                 await interaction.response.send_message(content="You are already queued", ephemeral=True,
                                                         delete_after=5)
-            elif len(self.queued_players) == 10 and interaction.user not in self.preload_modal.waiting_list:
-                self.preload_modal.waiting_list.append(interaction.user)
-                await self.preload_modal.update_message()
-                await interaction.response.defer()
-            else:
+            elif len(self.queued_players) < 10:
                 self.queued_players.append(interaction.user)
                 await self.update_message(self.queued_players, server, 'Join', interaction.user)
+                await interaction.response.defer()
+            elif interaction.user in self.preload_modal.waiting_list:
+                await interaction.response.send_message(content="You are already in the waiting list", ephemeral=True,
+                                                        delete_after=5)
+            else:
+                self.preload_modal.waiting_list.append(interaction.user)
+                await self.preload_modal.update_message()
                 await interaction.response.defer()
         else:
             await interaction.response.send_message(
