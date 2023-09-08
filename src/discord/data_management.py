@@ -1,9 +1,39 @@
-# For all functions relating to adding/removing/amending/viewing from users.csv
-
 import pandas as pd
 import csv
+import yaml
+from yaml.loader import SafeLoader
 import networkx as nx
 from networkx.algorithms import bipartite
+
+
+def load_token():
+    with open('../../credentials/discord_token.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data['TOKEN']
+
+
+def load_default_config(category):
+    with open('../../data/default_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data[category]
+
+
+def load_config_data(server, category, sub_category=None):
+    with open(f'../../data/{server.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    if sub_category is None:
+        return data[category]
+    elif data[category][sub_category]:
+        return data[category][sub_category]
+    else:
+        return None
+
+def update_config(server, category, sub_category, new_value):
+    with open(f'../../data/{server.id}_config.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    data[category][sub_category] = new_value
+    with open(f'../../data/{server.id}_config.yml', 'w') as f:
+        yaml.dump(data, f)
 
 
 def update_user_data(discord_id, columns, new_data):
@@ -111,7 +141,7 @@ def team_balancer(queue_ids):
         queue = queue.rename(columns={"team_dos": "team"})
     team1 = queue.loc[queue['team'] == "Team 1"]
     team2 = queue.loc[queue['team'] == "Team 2"]
-    pos1 = pos_graph(team1)
+    pos1 = role_allocation(team1)
     team1["pos"] = [11, 12, 13, 14, 15]
     team1.at[pos1[5001], 'pos'] = 1
     team1.at[pos1[5002], 'pos'] = 2
@@ -119,7 +149,7 @@ def team_balancer(queue_ids):
     team1.at[pos1[5004], 'pos'] = 4
     team1.at[pos1[5005], 'pos'] = 5
     team1 = team1.sort_values('pos')
-    pos2 = pos_graph(team2)
+    pos2 = role_allocation(team2)
     team2["pos"] = [11, 12, 13, 14, 15]
     team2.at[pos2[5001], 'pos'] = 1
     team2.at[pos2[5002], 'pos'] = 2
@@ -134,11 +164,12 @@ def team_balancer(queue_ids):
         f.write('yes')
     return team1['disc'].tolist(), team2['disc'].tolist()
 
-def pos_graph(team):
-    G = nx.Graph()
+
+def role_allocation(team):
+    graph = nx.Graph()
     for i in range(0, 5):
-        G.add_node(team.index[i])
+        graph.add_node(team.index[i])
         for j in range(1, 6):
-            G.add_node(j + 5000)
-            G.add_edge(team.index[i], j + 5000, weight=team.iloc[[i], [j + 2]].values.min())
-    return bipartite.minimum_weight_full_matching(G, top_nodes=None, weight='weight')
+            graph.add_node(j + 5000)
+            graph.add_edge(team.index[i], j + 5000, weight=team.iloc[[i], [j + 2]].values.min())
+    return bipartite.minimum_weight_full_matching(graph, top_nodes=None, weight='weight')

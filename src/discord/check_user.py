@@ -1,13 +1,13 @@
 import discord
 import data_management
 
-registered_list = []
-
+register_list = []
 
 def user_embed(data_list, player_data, server):
-    role_banned = discord.utils.get(server.roles, name="queue ban")
-    role_champion = discord.utils.get(server.roles, name="current champions")
-    role_verified = discord.utils.get(server.roles, name="verified")
+    roles_id = data_management.load_config_data(server, 'ROLES')
+    role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
+    role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
+    role_champion = discord.utils.get(server.roles, id=roles_id['champions_role'])
     if role_banned in player_data.roles:
         user_status = "User is currently banned 😢"
         user_clr = 0x000000
@@ -39,8 +39,15 @@ def user_embed(data_list, player_data, server):
     view_user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{user_status}',
                                     color=user_clr)
     view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
-    view_user_embed.add_field(name='Dotabuff', value=f'https://www.dotabuff.com/players/{data_list[1]}', inline=True)
-    view_user_embed.add_field(name='MMR', value=f'{data_list[2]}', inline=True)
+    view_user_embed.add_field(name='Dotabuff',
+                              value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
+                                    f'\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
+                              inline=True)
+    view_user_embed.add_field(name='Rank', value=f'N/A \u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='Matches', value=f'0', inline=True)
+    view_user_embed.add_field(name='Wins', value=f'0', inline=True)
+    view_user_embed.add_field(name='Losses', value=f'0', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
     view_user_embed.add_field(name='Carry', value=f'{data_list[3]}', inline=False)
     view_user_embed.add_field(name='Midlane', value=f'{data_list[4]}', inline=False)
@@ -48,18 +55,6 @@ def user_embed(data_list, player_data, server):
     view_user_embed.add_field(name='Soft Support', value=f'{data_list[6]}', inline=False)
     view_user_embed.add_field(name='Hard Support', value=f'{data_list[7]}', inline=False)
     return view_user_embed
-
-
-def user_list(list_condition, user=None):
-    global registered_list
-    match list_condition:
-        case "Add":
-            registered_list.append(user)
-        case "Remove":
-            registered_list.remove(user)
-        case _:
-            pass
-    return registered_list
 
 
 def user_exists(server, user_name):
@@ -103,3 +98,15 @@ def check_role_priority(user):
             case _:
                 role_pref = "Balanced"
     return role_pref
+
+
+def user_list(list_condition, user=None):
+    global register_list
+    match list_condition:
+        case "Add":
+            register_list.append(user)
+        case "Remove":
+            register_list.remove(user)
+        case _:
+            pass
+    return register_list

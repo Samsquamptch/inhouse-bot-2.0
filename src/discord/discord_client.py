@@ -1,18 +1,10 @@
 import discord
 from discord.ext import commands
-import admin_panel
-import select_menus
-import register_user
 import user_help
-import yaml
-import inhouse_queue
-from yaml.loader import SafeLoader
-
-
-def load_token():
-    with open('../../credentials/discord_token.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    return data['TOKEN']
+import initialisation
+import data_management
+from os.path import isfile
+from shutil import copyfile
 
 
 def run_discord_bot():
@@ -23,42 +15,62 @@ def run_discord_bot():
     @bot.event
     async def on_ready():
         print('bot now running!')
-
-    # @bot.command()
-    # async def user(ctx):
-    #     await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-    #     await ctx.send("Already registered? Please choose from the below options", view=user_settings.UserChoices())
-
-    @bot.command()
-    # Used to post the admin panel and admin options menu
-    async def admin(ctx):
-        verify_view = admin_panel.AdminEmbed()
-        await verify_view.send_embed(ctx)
-        await ctx.send("More options are available via the drop-down menu below", view=select_menus.AdminOptions())
+        for server in bot.guilds:
+            check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
+            if not check_config:
+                print(f'No config file found for {server}')
+            elif check_config == 'Yes':
+                await initialisation.run_user_modules(server)
 
     @bot.command()
-    # Used to post the regiser/view self/set roles buttons, additional user options, and inhouse queue
-    async def queue(ctx):
-        await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-        await ctx.send("Already registered? More options are available via the drop-down menu below",
-                       view=select_menus.UserOptions())
-        await inhouse_queue.InhouseQueue().send_embed(ctx)
+    @commands.is_owner()
+    async def setup(ctx):
+        await ctx.send("Beginning setup of inhouse bot")
+        if not isfile(f'../../data/{ctx.guild.id}_config.yml'):
+            copyfile(f'../../data/default_config.yml', f'../../data/{ctx.guild.id}_config.yml')
+        await initialisation.ConfigButtons().config_start(ctx)
+
+    @bot.command()
+    async def refresh(ctx):
+        check_config = data_management.load_config_data(ctx.guild, 'CONFIG', 'setup_complete')
+        admin_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
+        admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
+        if check_config != 'Yes':
+            await ctx.send(
+                content="Config setup has not been completed. Please run !setup and follow the instructions to use this command")
+        elif admin_role in ctx.author.roles:
+            await initialisation.run_user_modules(ctx.guild)
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)
     async def get_help(ctx):
         await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
-    @bot.command()
-    # Used to clear the channel of text (helps de-clutter during testing
-    # TODO comment this out when ready for production
-    async def clear(ctx):
-        await ctx.channel.purge()
+    # Old commands which are no longer required
+    # @bot.command()
+    # # Used to post the admin panel and admin options menu
+    # async def admin(ctx):
+    #     verify_view = admin_panel.AdminEmbed()
+    #     await verify_view.send_embed(ctx.channel, ctx.guild)
+    #     await ctx.send("More options are available via the drop-down menu below", view=select_menus.AdminOptions())
+    #
+    # @bot.command()
+    # # Used to post the regiser/view self/set roles buttons, additional user options, and inhouse queue
+    # async def queue(ctx):
+    #     await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
+    #     await ctx.send("Already registered? More options are available via the drop-down menu below",
+    #                    view=select_menus.UserOptions())
+    #     await inhouse_queue.InhouseQueue().send_embed(ctx.channel, ctx.guild)
+    #
+    # @bot.command()
+    # # Used to clear the channel of text (helps de-clutter during testing)
+    # async def clear(ctx):
+    #     await ctx.channel.purge()
 
     # @bot.command()
     # async def check(ctx):
 
-    bot.run(load_token())
+    bot.run(data_management.load_token())
 
 
 if __name__ == '__main__':

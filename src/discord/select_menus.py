@@ -14,6 +14,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
+        roles_id = data_management.load_config_data(server, 'ROLES')
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             new_mmr = str(self.set_mmr)
@@ -39,7 +40,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             verify_role = str(self.remove_verify)
             if verify_role != "":
                 if verify_role.lower() == "y":
-                    role_verified = discord.utils.get(server.roles, name="verified")
+                    role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                     await check_if_exists[1].remove_roles(role_verified)
                 else:
                     await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
@@ -48,7 +49,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
             ban_time = str(self.ban_user)
             if ban_time != "":
                 if ban_time.lower() == "y":
-                    role_banned = discord.utils.get(server.roles, name="queue ban")
+                    role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
                     if role_banned in check_if_exists[1].roles:
                         await check_if_exists[1].remove_roles(role_banned)
                     else:
@@ -57,15 +58,6 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                     await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
                                                             ephemeral=True,
                                                             delete_after=10)
-            # ban_time = str(self.ban_user)
-            # if ban_time != "":
-            #     try:
-            #         int_ban_time = int(ban_time)
-            #         print(int_ban_time)
-            #     except ValueError:
-            #         await interaction.response.send_message('Please only input numbers for inhouse bans',
-            #                                                 ephemeral=True,
-            #                                                 delete_after=10)
             await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
                                                     ephemeral=True, delete_after=10)
         else:
@@ -101,8 +93,9 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             if delete_conf.lower() == "y":
-                role_inhouse = discord.utils.get(server.roles, name="inhouse")
-                role_verified = discord.utils.get(server.roles, name="verified")
+                roles_id = data_management.load_config_data(server, 'ROLES')
+                role_inhouse = discord.utils.get(server.roles, id=roles_id['registered_role'])
+                role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                 await check_if_exists[1].remove_roles(role_inhouse, role_verified)
                 data_management.remove_user_data(check_if_exists[1].id)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
@@ -120,16 +113,18 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
 class UserOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.last_value = None
 
-    @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
+    @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user with their name"),
         discord.SelectOption(label="Update", emoji="❗", description="Notify admins of MMR change (NOT WORKING YET)"),
         discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
-        discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        match select.values[0]:
+        if select.values:
+            self.last_value = select.values[0]
+        match self.last_value:
             case "Search":
                 await interaction.response.send_modal(ViewUserModal())
             case "Update":
@@ -146,21 +141,21 @@ class UserOptions(discord.ui.View):
 class AdminOptions(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.last_value = None
 
-    @discord.ui.select(placeholder="Select an action here", min_values=1, max_values=1, options=[
+    @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user"),
         discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user (NOT WORKING YET"),
-        discord.SelectOption(label="Refresh", emoji="♻", description="Select to allow you to refresh options")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        match select.values[0]:
+        if select.values:
+            self.last_value = select.values[0]
+        match self.last_value:
             case "Edit":
                 await interaction.response.send_modal(EditUserModal())
             case "Search":
                 await interaction.response.send_modal(ViewUserModal())
             case "Remove":
                 await interaction.response.send_modal(RemoveUserModal())
-            case "Refresh":
-                await interaction.response.defer()

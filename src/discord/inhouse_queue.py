@@ -44,15 +44,17 @@ class WaitingRoom(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.waiting_list = []
+        self.channel_id = None
+        self.message = None
 
     async def send_embed(self, server):
-        channel = discord.utils.get(server.channels, name="inhouse-queue")
+        channel = discord.utils.get(server.channels, id=self.channel_id)
         self.message = await channel.send(content="Users in the waiting room are below", view=self)
         await self.update_message()
 
     def create_embed(self, queue_list):
         if queue_list:
-            embed_desc = "People currently in waiting list"
+            embed_desc = f"{len(queue_list)} People currently in waiting list"
             embed_clr = 0x00ff00
         else:
             embed_desc = "Waiting list is currently empty"
@@ -82,6 +84,9 @@ class InhouseQueue(discord.ui.View):
         super().__init__(timeout=None)
         self.queued_players = []
         self.preload_modal = WaitingRoom()
+        self.roles_id = None
+        self.channel_id = None
+        self.message = None
 
     async def test_add_user(self, interaction: discord.Interaction):
         server = interaction.guild
@@ -92,9 +97,10 @@ class InhouseQueue(discord.ui.View):
             if user not in self.queued_players:
                 self.queued_players.append(check_if_exists[1])
 
-    async def send_embed(self, ctx):
-        self.message = await ctx.send(view=self)
-        await self.update_message(self.queued_players, ctx.guild)
+    async def send_embed(self, channel, server):
+        self.preload_modal.channel_id = self.channel_id
+        self.message = await channel.send(view=self)
+        await self.update_message(self.queued_players, server)
 
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
@@ -152,16 +158,16 @@ class InhouseQueue(discord.ui.View):
     # Creates the embed used for displaying the inhouse queue
     def create_embed(self, queue_list, server):
         if queue_list:
-            role_champions = discord.utils.get(server.roles, name="current champions")
+            role_champions = discord.utils.get(server.roles, id=self.roles_id['champions_role'])
             champion_check = any(check in queue_list for check in role_champions.members)
             if champion_check:
-                embed_desc = "A champion is in the queue!"
+                embed_desc = f"A champion is in the queue! {len(queue_list)} players currently in the queue"
                 embed_clr = 0xFFD700
             else:
-                embed_desc = "People currently in the inhouse queue"
+                embed_desc = f"{len(queue_list)} players currently in the queue"
                 embed_clr = 0x00ff00
         else:
-            embed_desc = "Inhouse queue is currently empty"
+            embed_desc = "The queue is currently empty. You change that!"
             embed_clr = 0xFF0000
         queue_embed = discord.Embed(title="Inhouse queue", description=f'{embed_desc}',
                                     color=embed_clr)
@@ -188,7 +194,7 @@ class InhouseQueue(discord.ui.View):
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
             # TODO uncomment when going live
-            # channel = discord.utils.get(server.channels, name="inhouse-queue")
+            # channel = discord.utils.get(server.channels, id=self.channel_id)
             # await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
             #                    f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
             #                    f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
@@ -223,8 +229,8 @@ class InhouseQueue(discord.ui.View):
                        style=discord.ButtonStyle.green)
     async def join_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        role_verify = discord.utils.get(server.roles, name="verified")
-        role_banned = discord.utils.get(server.roles, name="queue ban")
+        role_verify = discord.utils.get(server.roles, id=self.roles_id['verified_role'])
+        role_banned = discord.utils.get(server.roles, id=self.roles_id['banned_role'])
         if role_banned in interaction.user.roles:
             await interaction.response.send_message(content="You are currently banned from joining the queue",
                                                     ephemeral=True, delete_after=5)
@@ -272,7 +278,7 @@ class InhouseQueue(discord.ui.View):
                        style=discord.ButtonStyle.blurple)
     async def kick_from_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
-        role_admin = discord.utils.get(server.roles, name="admin")
+        role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
         if role_admin in interaction.user.roles:
             admin_modal = AdminKickPlayerModal()
             await interaction.response.send_modal(admin_modal)
@@ -299,7 +305,7 @@ class InhouseQueue(discord.ui.View):
         #         if votekick_modal.user_name in user.global_name:
         #             number = 1
         #             await interaction.channel.send(content=f'{interaction.user.global_name} wants to kick {user.global_name} from the queue! {3 - number} votes left to kick')
-        #         # await interaction.followup.send(content=f'{votekick_modal.user_name} isn\'t in the queue', ephemeral=True)
+        #         # await interaction.followup.send(content=f'{votekick_modal.user_name} isn't in the queue', ephemeral=True)
         # elif len(self.queued_players) < 10 and interaction.user in self.queued_players:
         #     await interaction.response.send_message(content="Votekick can only be held once queue is full", ephemeral=True, delete_after=5)
         # else:
@@ -309,12 +315,12 @@ class InhouseQueue(discord.ui.View):
                 content="Only admins are able to kick users from the queue (votekick to be added later)",
                 ephemeral=True, delete_after=5)
 
-    @discord.ui.button(label="Add User (test)", emoji="🖥️",
-                       style=discord.ButtonStyle.blurple)
-    async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.user.guild
-        role_admin = discord.utils.get(server.roles, name="admin")
-        if role_admin in interaction.user.roles:
-            await self.test_add_user(interaction)
-            await self.update_message(self.queued_players, server)
-            await interaction.response.defer()
+    # @discord.ui.button(label="Add User (test)", emoji="🖥️",
+    #                    style=discord.ButtonStyle.blurple)
+    # async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
+    #     server = interaction.user.guild
+    #     role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
+    #     if role_admin in interaction.user.roles:
+    #         await self.test_add_user(interaction)
+    #         await self.update_message(self.queued_players, server)
+    #         await interaction.response.defer()
