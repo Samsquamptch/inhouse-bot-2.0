@@ -1,11 +1,12 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import user_help
 import initialisation
 import data_management
+import datetime
 from os.path import isfile
 from shutil import copyfile
-
+import pytz
 
 def run_discord_bot():
     intents = discord.Intents.all()
@@ -22,6 +23,24 @@ def run_discord_bot():
                 check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
                 if check_config == 'Yes':
                     await initialisation.run_user_modules(server)
+
+    # @tasks.loop(seconds = 15)
+    # async def test_stuff():
+    #     utc = pytz.UTC
+    #     server = discord.utils.get(bot.guilds, id=1072625693185294407)
+    #     jam = discord.utils.get(server.members, id=215529156031545344)
+    #     boo = discord.utils.get(server.members, id=181839327985139713)
+    #     channel = discord.utils.get(server.channels, id=1149120451335962625)
+    #     list = [jam, boo]
+    #     for user in list:
+    #         messages = [message async for message in channel.history(limit=100) if message.author.id == user.id]
+    #         naive = messages[0].created_at.replace(tzinfo=None)
+    #         print(naive)
+    #         print(datetime.datetime.now()-datetime.timedelta(minutes=61))
+    #         if naive < datetime.datetime.now(tz=None)-datetime.timedelta(minutes=61):
+    #             print(f'{user} last message was older than 1 minute')
+    #         else:
+    #             print(f'{user} last message was newer than 1 minute')
 
 
     @bot.command()

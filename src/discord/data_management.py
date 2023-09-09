@@ -89,7 +89,8 @@ def assign_teams(queue_ids):
         queue['team_dos'] == "Team 2", 'mmr'].mean())
     delta3 = abs(queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[
         queue['team_tres'] == "Team 2", 'mmr'].mean())
-    print(delta1, delta2, delta3)
+    # delta_list = [delta1, delta2, delta3]
+    # low_delta = [i for i in delta_list if i < 100]
     if delta3 <= delta1 and delta2 <= delta1 and abs(delta2 - delta3) < 100:
         coin_flip = random.randint(1, 2)
         print(coin_flip)

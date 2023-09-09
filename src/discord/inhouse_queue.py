@@ -1,4 +1,5 @@
 import discord
+from discord.ext import tasks
 import data_management
 import check_user
 from datetime import datetime
@@ -22,7 +23,10 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
             await interaction.response.defer()
         else:
             check_if_exists = check_user.user_exists(server, self.user_name)
-            if check_if_exists[0]:
+            if not check_if_exists[0]:
+                self.user_acc = None
+                await interaction.response.defer()
+            else:
                 self.user_acc = check_if_exists[1]
                 await interaction.response.defer()
         self.stop()
@@ -90,6 +94,21 @@ class InhouseQueue(discord.ui.View):
         self.channel_id = None
         self.message = None
 
+    # @tasks.loop(seconds=20)
+    # async def afk_check(self, server):
+    #     channel = discord.utils.get(server.channels, id=self.channel_id['chat_channel'])
+    #     for user in self.queued_players:
+    #         messages = [message async for message in channel.history(limit=100) if message.author.id == user.id]
+    #         naive = messages[0].created_at.replace(tzinfo=None)
+    #         print(naive)
+    #         print(datetime.datetime.now() - datetime.timedelta(minutes=61))
+    #         if naive < datetime.datetime.now(tz=None) - datetime.timedelta(minutes=61):
+    #             print(f'{user} is afk')
+    #         else:
+    #             print(f'{user} user is active')
+
+
+
     async def test_add_user(self, interaction: discord.Interaction):
         server = interaction.guild
         test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
@@ -153,21 +172,29 @@ class InhouseQueue(discord.ui.View):
         return queue_embed
 
     # Creates the embed used for displaying the inhouse queue
-    def create_embed(self, queue_list, server, action=None, user=None):
+    def create_embed(self, queue_list, server, action=None, action_user=None):
         if queue_list:
             role_champions = discord.utils.get(server.roles, id=self.roles_id['champions_role'])
             champion_check = any(check in queue_list for check in role_champions.members)
             if champion_check:
-                embed_desc = f"A champion is in the queue! {len(queue_list)} players currently in the queue"
+                embed_desc = f"A champion is in the queue!"
                 embed_clr = 0xFFD700
             else:
-                embed_desc = f"{len(queue_list)} players currently in the queue"
+                embed_desc = f"Queue is live, come join!"
                 embed_clr = 0x00ff00
         else:
-            embed_desc = "The queue is currently empty. You change that!"
+            embed_desc = "The queue is currently empty. You change this!"
             embed_clr = 0xFF0000
-        queue_embed = discord.Embed(title="Inhouse queue", description=f'{embed_desc}',
+        queue_embed = discord.Embed(title="INHOUSE QUEUE", description=f'{embed_desc}',
                                     color=embed_clr)
+        queue_length = len(queue_list)
+        match queue_length:
+            case 0:
+                queue_embed.add_field(name=f'No one is in the queue', value='', inline=False)
+            case 1:
+                queue_embed.add_field(name=f'1 player in queue', value='', inline=False)
+            case _:
+                queue_embed.add_field(name=f'{queue_length} players in queue', value='', inline=False)
         icon_url = server.icon.url
         queue_embed.set_thumbnail(url=f'{icon_url}')
         mmr_total = 0
@@ -181,13 +208,13 @@ class InhouseQueue(discord.ui.View):
         update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         match action:
             case 'Join':
-                queue_embed.add_field(name='', value=f'{user.global_name} joined the queue')
+                queue_embed.add_field(name='', value=f'{action_user.global_name} joined the queue')
             case 'Leave':
-                queue_embed.add_field(name='', value=f'{user.global_name} left the queue')
+                queue_embed.add_field(name='', value=f'{action_user.global_name} left the queue')
             case 'Kick':
-                queue_embed.add_field(name='', value=f'{user.global_name} was kicked from queue')
+                queue_embed.add_field(name='', value=f'{action_user.global_name} was kicked from queue')
             case 'Clear':
-                queue_embed.add_field(name='', value=f'Queue was cleared by {user.global_name}')
+                queue_embed.add_field(name='', value=f'Queue was cleared by {action_user.global_name}')
             case _:
                 pass
         if queue_list:
@@ -197,18 +224,18 @@ class InhouseQueue(discord.ui.View):
             queue_embed.set_footer(text=f'Queue updated at: {update_time}')
         return queue_embed
 
-    async def update_message(self, queue_list, server, action=None, user=None):
+    async def update_message(self, queue_list, server, action=None, update_user=None):
         if len(queue_list) >= 10:
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
-            channel = discord.utils.get(server.channels, id=self.channel_id)
+            channel = discord.utils.get(server.channels, id=self.channel_id['queue_channel'])
             await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
                                f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
                                f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
                                f'<@{queue_list[6].id}> <@{queue_list[7].id}> <@{queue_list[8].id}>'
                                f'<@{queue_list[9].id}>', delete_after=600)
         else:
-            await self.message.edit(embed=self.create_embed(queue_list, server, action, user), view=self)
+            await self.message.edit(embed=self.create_embed(queue_list, server, action, update_user), view=self)
 
     async def waiting_room_transfer(self, server):
         if not self.queued_players and self.preload_modal.waiting_list:
@@ -293,19 +320,19 @@ class InhouseQueue(discord.ui.View):
             admin_modal = AdminKickPlayerModal()
             await interaction.response.send_modal(admin_modal)
             await admin_modal.wait()
-            if admin_modal.user_acc == "clear":
+            if not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
+                await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
+            elif admin_modal.user_acc == "clear":
                 self.queued_players.clear()
                 await self.update_message(self.queued_players, server, 'Clear', interaction.user)
                 await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
-            elif admin_modal.user_acc in self.queued_players:
+            else:
                 self.queued_players.remove(admin_modal.user_acc)
                 await self.update_message(self.queued_players, server, 'Kick', admin_modal.user_acc)
                 await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'{admin_modal.user_name} has been kicked from the queue',
                                                 ephemeral=True)
-            else:
-                await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
         # # elif len(self.queued_players) == 10 and interaction.user in self.queued_players:
         # elif interaction.user in self.queued_players:
         #     votekick_modal = VoteKickPlayerModal()

@@ -189,7 +189,8 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                 check_user.user_list("Add", interaction.user)
                                 notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
                                 notif_channel = discord.utils.get(server.channels, id=notif_id)
-                                await notif_channel.send(f'<@&{role_admin.id}> user <@{interaction.user}> has registered for the inhouse')
+                                await notif_channel.send(f'<@&{role_admin.id}> user <@{interaction.user.id}> has '
+                                                         f'registered for the inhouse and requires verification')
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
                                 await interaction.response.send_message(
                                     'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',
