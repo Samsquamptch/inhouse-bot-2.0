@@ -2,7 +2,7 @@ import discord
 from discord.ext import tasks
 import data_management
 import check_user
-from datetime import datetime
+import datetime
 from zoneinfo import ZoneInfo
 
 
@@ -93,20 +93,25 @@ class InhouseQueue(discord.ui.View):
         self.roles_id = None
         self.channel_id = None
         self.message = None
+        self.server = None
 
-    # @tasks.loop(seconds=20)
-    # async def afk_check(self, server):
-    #     channel = discord.utils.get(server.channels, id=self.channel_id['chat_channel'])
-    #     for user in self.queued_players:
-    #         messages = [message async for message in channel.history(limit=100) if message.author.id == user.id]
-    #         naive = messages[0].created_at.replace(tzinfo=None)
-    #         print(naive)
-    #         print(datetime.datetime.now() - datetime.timedelta(minutes=61))
-    #         if naive < datetime.datetime.now(tz=None) - datetime.timedelta(minutes=61):
-    #             print(f'{user} is afk')
-    #         else:
-    #             print(f'{user} user is active')
-
+    @tasks.loop(seconds=30)
+    async def afk_check(self):
+        channel = discord.utils.get(self.server.channels, id=self.channel_id['chat_channel'])
+        channel_messages = channel.history(limit=200)
+        if self.queued_players and len(self.queued_players) < 10:
+            for user in self.queued_players:
+                user_messages = [message async for message in channel_messages if message.author.id == user.id]
+                if user_messages:
+                    mesage_time_naive = user_messages[0].created_at.replace(tzinfo=None)
+                    print(mesage_time_naive)
+                print(datetime.datetime.now() - datetime.timedelta(minutes=60 + 15))
+                if not user_messages:
+                    print(f'{user} is afk')
+                elif mesage_time_naive < datetime.datetime.now(tz=None) - datetime.timedelta(minutes=60 + 15):
+                    print(f'{user} is afk')
+                else:
+                    print(f'{user} user is active')
 
 
     async def test_add_user(self, interaction: discord.Interaction):
@@ -120,6 +125,7 @@ class InhouseQueue(discord.ui.View):
 
     async def send_embed(self, channel, server):
         self.preload_modal.channel_id = self.channel_id
+        self.afk_check.start()
         self.message = await channel.send(view=self)
         await self.update_message(self.queued_players, server)
 
@@ -163,7 +169,7 @@ class InhouseQueue(discord.ui.View):
         queue_embed.add_field(name=f'Average MMR', value='', inline=True)
         queue_embed.add_field(name=f'{mmr_avg_radiant}', value='', inline=True)
         queue_embed.add_field(name=f'{mmr_avg_dire}', value='', inline=True)
-        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        update_time = datetime.datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         queue_embed.add_field(name='Players',
                               value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
                                     f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
@@ -205,7 +211,7 @@ class InhouseQueue(discord.ui.View):
             queue_embed.add_field(name=user.global_name,
                                   value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Preference: {role_preference}',
                                   inline=False)
-        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        update_time = datetime.datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         match action:
             case 'Join':
                 queue_embed.add_field(name='', value=f'{action_user.global_name} joined the queue')
