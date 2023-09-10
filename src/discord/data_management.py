@@ -77,7 +77,7 @@ def assign_teams(queue_ids):
     user_data = pd.read_csv("../../data/users.csv")
     queue = user_data.query("disc in @queue_ids")
     queue = queue.sort_values('mmr', ascending=False)
-    team_uno = ["Team 1", "Team 2", "Team 2", "Team 1", "Team 1", "Team 2", "Team 2", "Team 1", "Team 1", "Team 2"]
+    team_uno = team_balancer.sort_balancer(queue['mmr'].tolist())
     team_dos = team_balancer.mean_balancer(queue['mmr'].tolist())
     team_tres = team_balancer.draft_balancer(queue['mmr'].tolist())
     queue["team_uno"] = team_uno
@@ -95,7 +95,10 @@ def assign_teams(queue_ids):
     while not delta_choices:
         delta_choices = [i for i in delta_list if i < allowed_range]
         allowed_range += 50
+    print(delta_list)
+    print(delta_choices)
     random_delta = random.choice(delta_choices)
+    print(random_delta)
     if random_delta == delta1:
         queue = queue.drop(columns="team_dos")
         queue = queue.drop(columns="team_tres")
@@ -108,29 +111,6 @@ def assign_teams(queue_ids):
         queue = queue.drop(columns="team_uno")
         queue = queue.drop(columns="team_dos")
         queue = queue.rename(columns={"team_tres": "team"})
-    # if delta3 <= delta1 and delta2 <= delta1 and abs(delta2 - delta3) < 100:
-    #     coin_flip = random.randint(1, 2)
-    #     print(coin_flip)
-    #     if coin_flip == 1:
-    #         queue = queue.drop(columns="team_uno")
-    #         queue = queue.drop(columns="team_dos")
-    #         queue = queue.rename(columns={"team_tres": "team"})
-    #     elif coin_flip == 2:
-    #         queue = queue.drop(columns="team_uno")
-    #         queue = queue.drop(columns="team_tres")
-    #         queue = queue.rename(columns={"team_dos": "team"})
-    # elif delta3 <= delta1 and delta3 <= delta2:
-    #     queue = queue.drop(columns="team_uno")
-    #     queue = queue.drop(columns="team_dos")
-    #     queue = queue.rename(columns={"team_tres": "team"})
-    # elif delta1 <= delta2:
-    #     queue = queue.drop(columns="team_dos")
-    #     queue = queue.drop(columns="team_tres")
-    #     queue = queue.rename(columns={"team_uno": "team"})
-    # else:
-    #     queue = queue.drop(columns="team_uno")
-    #     queue = queue.drop(columns="team_tres")
-    #     queue = queue.rename(columns={"team_dos": "team"})
     team1 = queue.loc[queue['team'] == "Team 1"]
     team2 = queue.loc[queue['team'] == "Team 2"]
     pos1 = role_allocation(team1)

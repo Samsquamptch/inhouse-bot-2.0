@@ -3,7 +3,7 @@ from discord.ext import commands, tasks
 import user_help
 import initialisation
 import data_management
-import datetime
+import team_balancer
 from os.path import isfile
 from shutil import copyfile
 import pytz
@@ -64,15 +64,17 @@ def run_discord_bot():
 
     @bot.command()
     async def test(ctx):
+        # list = [4620, 4250, 4000, 3888, 3700, 3150, 2900, 2540, 2260, 1840]
+        # team_balancer.sort_balancer(list)
         list = [181839327985139713, 162236558529789963, 244038277106106369, 202441334726852608, 238402271849742336,
                 367058803763445760, 303493411242115073, 270954490578862081, 242587573350957056, 202520217082003457]
         test = data_management.assign_teams(list)
         print(test[0])
         print(test[1])
-        # role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
-        # notif_id = data_management.load_config_data(ctx.guild, 'CHANNELS', 'notification_channel')
-        # notif_channel = discord.utils.get(ctx.guild.channels, id=notif_id)
-        # await notif_channel.send(f'<@&{role_id}> user <@{ctx.author.id}> has registered for the inhouse')
+        # # role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
+        # # notif_id = data_management.load_config_data(ctx.guild, 'CHANNELS', 'notification_channel')
+        # # notif_channel = discord.utils.get(ctx.guild.channels, id=notif_id)
+        # # await notif_channel.send(f'<@&{role_id}> user <@{ctx.author.id}> has registered for the inhouse')
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)
