@@ -92,6 +92,7 @@ class InhouseQueue(discord.ui.View):
         self.preload_modal = WaitingRoom()
         self.roles_id = None
         self.channel_id = None
+        self.config_data = None
         self.message = None
         self.server = None
 
@@ -103,12 +104,10 @@ class InhouseQueue(discord.ui.View):
             for user in self.queued_players:
                 user_messages = [message async for message in channel_messages if message.author.id == user.id]
                 if user_messages:
-                    mesage_time_naive = user_messages[0].created_at.replace(tzinfo=None)
-                    print(mesage_time_naive)
-                print(datetime.datetime.now() - datetime.timedelta(minutes=60 + 15))
-                if not user_messages:
-                    print(f'{user} is afk')
-                elif mesage_time_naive < datetime.datetime.now(tz=None) - datetime.timedelta(minutes=60 + 15):
+                    message_time_naive = user_messages[0].created_at.replace(tzinfo=None)
+                    print(message_time_naive)
+                print(datetime.datetime.now() - datetime.timedelta(minutes=60 + self.config_data['afk_time']))
+                if not user_messages or message_time_naive < datetime.datetime.now(tz=None) - datetime.timedelta(minutes=60 + self.config_data['afk_time']):
                     print(f'{user} is afk')
                 else:
                     print(f'{user} user is active')

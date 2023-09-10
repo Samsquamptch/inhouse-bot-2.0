@@ -319,5 +319,6 @@ async def run_user_modules(server):
     inhouse_view.server = server
     inhouse_view.roles_id = data_management.load_config_data(server, 'ROLES')
     inhouse_view.channel_id = data_management.load_config_data(server, 'CHANNELS')
+    inhouse_view.config_data = data_management.load_config_data(server, 'CONFIG')
     await inhouse_view.send_embed(queue_channel, server)
     print("User settings created")

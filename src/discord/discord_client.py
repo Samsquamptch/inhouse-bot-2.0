@@ -16,13 +16,13 @@ def run_discord_bot():
     @bot.event
     async def on_ready():
         print('bot now running!')
-        for server in bot.guilds:
-            if not isfile(f'../../data/{server.id}_config.yml'):
-                print(f'No config file found for {server}')
-            else:
-                check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
-                if check_config == 'Yes':
-                    await initialisation.run_user_modules(server)
+        # for server in bot.guilds:
+        #     if not isfile(f'../../data/{server.id}_config.yml'):
+        #         print(f'No config file found for {server}')
+        #     else:
+        #         check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
+        #         if check_config == 'Yes':
+        #             await initialisation.run_user_modules(server)
 
     # @tasks.loop(seconds = 15)
     # async def test_stuff():
@@ -64,10 +64,15 @@ def run_discord_bot():
 
     @bot.command()
     async def test(ctx):
-        role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
-        notif_id = data_management.load_config_data(ctx.guild, 'CHANNELS', 'notification_channel')
-        notif_channel = discord.utils.get(ctx.guild.channels, id=notif_id)
-        await notif_channel.send(f'<@&{role_id}> user <@{ctx.author.id}> has registered for the inhouse')
+        list = [181839327985139713, 162236558529789963, 244038277106106369, 202441334726852608, 238402271849742336,
+                367058803763445760, 303493411242115073, 270954490578862081, 242587573350957056, 202520217082003457]
+        test = data_management.assign_teams(list)
+        print(test[0])
+        print(test[1])
+        # role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
+        # notif_id = data_management.load_config_data(ctx.guild, 'CHANNELS', 'notification_channel')
+        # notif_channel = discord.utils.get(ctx.guild.channels, id=notif_id)
+        # await notif_channel.send(f'<@&{role_id}> user <@{ctx.author.id}> has registered for the inhouse')
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)

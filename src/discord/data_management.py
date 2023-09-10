@@ -89,31 +89,48 @@ def assign_teams(queue_ids):
         queue['team_dos'] == "Team 2", 'mmr'].mean())
     delta3 = abs(queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[
         queue['team_tres'] == "Team 2", 'mmr'].mean())
-    # delta_list = [delta1, delta2, delta3]
-    # low_delta = [i for i in delta_list if i < 100]
-    if delta3 <= delta1 and delta2 <= delta1 and abs(delta2 - delta3) < 100:
-        coin_flip = random.randint(1, 2)
-        print(coin_flip)
-        if coin_flip == 1:
-            queue = queue.drop(columns="team_uno")
-            queue = queue.drop(columns="team_dos")
-            queue = queue.rename(columns={"team_tres": "team"})
-        elif coin_flip == 2:
-            queue = queue.drop(columns="team_uno")
-            queue = queue.drop(columns="team_tres")
-            queue = queue.rename(columns={"team_dos": "team"})
-    elif delta3 <= delta1 and delta3 <= delta2:
-        queue = queue.drop(columns="team_uno")
-        queue = queue.drop(columns="team_dos")
-        queue = queue.rename(columns={"team_tres": "team"})
-    elif delta1 <= delta2:
+    delta_list = [delta1, delta2, delta3]
+    allowed_range = 50
+    delta_choices = []
+    while not delta_choices:
+        delta_choices = [i for i in delta_list if i < allowed_range]
+        allowed_range += 50
+    random_delta = random.choice(delta_choices)
+    if random_delta == delta1:
         queue = queue.drop(columns="team_dos")
         queue = queue.drop(columns="team_tres")
         queue = queue.rename(columns={"team_uno": "team"})
-    else:
+    elif random_delta == delta2:
         queue = queue.drop(columns="team_uno")
         queue = queue.drop(columns="team_tres")
         queue = queue.rename(columns={"team_dos": "team"})
+    else:
+        queue = queue.drop(columns="team_uno")
+        queue = queue.drop(columns="team_dos")
+        queue = queue.rename(columns={"team_tres": "team"})
+    # if delta3 <= delta1 and delta2 <= delta1 and abs(delta2 - delta3) < 100:
+    #     coin_flip = random.randint(1, 2)
+    #     print(coin_flip)
+    #     if coin_flip == 1:
+    #         queue = queue.drop(columns="team_uno")
+    #         queue = queue.drop(columns="team_dos")
+    #         queue = queue.rename(columns={"team_tres": "team"})
+    #     elif coin_flip == 2:
+    #         queue = queue.drop(columns="team_uno")
+    #         queue = queue.drop(columns="team_tres")
+    #         queue = queue.rename(columns={"team_dos": "team"})
+    # elif delta3 <= delta1 and delta3 <= delta2:
+    #     queue = queue.drop(columns="team_uno")
+    #     queue = queue.drop(columns="team_dos")
+    #     queue = queue.rename(columns={"team_tres": "team"})
+    # elif delta1 <= delta2:
+    #     queue = queue.drop(columns="team_dos")
+    #     queue = queue.drop(columns="team_tres")
+    #     queue = queue.rename(columns={"team_uno": "team"})
+    # else:
+    #     queue = queue.drop(columns="team_uno")
+    #     queue = queue.drop(columns="team_tres")
+    #     queue = queue.rename(columns={"team_dos": "team"})
     team1 = queue.loc[queue['team'] == "Team 1"]
     team2 = queue.loc[queue['team'] == "Team 2"]
     pos1 = role_allocation(team1)
