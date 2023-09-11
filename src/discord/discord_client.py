@@ -44,10 +44,11 @@ def run_discord_bot():
     async def get_help(ctx):
         await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
-    @bot.command()
-    # Used to clear the channel of text (helps de-clutter during testing)
-    async def clear(ctx):
-        await ctx.channel.purge()
+    # @bot.command()
+    # @bot.is_owner()
+    # # Used to clear the channel of text (helps de-clutter during testing)
+    # async def clear(ctx):
+    #     await ctx.channel.purge()
 
     bot.run(data_management.load_token())
 
