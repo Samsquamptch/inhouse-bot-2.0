@@ -162,14 +162,14 @@ class InhouseQueue(discord.ui.View):
             print(f"{user} responded")
             self.afk_dict[user.id] = datetime.datetime.now(tz=None)
 
-    async def test_add_user(self, interaction: discord.Interaction):
-        server = interaction.guild
-        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
-                     "Teky", "Rock Bottom"]
-        for user in test_list:
-            check_if_exists = check_user.user_exists(server, user)
-            if user not in self.queued_players:
-                self.queued_players.append(check_if_exists[1])
+    # async def test_add_user(self, interaction: discord.Interaction):
+    #     server = interaction.guild
+    #     test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
+    #                  "Teky", "Rock Bottom"]
+    #     for user in test_list:
+    #         check_if_exists = check_user.user_exists(server, user)
+    #         if user not in self.queued_players:
+    #             self.queued_players.append(check_if_exists[1])
 
     async def send_embed(self, channel):
         self.preload_modal.channel_id = self.channel_id
@@ -412,12 +412,12 @@ class InhouseQueue(discord.ui.View):
                 content="Only admins are able to kick users from the queue (votekick to be added later)",
                 ephemeral=True, delete_after=5)
 
-    @discord.ui.button(label="Add User (test)", emoji="🖥️",
-                       style=discord.ButtonStyle.blurple)
-    async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.user.guild
-        role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
-        if role_admin in interaction.user.roles:
-            await self.test_add_user(interaction)
-            await self.update_message(self.queued_players, server)
-            await interaction.response.defer()
+    # @discord.ui.button(label="Add User (test)", emoji="🖥️",
+    #                    style=discord.ButtonStyle.blurple)
+    # async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
+    #     server = interaction.user.guild
+    #     role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
+    #     if role_admin in interaction.user.roles:
+    #         await self.test_add_user(interaction)
+    #         await self.update_message(self.queued_players, server)
+    #         await interaction.response.defer()
