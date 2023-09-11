@@ -3,6 +3,7 @@ from discord.ext import tasks
 import data_management
 import check_user
 import datetime
+import asyncio
 from zoneinfo import ZoneInfo
 
 
@@ -43,6 +44,35 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
 #     async def on_submit(self, interaction: discord.Interaction):
 #         self.user_name = str(self.player_name)
 #         self.stop()
+
+class AfkCheckButtons(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=300)
+        self.check_user = None
+        self.kick_user = True
+        self.message = None
+
+    async def send_buttons(self, channel):
+        self.message = await channel.send(
+            f"<@{self.check_user.id}>, please confirm you are here. You have five minutes to respond.", view=self)
+
+    async def on_timeout(self):
+        self.press_button.disabled = True
+        await self.message.edit(content=f"You took too long to respond, {self.check_user.global_name}!", view=self)
+        self.stop()
+
+    @discord.ui.button(label="I'm here!", emoji="👋",
+                       style=discord.ButtonStyle.green)
+    async def press_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user == self.check_user:
+            self.press_button.disabled = True
+            self.kick_user = False
+            await self.message.edit(content=f"Thank you for responding, {interaction.user.global_name}.", view=self)
+            await interaction.response.defer()
+            self.stop()
+        else:
+            await interaction.response.defer()
+
 
 class WaitingRoom(discord.ui.View):
     def __init__(self):
@@ -90,43 +120,61 @@ class InhouseQueue(discord.ui.View):
         super().__init__(timeout=None)
         self.queued_players = []
         self.preload_modal = WaitingRoom()
+        self.afk_dict = {}
         self.roles_id = None
         self.channel_id = None
         self.config_data = None
         self.message = None
         self.server = None
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(minutes=5)
     async def afk_check(self):
         channel = discord.utils.get(self.server.channels, id=self.channel_id['chat_channel'])
-        channel_messages = channel.history(limit=200)
+        channel_messages = channel.history(
+            after=(datetime.datetime.now() - datetime.timedelta(minutes=self.config_data['afk_time'])))
         if self.queued_players and len(self.queued_players) < 10:
             for user in self.queued_players:
                 user_messages = [message async for message in channel_messages if message.author.id == user.id]
-                if user_messages:
-                    message_time_naive = user_messages[0].created_at.replace(tzinfo=None)
-                    print(message_time_naive)
-                print(datetime.datetime.now() - datetime.timedelta(minutes=60 + self.config_data['afk_time']))
-                if not user_messages or message_time_naive < datetime.datetime.now(tz=None) - datetime.timedelta(minutes=60 + self.config_data['afk_time']):
-                    print(f'{user} is afk')
-                else:
+                if self.afk_dict[user.id] > datetime.datetime.now(tz=None) - datetime.timedelta(
+                        minutes=self.config_data['afk_time']):
                     print(f'{user} user is active')
+                    continue
+                if user_messages:
+                    print(f'{user} user is active')
+                    continue
+                else:
+                    self.afk_dict[user.id] = datetime.datetime.now(tz=None)
+                    asyncio.create_task(self.afk_ping(user, channel))
+                    print(f'{user} is afk')
 
+    async def afk_ping(self, user, channel):
+        afk_check_ping = AfkCheckButtons()
+        afk_check_ping.check_user = user
+        await afk_check_ping.send_buttons(channel)
+        await afk_check_ping.wait()
+        if afk_check_ping.kick_user and len(self.queued_players) < 10:
+            del self.afk_dict[user.id]
+            self.queued_players.remove(user)
+            await self.update_message(self.queued_players, self.server, 'Kick', user)
+            await channel.send(f"<@{user.id}> has been kicked from the queue for being afk")
+        else:
+            print(f"{user} responded")
+            self.afk_dict[user.id] = datetime.datetime.now(tz=None)
 
-    async def test_add_user(self, interaction: discord.Interaction):
-        server = interaction.guild
-        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
-                     "Teky", "Rock Bottom"]
-        for user in test_list:
-            check_if_exists = check_user.user_exists(server, user)
-            if user not in self.queued_players:
-                self.queued_players.append(check_if_exists[1])
+    # async def test_add_user(self, interaction: discord.Interaction):
+    #     server = interaction.guild
+    #     test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
+    #                  "Teky", "Rock Bottom"]
+    #     for user in test_list:
+    #         check_if_exists = check_user.user_exists(server, user)
+    #         if user not in self.queued_players:
+    #             self.queued_players.append(check_if_exists[1])
 
-    async def send_embed(self, channel, server):
+    async def send_embed(self, channel):
         self.preload_modal.channel_id = self.channel_id
         self.afk_check.start()
         self.message = await channel.send(view=self)
-        await self.update_message(self.queued_players, server)
+        await self.update_message(self.queued_players, self.server)
 
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
@@ -188,7 +236,7 @@ class InhouseQueue(discord.ui.View):
                 embed_desc = f"Queue is live, come join!"
                 embed_clr = 0x00ff00
         else:
-            embed_desc = "The queue is currently empty. You change this!"
+            embed_desc = "The queue is currently empty. You can change this!"
             embed_clr = 0xFF0000
         queue_embed = discord.Embed(title="INHOUSE QUEUE", description=f'{embed_desc}',
                                     color=embed_clr)
@@ -248,7 +296,8 @@ class InhouseQueue(discord.ui.View):
                 self.queued_players.append(user)
                 if len(self.queued_players) == 10:
                     break
-            self.preload_modal.waiting_list = [i for i in self.preload_modal.waiting_list if i not in self.queued_players]
+            self.preload_modal.waiting_list = [i for i in self.preload_modal.waiting_list if
+                                               i not in self.queued_players]
             await self.preload_modal.delete_message()
             await self.update_message(self.queued_players, server)
         elif self.preload_modal.waiting_list:
@@ -257,7 +306,8 @@ class InhouseQueue(discord.ui.View):
                 await self.preload_modal.update_message()
                 if len(self.queued_players) == 10:
                     break
-            self.preload_modal.waiting_list = [i for i in self.preload_modal.waiting_list if i not in self.queued_players]
+            self.preload_modal.waiting_list = [i for i in self.preload_modal.waiting_list if
+                                               i not in self.queued_players]
             await self.preload_modal.delete_message()
             await self.update_message(self.queued_players, server)
         else:
@@ -278,6 +328,7 @@ class InhouseQueue(discord.ui.View):
                 await interaction.response.send_message(content="You are already queued", ephemeral=True,
                                                         delete_after=5)
             elif len(self.queued_players) < 10:
+                self.afk_dict[interaction.user.id] = datetime.datetime.now(tz=None)
                 self.queued_players.append(interaction.user)
                 await self.update_message(self.queued_players, server, 'Join', interaction.user)
                 await interaction.response.defer()
@@ -303,6 +354,7 @@ class InhouseQueue(discord.ui.View):
                 await interaction.response.send_message(content="You cannot leave a full queue!", ephemeral=True,
                                                         delete_after=5)
             else:
+                del self.afk_dict[interaction.user.id]
                 self.queued_players.remove(interaction.user)
                 await self.update_message(self.queued_players, server, 'Leave', interaction.user)
                 await interaction.response.defer()
@@ -328,11 +380,13 @@ class InhouseQueue(discord.ui.View):
             if not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
                 await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
             elif admin_modal.user_acc == "clear":
+                self.afk_dict.clear()
                 self.queued_players.clear()
                 await self.update_message(self.queued_players, server, 'Clear', interaction.user)
                 await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
             else:
+                del self.afk_dict[admin_modal.user_acc.id]
                 self.queued_players.remove(admin_modal.user_acc)
                 await self.update_message(self.queued_players, server, 'Kick', admin_modal.user_acc)
                 await self.waiting_room_transfer(server)

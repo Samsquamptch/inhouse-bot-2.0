@@ -90,7 +90,7 @@ def assign_teams(queue_ids):
     delta3 = abs(queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[
         queue['team_tres'] == "Team 2", 'mmr'].mean())
     delta_list = [delta1, delta2, delta3]
-    allowed_range = 50
+    allowed_range = 100
     delta_choices = []
     while not delta_choices:
         delta_choices = [i for i in delta_list if i < allowed_range]
