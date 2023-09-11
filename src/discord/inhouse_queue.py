@@ -13,6 +13,7 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
         super().__init__()
         self.user_acc = None
         self.user_name = ""
+        self.clear_users = False
 
     player_name = discord.ui.TextInput(label='User\'s global name or username', min_length=3)
 
@@ -20,7 +21,7 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
         server = interaction.guild
         self.user_name = str(self.player_name)
         if self.user_name.lower() == "all" or self.user_name == "clear":
-            self.user_acc = "clear"
+            self.clear_users = True
             await interaction.response.defer()
         else:
             check_if_exists = check_user.user_exists(server, self.user_name)
@@ -82,7 +83,7 @@ class WaitingRoom(discord.ui.View):
         self.message = None
 
     async def send_embed(self, server):
-        channel = discord.utils.get(server.channels, id=self.channel_id)
+        channel = discord.utils.get(server.channels, id=self.channel_id['queue_channel'])
         self.message = await channel.send(content="Users in the waiting room are below", view=self)
         await self.update_message()
 
@@ -98,7 +99,7 @@ class WaitingRoom(discord.ui.View):
         for user in queue_list:
             user_data = data_management.view_user_data(user.id)
             queue_embed.add_field(name=user.global_name, value=f'MMR: {user_data[2]}', inline=True)
-        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        update_time = datetime.datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         queue_embed.set_footer(text=f'Waiting list updated at: {update_time}')
         return queue_embed
 
@@ -161,14 +162,14 @@ class InhouseQueue(discord.ui.View):
             print(f"{user} responded")
             self.afk_dict[user.id] = datetime.datetime.now(tz=None)
 
-    # async def test_add_user(self, interaction: discord.Interaction):
-    #     server = interaction.guild
-    #     test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
-    #                  "Teky", "Rock Bottom"]
-    #     for user in test_list:
-    #         check_if_exists = check_user.user_exists(server, user)
-    #         if user not in self.queued_players:
-    #             self.queued_players.append(check_if_exists[1])
+    async def test_add_user(self, interaction: discord.Interaction):
+        server = interaction.guild
+        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
+                     "Teky", "Rock Bottom"]
+        for user in test_list:
+            check_if_exists = check_user.user_exists(server, user)
+            if user not in self.queued_players:
+                self.queued_players.append(check_if_exists[1])
 
     async def send_embed(self, channel):
         self.preload_modal.channel_id = self.channel_id
@@ -377,14 +378,14 @@ class InhouseQueue(discord.ui.View):
             admin_modal = AdminKickPlayerModal()
             await interaction.response.send_modal(admin_modal)
             await admin_modal.wait()
-            if not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
-                await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
-            elif admin_modal.user_acc == "clear":
+            if admin_modal.clear_users:
                 self.afk_dict.clear()
                 self.queued_players.clear()
                 await self.update_message(self.queued_players, server, 'Clear', interaction.user)
                 await self.waiting_room_transfer(server)
                 await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
+            elif not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
+                await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
             else:
                 del self.afk_dict[admin_modal.user_acc.id]
                 self.queued_players.remove(admin_modal.user_acc)
@@ -411,12 +412,12 @@ class InhouseQueue(discord.ui.View):
                 content="Only admins are able to kick users from the queue (votekick to be added later)",
                 ephemeral=True, delete_after=5)
 
-    # @discord.ui.button(label="Add User (test)", emoji="🖥️",
-    #                    style=discord.ButtonStyle.blurple)
-    # async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
-    #     server = interaction.user.guild
-    #     role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
-    #     if role_admin in interaction.user.roles:
-    #         await self.test_add_user(interaction)
-    #         await self.update_message(self.queued_players, server)
-    #         await interaction.response.defer()
+    @discord.ui.button(label="Add User (test)", emoji="🖥️",
+                       style=discord.ButtonStyle.blurple)
+    async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
+        server = interaction.user.guild
+        role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
+        if role_admin in interaction.user.roles:
+            await self.test_add_user(interaction)
+            await self.update_message(self.queued_players, server)
+            await interaction.response.defer()
