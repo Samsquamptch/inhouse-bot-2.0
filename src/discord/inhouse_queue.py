@@ -130,8 +130,9 @@ class InhouseQueue(discord.ui.View):
 
     @tasks.loop(minutes=5)
     async def afk_check(self):
-        channel = discord.utils.get(self.server.channels, id=self.channel_id['chat_channel'])
-        channel_messages = channel.history(
+        chat_channel = discord.utils.get(self.server.channels, id=self.channel_id['chat_channel'])
+        notif_channel = discord.utils.get(self.server.channels, id=self.channel_id['notification_channel'])
+        channel_messages = chat_channel.history(
             after=(datetime.datetime.now() - datetime.timedelta(minutes=self.config_data['afk_time'])))
         if self.queued_players and len(self.queued_players) < 10:
             for user in self.queued_players:
@@ -145,7 +146,7 @@ class InhouseQueue(discord.ui.View):
                     continue
                 else:
                     self.afk_dict[user.id] = datetime.datetime.now(tz=None)
-                    asyncio.create_task(self.afk_ping(user, channel))
+                    asyncio.create_task(self.afk_ping(user, notif_channel))
                     print(f'{user} is afk')
 
     async def afk_ping(self, user, channel):
