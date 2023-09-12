@@ -326,11 +326,11 @@ class InhouseQueue(discord.ui.View):
             await interaction.response.send_message(content="You are currently banned from joining the queue",
                                                     ephemeral=True, delete_after=5)
         elif role_verify in interaction.user.roles:
+            self.afk_dict[interaction.user.id] = datetime.datetime.now(tz=None)
             if interaction.user in self.queued_players:
                 await interaction.response.send_message(content="You are already queued", ephemeral=True,
                                                         delete_after=5)
             elif len(self.queued_players) < 10:
-                self.afk_dict[interaction.user.id] = datetime.datetime.now(tz=None)
                 self.queued_players.append(interaction.user)
                 await self.update_message(self.queued_players, server, 'Join', interaction.user)
                 await interaction.response.defer()
@@ -338,6 +338,7 @@ class InhouseQueue(discord.ui.View):
                 await interaction.response.send_message(content="You are already in the waiting list", ephemeral=True,
                                                         delete_after=5)
             else:
+
                 self.preload_modal.waiting_list.append(interaction.user)
                 await self.preload_modal.update_message()
                 await interaction.response.defer()
@@ -362,6 +363,7 @@ class InhouseQueue(discord.ui.View):
                 await interaction.response.defer()
         else:
             if len(self.queued_players) == 10 and interaction.user in self.preload_modal.waiting_list:
+                del self.afk_dict[interaction.user.id]
                 self.preload_modal.waiting_list.remove(interaction.user)
                 await self.preload_modal.update_message()
                 await interaction.response.defer()
