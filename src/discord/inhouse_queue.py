@@ -55,7 +55,7 @@ class AfkCheckButtons(discord.ui.View):
 
     async def send_buttons(self, channel):
         self.message = await channel.send(
-            f"<@{self.check_user.id}>, please confirm you are here. You have five minutes to respond.", view=self)
+            f"<@{self.check_user.id}>, please confirm you are here. You have five minutes to respond.", view=self, delete_after=600)
 
     async def on_timeout(self):
         self.press_button.disabled = True
