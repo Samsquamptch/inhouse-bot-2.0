@@ -37,7 +37,7 @@ def user_embed(data_list, player_data, server):
                 data_list[n] = 2
             case 5:
                 data_list[n] = 1
-    view_user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{user_status}',
+    view_user_embed = discord.Embed(title=f'{player_data.display_name}', description=f'{user_status}',
                                     color=user_clr)
     if player_data.avatar:
         view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
