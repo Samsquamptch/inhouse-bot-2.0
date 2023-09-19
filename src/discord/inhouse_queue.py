@@ -5,6 +5,7 @@ import check_user
 import datetime
 import asyncio
 from zoneinfo import ZoneInfo
+from collections import defaultdict
 
 
 # The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
@@ -35,25 +36,25 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
 
 
 # The modal for users to votekick when the queue is full. Will be left for a later date
-class VoteKickSelect(discord.ui.View):
-    def __init__(self, player_list):
-        options = [
-            discord.SelectOption(label=f"{player_list[0].display_name}", value="1"),
-            discord.SelectOption(label=f"{player_list[1].display_name}", value="2"),
-            discord.SelectOption(label=f"{player_list[2].display_name}", value="3"),
-            discord.SelectOption(label=f"{player_list[3].display_name}", value="4"),
-            discord.SelectOption(label=f"{player_list[4].display_name}", value="5"),
-            discord.SelectOption(label=f"{player_list[5].display_name}", value="6"),
-            discord.SelectOption(label=f"{player_list[6].display_name}", value="7"),
-            discord.SelectOption(label=f"{player_list[7].display_name}", value="8"),
-            discord.SelectOption(label=f"{player_list[8].display_name}", value="9"),
-            discord.SelectOption(label=f"{player_list[9].display_name}", value="10"),
+class VoteKickPlayerModal(discord.ui.Modal, title='Votekick User in Queue'):
+    def __init__(self):
+        super().__init__()
+        self.user_acc = None
+        self.user_name = ""
 
-        ]
-        super().__init__(custom_id="VoteKick", placeholder="Who do you want to kick?", min_values=1, max_values=1, options=options)
+    player_name = discord.ui.TextInput(label='User\'s global name or username', min_length=3)
 
-    async def callback(self, interaction: discord.Interaction):
-        print(self.values[0])
+    async def on_submit(self, interaction: discord.Interaction):
+        server = interaction.guild
+        self.user_name = str(self.player_name)
+        check_if_exists = check_user.user_exists(server, self.user_name)
+        if not check_if_exists[0]:
+            self.user_acc = None
+            await interaction.response.defer()
+        else:
+            self.user_acc = check_if_exists[1]
+            await interaction.response.defer()
+        self.stop()
 
 
 class AfkCheckButtons(discord.ui.View):
@@ -132,6 +133,7 @@ class InhouseQueue(discord.ui.View):
         super().__init__(timeout=None)
         self.queued_players = []
         self.preload_modal = WaitingRoom()
+        self.votekick_dict = defaultdict(list)
         self.afk_dict = {}
         self.roles_id = None
         self.channel_id = None
@@ -175,16 +177,15 @@ class InhouseQueue(discord.ui.View):
             print(f"{user} responded")
             self.afk_dict[user.id] = datetime.datetime.now(tz=None)
 
-
-
-    async def test_add_user(self, interaction: discord.Interaction):
-        server = interaction.guild
-        test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Pocket-",
-                     "Teky", "Rock Bottom"]
-        for user in test_list:
-            check_if_exists = check_user.user_exists(server, user)
-            if user not in self.queued_players:
-                self.queued_players.append(check_if_exists[1])
+    # async def test_add_user(self, interaction: discord.Interaction):
+    #     server = interaction.guild
+    #     test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo... Who?", "Abfr0", "greenman", "Glimmy", "Rock Bottom",
+    #                  "Teky"]
+    #     for user in test_list:
+    #         check_if_exists = check_user.user_exists(server, user)
+    #         if user not in self.queued_players:
+    #             self.queued_players.append(check_if_exists[1])
+    #     print(self.queued_players)
 
     async def send_embed(self, channel):
         self.preload_modal.channel_id = self.channel_id
@@ -268,6 +269,7 @@ class InhouseQueue(discord.ui.View):
         queue_embed.set_thumbnail(url=f'{icon_url}')
         mmr_total = 0
         for user in queue_list:
+            print(user)
             user_data = data_management.view_user_data(user.id)
             mmr_total = mmr_total + user_data[2]
             role_preference = check_user.check_role_priority(user_data)
@@ -298,11 +300,11 @@ class InhouseQueue(discord.ui.View):
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
             channel = discord.utils.get(server.channels, id=self.channel_id['queue_channel'])
-            # await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
-            #                    f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
-            #                    f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
-            #                    f'<@{queue_list[6].id}> <@{queue_list[7].id}> <@{queue_list[8].id}>'
-            #                    f'<@{queue_list[9].id}>', delete_after=600)
+            await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
+                               f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
+                               f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
+                               f'<@{queue_list[6].id}> <@{queue_list[7].id}> <@{queue_list[8].id}>'
+                               f'<@{queue_list[9].id}>', delete_after=600)
         else:
             await self.message.edit(embed=self.create_embed(queue_list, server, action, update_user), view=self)
 
@@ -329,6 +331,31 @@ class InhouseQueue(discord.ui.View):
             await self.update_message(self.queued_players, server)
         else:
             await self.preload_modal.delete_message()
+
+    async def vote_kick(self, server, votekick_modal, interaction):
+        channel = discord.utils.get(server.channels, id=self.channel_id['queue_channel'])
+        if votekick_modal.user_acc.id not in self.votekick_dict:
+            self.votekick_dict[votekick_modal.user_acc.id].append(interaction.user.id)
+        elif votekick_modal.user_acc.id in self.votekick_dict and interaction.user.id not in self.votekick_dict[votekick_modal.user_acc.id]:
+            self.votekick_dict[votekick_modal.user_acc.id].append(interaction.user.id)
+        else:
+            await interaction.followup.send(
+                content=f'You\'ve already voted to kick this user before!', ephemeral=True)
+            return
+        kick_votes = len(self.votekick_dict[votekick_modal.user_acc.id])
+        if kick_votes == 3:
+            if votekick_modal.user_acc.id in self.afk_dict:
+                del self.afk_dict[votekick_modal.user_acc.id]
+            self.queued_players.remove(votekick_modal.user_acc)
+            del self.votekick_dict[votekick_modal.user_acc.id]
+            await self.update_message(self.queued_players, server, 'Kick', votekick_modal.user_acc)
+            await self.waiting_room_transfer(server)
+            await channel.send(content=f'{votekick_modal.user_name} has been kicked from the queue', delete_after=60)
+        elif kick_votes < 3:
+            num = 3 - kick_votes
+            await channel.send(
+                content=f'{interaction.user.display_name} wants to kick {votekick_modal.user_name} from the queue! Votes required to kick: {num}',
+                delete_after=60)
 
     # Button to join the inhouse queue
     @discord.ui.button(label="Join Queue", emoji="✅",
@@ -379,22 +406,21 @@ class InhouseQueue(discord.ui.View):
                                                         delete_after=5)
             else:
                 self.status = True
-                if self.afk_dict[interaction.user.id]:
+                if interaction.user.id in self.afk_dict:
                     del self.afk_dict[interaction.user.id]
                 self.queued_players.remove(interaction.user)
                 await self.update_message(self.queued_players, server, 'Leave', interaction.user)
                 self.status = False
                 await interaction.response.defer()
+        elif interaction.user in self.preload_modal.waiting_list:
+            if interaction.user.id in self.afk_dict:
+                del self.afk_dict[interaction.user.id]
+            self.preload_modal.waiting_list.remove(interaction.user)
+            await self.preload_modal.update_message()
+            await interaction.response.defer()
         else:
-            if len(self.queued_players) == 10 and interaction.user in self.preload_modal.waiting_list:
-                if self.afk_dict[interaction.user.id]:
-                    del self.afk_dict[interaction.user.id]
-                self.preload_modal.waiting_list.remove(interaction.user)
-                await self.preload_modal.update_message()
-                await interaction.response.defer()
-            else:
-                await interaction.response.send_message(content="You aren't in the queue", ephemeral=True,
-                                                        delete_after=5)
+            await interaction.response.send_message(content="You aren't in the queue", ephemeral=True,
+                                                    delete_after=5)
 
     # Button to kick players from the inhouse queue
     @discord.ui.button(label="Kick User", emoji="🥾",
@@ -408,6 +434,7 @@ class InhouseQueue(discord.ui.View):
             await admin_modal.wait()
             if admin_modal.clear_users:
                 self.afk_dict.clear()
+                self.votekick_dict.clear()
                 self.queued_players.clear()
                 await self.update_message(self.queued_players, server, 'Clear', interaction.user)
                 await self.waiting_room_transfer(server)
@@ -415,7 +442,7 @@ class InhouseQueue(discord.ui.View):
             elif not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
                 await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
             else:
-                if self.afk_dict[admin_modal.user_acc.id]:
+                if admin_modal.user_acc.id in self.afk_dict:
                     del self.afk_dict[admin_modal.user_acc.id]
                 self.queued_players.remove(admin_modal.user_acc)
                 await self.update_message(self.queued_players, server, 'Kick', admin_modal.user_acc)
@@ -423,16 +450,14 @@ class InhouseQueue(discord.ui.View):
                 await interaction.followup.send(content=f'{admin_modal.user_name} has been kicked from the queue',
                                                 ephemeral=True)
         elif len(self.queued_players) == 10 and interaction.user in self.queued_players:
-            votekick_select = VoteKickSelect(self.queued_players)
-            await interaction.response.send_message(content="Please set your role preferences",
-                                                    view=votekick_select, ephemeral=True)
-            # await votekick_select.wait()
-            # for user in self.queued_players:
-            #     if votekick_select.user_name in user.display_name:
-            #         number = 1
-            #         await interaction.channel.send(
-            #             content=f'{interaction.user.display_name} wants to kick {user.display_name} from the queue! {3 - number} votes left to kick')
-                # await interaction.followup.send(content=f'{votekick_modal.user_name} isn't in the queue', ephemeral=True)
+            votekick_modal = VoteKickPlayerModal()
+            await interaction.response.send_modal(votekick_modal)
+            await votekick_modal.wait()
+            if not votekick_modal.user_acc or votekick_modal.user_acc not in self.queued_players:
+                await interaction.followup.send(content=f'{votekick_modal.user_name} isn\'t in the queue',
+                                                ephemeral=True)
+            else:
+                await self.vote_kick(server, votekick_modal, interaction)
 
         elif len(self.queued_players) < 10 and interaction.user in self.queued_players:
             await interaction.response.send_message(content="Votekick can only be held once queue is full",
@@ -441,12 +466,12 @@ class InhouseQueue(discord.ui.View):
             await interaction.response.send_message(content="You can't initiate a votekick if you're not in the queue!",
                                                     ephemeral=True, delete_after=5)
 
-    @discord.ui.button(label="Add User (test)", emoji="🖥️",
-                       style=discord.ButtonStyle.blurple)
-    async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.user.guild
-        role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
-        if role_admin in interaction.user.roles:
-            await self.test_add_user(interaction)
-            await self.update_message(self.queued_players, server)
-            await interaction.response.defer()
+    # @discord.ui.button(label="Add User (test)", emoji="🖥️",
+    #                    style=discord.ButtonStyle.blurple)
+    # async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
+    #     server = interaction.user.guild
+    #     role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
+    #     if role_admin in interaction.user.roles:
+    #         await self.test_add_user(interaction)
+    #         await self.update_message(self.queued_players, server)
+    #         await interaction.response.defer()
