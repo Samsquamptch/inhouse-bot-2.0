@@ -155,7 +155,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         else:
             try:
                 int_mmr = int(mmr)
-                if int_mmr > 12000:
+                if int_mmr > 15000:
                     await interaction.response.send_message('Please enter a valid MMR',
                                                             ephemeral=True,
                                                             delete_after=10)
