@@ -212,9 +212,9 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 
 
 class RegisterButton(discord.ui.View):
-    def __init__(self):
+    def __init__(self, role_inhouse):
         super().__init__(timeout=None)
-        self.role_inhouse = None
+        self.role_inhouse = role_inhouse
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)

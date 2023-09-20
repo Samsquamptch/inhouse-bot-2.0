@@ -75,15 +75,20 @@ class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
         str_mmr_limit = str(self.mmr_limit)
         str_queue_name = str(self.queue_name)
         str_afk_timer = str(self.afk_timer)
-        if str_mmr_limit != "":
-            try:
-                int_mmr_limit = int(str_mmr_limit)
-                data_management.update_config(interaction.guild, 'CONFIG', 'mmr_limit', int_mmr_limit)
-            except ValueError:
-                await interaction.response.send_message('Please only input numbers for mmr',
-                                                        ephemeral=True,
-                                                        delete_after=10)
-
+        settings_dict = {'mmr_limit': str_mmr_limit, 'afk_time': str_afk_timer}
+        for item in settings_dict:
+            if settings_dict[item] != "":
+                try:
+                    settings_dict[item] = int(settings_dict[item])
+                    data_management.update_config(interaction.guild, 'CONFIG', item, settings_dict[item])
+                except ValueError:
+                    await interaction.response.send_message(f'Please only input numbers for {item}',
+                                                            ephemeral=True,
+                                                            delete_after=10)
+        if str_queue_name != "":
+            data_management.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
+        await interaction.response.send_message(f'Server config file has been updated.',
+                                                ephemeral=True, delete_after=10)
 
 class ViewUserModal(discord.ui.Modal, title='View User'):
     player_name = discord.ui.TextInput(label='User\'s global name or username')
@@ -166,8 +171,8 @@ class AdminOptions(discord.ui.View):
     @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user"),
-        discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user (NOT WORKING YET)"),
-        discord.SelectOption(label="Settings", emoji="🗑️", description="Change configuration settings")
+        discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user"),
+        discord.SelectOption(label="Settings", emoji="🖥️", description="Change configuration settings")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):

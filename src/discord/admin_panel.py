@@ -4,10 +4,10 @@ import data_management
 
 
 class AdminEmbed(discord.ui.View):
-    def __init__(self):
+    def __init__(self, roles_id):
         super().__init__(timeout=None)
         self.unverified_list = []
-        self.roles_id = None
+        self.roles_id = roles_id
         self.message = None
 
     view_status = True
@@ -43,10 +43,10 @@ class AdminEmbed(discord.ui.View):
                         user_data[n] = 2
                     case 5:
                         user_data[n] = 1
-            all_embed.add_field(name=user.global_name,
+            all_embed.add_field(name=user.display_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                                 inline=False)
-        all_embed.set_footer(text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
+        all_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         return all_embed
 
     def empty_embed(self, interaction):
@@ -55,7 +55,7 @@ class AdminEmbed(discord.ui.View):
         empty_embed.set_image(
             url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
         if interaction:
-            empty_embed.set_footer(text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
+            empty_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         return empty_embed
 
     async def update_message(self, list_data, server, interaction=None):
@@ -67,7 +67,7 @@ class AdminEmbed(discord.ui.View):
                 update_embed = check_user.user_embed(user_data, user, server)
                 if interaction:
                     update_embed.set_footer(
-                        text=f'last accessed by {interaction.user.global_name} at {interaction.created_at}')
+                        text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
                 await self.message.edit(embed=update_embed, view=self)
             else:
                 await self.message.edit(embed=self.empty_embed(interaction), view=self)
