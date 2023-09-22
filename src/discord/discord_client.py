@@ -139,12 +139,20 @@ def run_discord_bot():
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f"Please input your Dotabuff id and your MMR when using the register command. For example:"
                            f"```\n!register 28707060 2600```\n")
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
+        else:
+            await ctx.send(f"Something went wrong. Please try again.")
 
     @roles.error
     async def arg_error(ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f"Please input your role preferences when using the roles command. If you wanted to play support, "
                            f"for example, you would enter:```\n!roles 1 1 1 5 5```\n")
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
+        else:
+            await ctx.send(f"Something went wrong. Please try again.")
 
     # @bot.command()
     # async def testing(ctx, chosen_string):
