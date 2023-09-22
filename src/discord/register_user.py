@@ -143,10 +143,9 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
     async def on_submit(self, interaction: discord.Interaction):
-        disc = interaction.user.id
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        disc_reg = check_user.registered_check(disc)
+        disc_reg = check_user.registered_check(interaction.user.id)
         if disc_reg:
             await interaction.response.send_message(
                 'Your discord account is already registered to the database, please contact an admin for assistance',
@@ -175,22 +174,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                     ephemeral=True,
                                     delete_after=10)
                             else:
-                                # Due to how the role balancer calculations work, number weighting is saved the opposite
-                                # to how users are used to (which is higher number = more pref and lower number = less pref).
-                                # Swaps have been implemented where required for user output to avoid confusion
-                                player = [disc, steam_int, int_mmr, 1, 1, 1, 1, 1]
-                                data_management.add_user_data(player)
-                                # Adds the inhouse role to the user once their details have been added to the register
-                                server = interaction.user.guild
-                                role_id = data_management.load_config_data(server, 'ROLES')
-                                role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
-                                role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
-                                await interaction.user.add_roles(role_inhouse)
-                                check_user.user_list("Add", interaction.user)
-                                notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
-                                notif_channel = discord.utils.get(server.channels, id=notif_id)
-                                await notif_channel.send(f'<@&{role_admin.id}> user <@{interaction.user.id}> has '
-                                                         f'registered for the inhouse and requires verification')
+                                register(interaction.user, steam_int, int_mmr, interaction.user.guild)
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
                                 await interaction.response.send_message(
                                     'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',
@@ -245,3 +229,20 @@ class RegisterButton(discord.ui.View):
         else:
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
+
+async def register(register_user, steam_int, int_mmr, server):
+    # Due to how the role balancer calculations work, number weighting is saved the opposite
+    # to how users are used to (which is higher number = more pref and lower number = less pref).
+    # Swaps have been implemented where required for user output to avoid confusion
+    player = [register_user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
+    data_management.add_user_data(player)
+    # Adds the inhouse role to the user once their details have been added to the register
+    role_id = data_management.load_config_data(server, 'ROLES')
+    role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
+    role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
+    await register_user.add_roles(role_inhouse)
+    check_user.user_list("Add", register_user)
+    notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+    notif_channel = discord.utils.get(server.channels, id=notif_id)
+    await notif_channel.send(f'<@&{role_admin.id}> user <@{register_user.id}> has '
+                             f'registered for the inhouse and requires verification')
