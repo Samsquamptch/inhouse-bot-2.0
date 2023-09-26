@@ -139,8 +139,8 @@ class InhouseQueue(discord.ui.View):
         self.channel_id = channel_id
         self.config_data = config_data
         self.message = None
-        self.server = server
         self.status = False
+        self.server = server
 
     async def vote_kick(self, server, vote_kick_target, vote_user, channel=None):
         if not channel:

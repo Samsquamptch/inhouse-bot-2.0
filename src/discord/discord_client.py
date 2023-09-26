@@ -25,7 +25,7 @@ def run_discord_bot():
             check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
             if check_config == 'Yes':
                 server_list.append(await initialisation.run_user_modules(server))
-            print(server_list)
+                print(server_list)
 
     @bot.command()
     @commands.is_owner()
@@ -109,11 +109,11 @@ def run_discord_bot():
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
-        registed_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
+        registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         roles_list = [pos1, pos2, pos3, pos4, pos5]
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        elif not registed_role:
+        elif not registered_role:
             await ctx.send("You need to register before you set your roles!")
             return
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
@@ -139,7 +139,7 @@ def run_discord_bot():
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f"Please input your Dotabuff id and your MMR when using the register command. For example:"
                            f"```\n!register 28707060 2600```\n")
-        if isinstance(error, commands.BadArgument):
+        elif isinstance(error, commands.BadArgument):
             await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
         else:
             await ctx.send(f"Something went wrong. Please try again.")
@@ -149,15 +149,36 @@ def run_discord_bot():
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f"Please input your role preferences when using the roles command. If you wanted to play support, "
                            f"for example, you would enter:```\n!roles 1 1 1 5 5```\n")
-        if isinstance(error, commands.BadArgument):
+        elif isinstance(error, commands.BadArgument):
             await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
+    @vk.error
+    async def arg_error(ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(
+                f"Please input the user you wish to kick"
+                f"```\n!vk Jam!```\n")
+        else:
+            await ctx.send(f"Something went wrong. Please try again.")
+
+    @wh.error
+    async def arg_error(ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(
+                f"Please input the user you wish to look up"
+                f"```\n!wh Jam!```\n")
+        else:
+            await ctx.send(f"Something went wrong. Please try again.")
+
+
     # @bot.command()
-    # async def testing(ctx, chosen_string):
-    #     user = next((x for x in ctx.guild.members if chosen_string.lower() in x.display_name.lower()))
-    #     await ctx.send(user.display_name)
+    # async def testing(ctx):
+    #     url = "https://api.opendota.com/api/leagues/14994/matches"
+    #     league_data = requests.get(url)
+    #     print(league_data.status_code)
+    #     print(league_data)
 
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)

@@ -309,8 +309,8 @@ async def run_user_modules(server):
     # Send queue buttons and panel to queue channel
     await queue_channel.purge()
     inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
-    regiser_view = register_user.RegisterButton(discord.utils.get(server.roles, id=inhouse_id))
-    await queue_channel.send("New user? Please register here:", view=regiser_view)
+    register_view = register_user.RegisterButton(discord.utils.get(server.roles, id=inhouse_id))
+    await queue_channel.send("New user? Please register here:", view=register_view)
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions())
     inhouse_view = inhouse_queue.InhouseQueue(server, data_management.load_config_data(server, 'ROLES'),
