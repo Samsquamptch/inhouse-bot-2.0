@@ -152,9 +152,12 @@ class AdminEmbed(discord.ui.View):
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
+            notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+            notif_channel = discord.utils.get(server.channels, id=notif_id)
             role_verified = discord.utils.get(server.roles, id=self.roles_id['verified_role'])
             user_to_verify = self.unverified_list[0]
             await user_to_verify.add_roles(role_verified)
+            await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been verified for the inhouse')
             del self.unverified_list[0]
             self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)
@@ -182,9 +185,18 @@ class AdminEmbed(discord.ui.View):
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
+            notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+            notif_channel = discord.utils.get(server.channels, id=notif_id)
             role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
             user_to_reject = self.unverified_list[0]
             await user_to_reject.remove_roles(role_inhouse)
+            user_data = data_management.view_user_data(self.unverified_list[0].id)
+            if user_data[2] >= 5000:
+                await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse for'
+                                         f' being too high MMR')
+            else:
+                await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
+                                         f' A dogmin will inform you why you were rejected.')
             del self.unverified_list[0]
             self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)

@@ -3,6 +3,7 @@ import data_management
 
 register_list = []
 
+
 def user_embed(data_list, player_data, server):
     roles_id = data_management.load_config_data(server, 'ROLES')
     role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
@@ -36,9 +37,10 @@ def user_embed(data_list, player_data, server):
                 data_list[n] = 2
             case 5:
                 data_list[n] = 1
-    view_user_embed = discord.Embed(title=f'{player_data.global_name}', description=f'{user_status}',
+    view_user_embed = discord.Embed(title=f'{player_data.display_name}', description=f'{user_status}',
                                     color=user_clr)
-    view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
+    if player_data.avatar:
+        view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
     view_user_embed.add_field(name='Dotabuff',
                               value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
                                     f'\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)

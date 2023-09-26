@@ -182,10 +182,15 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                 data_management.add_user_data(player)
                                 # Adds the inhouse role to the user once their details have been added to the register
                                 server = interaction.user.guild
-                                inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
-                                role_inhouse = discord.utils.get(server.roles, id=inhouse_id)
+                                role_id = data_management.load_config_data(server, 'ROLES')
+                                role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
+                                role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
                                 await interaction.user.add_roles(role_inhouse)
                                 check_user.user_list("Add", interaction.user)
+                                notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+                                notif_channel = discord.utils.get(server.channels, id=notif_id)
+                                await notif_channel.send(f'<@&{role_admin.id}> user <@{interaction.user.id}> has '
+                                                         f'registered for the inhouse and requires verification')
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
                                 await interaction.response.send_message(
                                     'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',

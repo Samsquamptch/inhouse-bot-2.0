@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import user_help
 import initialisation
 import data_management
@@ -16,18 +16,16 @@ def run_discord_bot():
     async def on_ready():
         print('bot now running!')
         for server in bot.guilds:
+            if not isfile(f'../../data/{server.id}_config.yml'):
+                copyfile(f'../../data/default_config.yml', f'../../data/{server.id}_config.yml')
             check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
-            if not check_config:
-                print(f'No config file found for {server}')
-            elif check_config == 'Yes':
+            if check_config == 'Yes':
                 await initialisation.run_user_modules(server)
 
     @bot.command()
     @commands.is_owner()
     async def setup(ctx):
         await ctx.send("Beginning setup of inhouse bot")
-        if not isfile(f'../../data/{ctx.guild.id}_config.yml'):
-            copyfile(f'../../data/default_config.yml', f'../../data/{ctx.guild.id}_config.yml')
         await initialisation.ConfigButtons().config_start(ctx)
 
     @bot.command()
@@ -46,29 +44,11 @@ def run_discord_bot():
     async def get_help(ctx):
         await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
-    # Old commands which are no longer required
     # @bot.command()
-    # # Used to post the admin panel and admin options menu
-    # async def admin(ctx):
-    #     verify_view = admin_panel.AdminEmbed()
-    #     await verify_view.send_embed(ctx.channel, ctx.guild)
-    #     await ctx.send("More options are available via the drop-down menu below", view=select_menus.AdminOptions())
-    #
-    # @bot.command()
-    # # Used to post the regiser/view self/set roles buttons, additional user options, and inhouse queue
-    # async def queue(ctx):
-    #     await ctx.send("New user? Please register here:", view=register_user.RegisterButton())
-    #     await ctx.send("Already registered? More options are available via the drop-down menu below",
-    #                    view=select_menus.UserOptions())
-    #     await inhouse_queue.InhouseQueue().send_embed(ctx.channel, ctx.guild)
-    #
-    # @bot.command()
+    # @bot.is_owner()
     # # Used to clear the channel of text (helps de-clutter during testing)
     # async def clear(ctx):
     #     await ctx.channel.purge()
-
-    # @bot.command()
-    # async def check(ctx):
 
     bot.run(data_management.load_token())
 

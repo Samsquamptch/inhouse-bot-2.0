@@ -316,7 +316,9 @@ async def run_user_modules(server):
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions())
     inhouse_view = inhouse_queue.InhouseQueue()
+    inhouse_view.server = server
     inhouse_view.roles_id = data_management.load_config_data(server, 'ROLES')
-    inhouse_view.channel_id = data_management.load_config_data(server, 'CHANNELS', 'queue_channel')
-    await inhouse_view.send_embed(queue_channel, server)
+    inhouse_view.channel_id = data_management.load_config_data(server, 'CHANNELS')
+    inhouse_view.config_data = data_management.load_config_data(server, 'CONFIG')
+    await inhouse_view.send_embed(queue_channel)
     print("User settings created")

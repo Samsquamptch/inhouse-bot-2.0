@@ -13,3 +13,6 @@ ROLES:
 CONFIG:
   server_id: None
   setup_complete: 'No'
+  mmr_limit: 15000
+  queue_name: 'INHOUSE'
+  afk_time: 15

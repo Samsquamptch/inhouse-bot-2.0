@@ -1,6 +1,8 @@
 import pandas as pd
+import team_balancer
 import csv
 import yaml
+import random
 from yaml.loader import SafeLoader
 import networkx as nx
 from networkx.algorithms import bipartite
@@ -23,10 +25,9 @@ def load_config_data(server, category, sub_category=None):
         data = yaml.load(f, Loader=SafeLoader)
     if sub_category is None:
         return data[category]
-    elif data[category][sub_category]:
-        return data[category][sub_category]
     else:
-        return None
+        return data[category][sub_category]
+
 
 def update_config(server, category, sub_category, new_value):
     with open(f'../../data/{server.id}_config.yml') as f:
@@ -72,73 +73,44 @@ def remove_user_data(discord_id):
     user_data.to_csv("../../data/users.csv", index=False)
 
 
-def team_draft_balancer(list_mmr):
-    team_order = []
-    radiant = 0
-    dire = 0
-    radiant = radiant + list_mmr[0] + list_mmr[-1]
-    team_order.append("Team 1")
-    dire = dire + list_mmr[1] + list_mmr[-2]
-    team_order.append("Team 2")
-    if radiant > dire:
-        dire = dire + list_mmr[2]
-        radiant = radiant + list_mmr[3]
-        team_order.append("Team 2")
-        team_order.append("Team 1")
-    else:
-        radiant = radiant + list_mmr[2]
-        dire = dire + list_mmr[3]
-        team_order.append("Team 1")
-        team_order.append("Team 2")
-    if radiant > dire:
-        dire = dire + list_mmr[4]
-        radiant = radiant + list_mmr[5]
-        team_order.append("Team 2")
-        team_order.append("Team 1")
-    else:
-        radiant = radiant + list_mmr[4]
-        dire = dire + list_mmr[5]
-        team_order.append("Team 1")
-        team_order.append("Team 2")
-    if radiant > dire:
-        team_order.append("Team 2")
-        team_order.append("Team 1")
-    else:
-        team_order.append("Team 1")
-        team_order.append("Team 2")
-    team_order.append("Team 2")
-    team_order.append("Team 1")
-    return team_order
-
-
-def team_balancer(queue_ids):
+def assign_teams(queue_ids):
     user_data = pd.read_csv("../../data/users.csv")
     queue = user_data.query("disc in @queue_ids")
     queue = queue.sort_values('mmr', ascending=False)
-    team_uno = ["Team 1", "Team 2", "Team 1", "Team 2", "Team 1", "Team 2", "Team 1", "Team 2", "Team 1", "Team 2"]
-    team_dos = ["Team 1", "Team 2", "Team 2", "Team 1", "Team 1", "Team 2", "Team 2", "Team 1", "Team 1", "Team 2"]
-    team_tres = team_draft_balancer(queue['mmr'].tolist())
+    team_uno = team_balancer.sort_balancer(queue['mmr'].tolist())
+    team_dos = team_balancer.mean_balancer(queue['mmr'].tolist())
+    team_tres = team_balancer.draft_balancer(queue['mmr'].tolist())
     queue["team_uno"] = team_uno
     queue["team_dos"] = team_dos
     queue["team_tres"] = team_tres
-    delta1 = queue.loc[queue['team_uno'] == "Team 1", 'mmr'].mean() - queue.loc[
-        queue['team_uno'] == "Team 2", 'mmr'].mean()
-    delta2 = queue.loc[queue['team_dos'] == "Team 1", 'mmr'].mean() - queue.loc[
-        queue['team_dos'] == "Team 2", 'mmr'].mean()
-    delta3 = queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[
-        queue['team_tres'] == "Team 2", 'mmr'].mean()
-    if delta3 <= delta1 and delta3 <= delta2:
-        queue = queue.drop(columns="team_uno")
-        queue = queue.drop(columns="team_dos")
-        queue = queue.rename(columns={"team_tres": "team"})
-    elif delta1 <= delta2:
+    delta1 = abs(queue.loc[queue['team_uno'] == "Team 1", 'mmr'].mean() - queue.loc[
+        queue['team_uno'] == "Team 2", 'mmr'].mean())
+    delta2 = abs(queue.loc[queue['team_dos'] == "Team 1", 'mmr'].mean() - queue.loc[
+        queue['team_dos'] == "Team 2", 'mmr'].mean())
+    delta3 = abs(queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[
+        queue['team_tres'] == "Team 2", 'mmr'].mean())
+    delta_list = [delta1, delta2, delta3]
+    allowed_range = 100
+    delta_choices = []
+    while not delta_choices:
+        delta_choices = [i for i in delta_list if i < allowed_range]
+        allowed_range += 50
+    print(delta_list)
+    print(delta_choices)
+    random_delta = random.choice(delta_choices)
+    print(random_delta)
+    if random_delta == delta1:
         queue = queue.drop(columns="team_dos")
         queue = queue.drop(columns="team_tres")
         queue = queue.rename(columns={"team_uno": "team"})
-    else:
+    elif random_delta == delta2:
         queue = queue.drop(columns="team_uno")
         queue = queue.drop(columns="team_tres")
         queue = queue.rename(columns={"team_dos": "team"})
+    else:
+        queue = queue.drop(columns="team_uno")
+        queue = queue.drop(columns="team_dos")
+        queue = queue.rename(columns={"team_tres": "team"})
     team1 = queue.loc[queue['team'] == "Team 1"]
     team2 = queue.loc[queue['team'] == "Team 2"]
     pos1 = role_allocation(team1)
@@ -159,9 +131,9 @@ def team_balancer(queue_ids):
     team2 = team2.sort_values('pos')
     queue = pd.concat([team1, team2])
     queue.to_csv("../../data/match.csv", index=False)
-    with open('../../data/activate.txt', 'r+') as f:
-        f.truncate(0)
-        f.write('yes')
+    # with open('../../data/activate.txt', 'r+') as f:
+    #     f.truncate(0)
+    #     f.write('yes')
     return team1['disc'].tolist(), team2['disc'].tolist()
 
 
