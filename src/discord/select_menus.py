@@ -66,6 +66,30 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                                                     delete_after=10)
 
 
+class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
+    mmr_limit = discord.ui.TextInput(label='Set MMR limit', required=False)
+    queue_name = discord.ui.TextInput(label='Set inhouse queue name', required=False)
+    afk_timer = discord.ui.TextInput(label='Set afk time', required=False)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        str_mmr_limit = str(self.mmr_limit)
+        str_queue_name = str(self.queue_name)
+        str_afk_timer = str(self.afk_timer)
+        settings_dict = {'mmr_limit': str_mmr_limit, 'afk_time': str_afk_timer}
+        for item in settings_dict:
+            if settings_dict[item] != "":
+                try:
+                    settings_dict[item] = int(settings_dict[item])
+                    data_management.update_config(interaction.guild, 'CONFIG', item, settings_dict[item])
+                except ValueError:
+                    await interaction.response.send_message(f'Please only input numbers for {item}',
+                                                            ephemeral=True,
+                                                            delete_after=10)
+        if str_queue_name != "":
+            data_management.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
+        await interaction.response.send_message(f'Server config file has been updated.',
+                                                ephemeral=True, delete_after=10)
+
 class ViewUserModal(discord.ui.Modal, title='View User'):
     player_name = discord.ui.TextInput(label='User\'s global name or username')
 
@@ -109,6 +133,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
                                                     delete_after=10)
 
 
+
 # Select menu for users (above inhouse queue)
 class UserOptions(discord.ui.View):
     def __init__(self):
@@ -146,7 +171,8 @@ class AdminOptions(discord.ui.View):
     @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit", emoji="🖊️", description="Edit a user's details and status"),
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user"),
-        discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user (NOT WORKING YET"),
+        discord.SelectOption(label="Remove", emoji="🗑️", description="Delete a registered user"),
+        discord.SelectOption(label="Settings", emoji="🖥️", description="Change configuration settings")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -159,3 +185,5 @@ class AdminOptions(discord.ui.View):
                 await interaction.response.send_modal(ViewUserModal())
             case "Remove":
                 await interaction.response.send_modal(RemoveUserModal())
+            case "Settings":
+                await interaction.response.send_modal(ChangeConfigModal())

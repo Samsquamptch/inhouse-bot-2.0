@@ -61,9 +61,7 @@ def user_embed(data_list, player_data, server):
 
 def user_exists(server, user_name):
     try:
-        user_account = discord.utils.get(server.members, global_name=user_name)
-        if user_account is None:
-            user_account = discord.utils.get(server.members, name=user_name)
+        user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
         user_in_database = data_management.check_for_value(user_account.id)
     except AttributeError:
         user_in_database = False
