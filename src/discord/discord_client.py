@@ -91,12 +91,12 @@ def run_discord_bot():
     async def register(ctx, dotabuff_id: int, mmr: int):
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
-        registed_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
+        registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         disc_reg = check_user.registered_check(ctx.author.id)
         steam_reg = check_user.registered_check(dotabuff_id)
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        elif registed_role in ctx.author.roles or disc_reg:
+        elif registered_role in ctx.author.roles or disc_reg:
             await ctx.send("Your discord account is already registered!")
             return
         elif steam_reg:
@@ -172,24 +172,10 @@ def run_discord_bot():
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
-
-    # @bot.command()
-    # async def testing(ctx):
-    #     url = "https://api.opendota.com/api/leagues/14994/matches"
-    #     league_data = requests.get(url)
-    #     print(league_data.status_code)
-    #     print(league_data)
-
     @bot.command()
     # Used to post the help button, currently not being worked on (name to be amended)
     async def get_help(ctx):
         await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
-
-    # @bot.command()
-    # @bot.is_owner()
-    # # Used to clear the channel of text (helps de-clutter during testing)
-    # async def clear(ctx):
-    #     await ctx.channel.purge()
 
     bot.run(data_management.load_token())
 
