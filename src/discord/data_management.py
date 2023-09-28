@@ -38,16 +38,25 @@ def update_config(server, category, sub_category, new_value):
         yaml.dump(data, f)
 
 
-def update_user_data(discord_id, columns, new_data):
-    user_data = pd.read_csv("../../data/users.csv")
-    updated_user = user_data.query(f'disc=={discord_id}')
-    user_data.iloc[updated_user.index, columns] = new_data
-    user_data.to_csv("../../data/users.csv", index=False)
+def update_user_data(discord_id, column, new_data, mutli_value=None):
+    conn = sqlite3.connect('../../data/test.db')
+    cur = conn.cursor()
+    print(column)
+    if column == "roles":
+        new_data.append(discord_id)
+        cur.execute("""UPDATE Users
+                            SET pos1 = ?, pos2 = ?, pos3 = ?, pos4 = ?, pos5 = ?
+                            WHERE disc=?""", new_data)
+    else:
+        cur.execute(f"UPDATE Users SET {column} = ? WHERE disc = ?", [new_data, discord_id])
+    conn.commit()
+    cur.close()
 
 
 def check_for_value(value_check):
     conn = sqlite3.connect('../../data/test.db')
     user_data = pd.read_sql_query("SELECT * from Users", conn)
+    conn.close()
     if value_check not in user_data.values:
         variable = False
         return variable
@@ -58,7 +67,7 @@ def check_for_value(value_check):
 
 def view_user_data(discord_id):
     conn = sqlite3.connect('../../data/test.db')
-    user_data = pd.read_sql_query("SELECT * from Users", conn)
+    user_data = pd.read_sql_query("SELECT * from Users WHERE disc=?", conn, params=[discord_id])
     user_data_list = user_data.query(f'disc=={discord_id}').values.flatten().tolist()
     return user_data_list
 
@@ -70,9 +79,6 @@ def add_user_data(player):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", player)
     conn.commit()
     conn.close()
-    # with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
-    #     writer = csv.writer(csv_file)
-    #     writer.writerow(player)
 
 
 def remove_user_data(discord_id):

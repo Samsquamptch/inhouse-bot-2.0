@@ -38,7 +38,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [3], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos1", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Carry")
         if counter_check:
@@ -60,7 +60,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [4], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos2", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Midlane")
         if counter_check:
@@ -82,7 +82,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [5], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos3", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Offlane")
         if counter_check:
@@ -104,7 +104,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [6], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos4", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Soft Support")
         if counter_check:
@@ -126,7 +126,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [7], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos5", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Hard Support")
         if counter_check:
@@ -174,7 +174,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                     ephemeral=True,
                                     delete_after=10)
                             else:
-                                register(interaction.user, steam_int, int_mmr, interaction.user.guild)
+                                await register(interaction.user, steam_int, int_mmr, interaction.user.guild)
                                 # Modals cannot be sent from another modal, meaning users will have to manually set roles
                                 await interaction.response.send_message(
                                     'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',

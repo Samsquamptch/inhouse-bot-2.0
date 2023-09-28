@@ -139,28 +139,28 @@ def run_discord_bot():
                     roles_list[n] = 2
                 case 5:
                     roles_list[n] = 1
-        data_management.update_user_data(ctx.author.id, [3, 4, 5, 6, 7], roles_list)
+        data_management.update_user_data(ctx.author.id, "roles", roles_list)
         await ctx.send("Thank you for updating your roles.")
 
-    # @register.error
-    # async def arg_error(ctx, error):
-    #     if isinstance(error, commands.MissingRequiredArgument):
-    #         await ctx.send(f"Please input your Dotabuff id and your MMR when using the register command. For example:"
-    #                        f"```\n!register 28707060 2600```\n")
-    #     elif isinstance(error, commands.BadArgument):
-    #         await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
-    #     else:
-    #         await ctx.send(f"Something went wrong. Please try again.")
-
-    @roles.error
+    @register.error
     async def arg_error(ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(f"Please input your role preferences when using the roles command. If you wanted to play support, "
-                           f"for example, you would enter:```\n!roles 1 1 1 5 5```\n")
+            await ctx.send(f"Please input your Dotabuff id and your MMR when using the register command. For example:"
+                           f"```\n!register 28707060 2600```\n")
         elif isinstance(error, commands.BadArgument):
             await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
         else:
             await ctx.send(f"Something went wrong. Please try again.")
+
+    # @roles.error
+    # async def arg_error(ctx, error):
+    #     if isinstance(error, commands.MissingRequiredArgument):
+    #         await ctx.send(f"Please input your role preferences when using the roles command. If you wanted to play support, "
+    #                        f"for example, you would enter:```\n!roles 1 1 1 5 5```\n")
+    #     elif isinstance(error, commands.BadArgument):
+    #         await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
+    #     else:
+    #         await ctx.send(f"Something went wrong. Please try again.")
 
     @vk.error
     async def arg_error(ctx, error):
