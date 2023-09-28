@@ -145,7 +145,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        disc_reg = check_user.registered_check(interaction.user.id)
+        disc_reg = data_management.check_for_value(interaction.user.id)
         if disc_reg:
             await interaction.response.send_message(
                 'Your discord account is already registered to the database, please contact an admin for assistance',
@@ -154,7 +154,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         else:
             try:
                 int_mmr = int(mmr)
-                if int_mmr > 15000:
+                if int_mmr < 1 or int_mmr > 15000:
                     await interaction.response.send_message('Please enter a valid MMR',
                                                             ephemeral=True,
                                                             delete_after=10)
@@ -167,7 +167,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                             steam = steam[0]
                         try:
                             steam_int = int(steam)
-                            steam_reg = check_user.registered_check(steam_int)
+                            steam_reg = data_management.check_for_value(steam_int)
                             if steam_reg:
                                 await interaction.response.send_message(
                                     'Your dotabuff account is already registered to the database, please contact an admin for assistance',

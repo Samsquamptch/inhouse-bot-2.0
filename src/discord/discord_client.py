@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import sqlite3
 import user_help
 import initialisation
 import data_management
@@ -25,7 +26,6 @@ def run_discord_bot():
             check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
             if check_config == 'Yes':
                 server_list.append(await initialisation.run_user_modules(server))
-                print(server_list)
 
     @bot.command()
     @commands.is_owner()
@@ -73,7 +73,7 @@ def run_discord_bot():
             return
         elif '<@' == user[0:2]:
             user_acc = await ctx.guild.fetch_member(user[2:-1])
-            user_check = check_user.registered_check(int(user[2:-1]))
+            user_check = data_management.check_for_value(int(user[2:-1]))
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
         chosen_server = next((x for x in server_list if x.server == ctx.guild))
@@ -92,8 +92,8 @@ def run_discord_bot():
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
-        disc_reg = check_user.registered_check(ctx.author.id)
-        steam_reg = check_user.registered_check(dotabuff_id)
+        disc_reg = data_management.check_for_value(ctx.author.id)
+        steam_reg = data_management.check_for_value(dotabuff_id)
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif registered_role in ctx.author.roles or disc_reg:
@@ -104,6 +104,14 @@ def run_discord_bot():
             return
         await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
         await ctx.send("You have been registered. Please set your roles using !roles")
+
+    @bot.command()
+    async def sqlite(ctx):
+        conn = sqlite3.connect('../../data/test.db')
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
+                    pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER)""")
+        print("Opened database successfully")
 
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
@@ -134,15 +142,15 @@ def run_discord_bot():
         data_management.update_user_data(ctx.author.id, [3, 4, 5, 6, 7], roles_list)
         await ctx.send("Thank you for updating your roles.")
 
-    @register.error
-    async def arg_error(ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(f"Please input your Dotabuff id and your MMR when using the register command. For example:"
-                           f"```\n!register 28707060 2600```\n")
-        elif isinstance(error, commands.BadArgument):
-            await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
-        else:
-            await ctx.send(f"Something went wrong. Please try again.")
+    # @register.error
+    # async def arg_error(ctx, error):
+    #     if isinstance(error, commands.MissingRequiredArgument):
+    #         await ctx.send(f"Please input your Dotabuff id and your MMR when using the register command. For example:"
+    #                        f"```\n!register 28707060 2600```\n")
+    #     elif isinstance(error, commands.BadArgument):
+    #         await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
+    #     else:
+    #         await ctx.send(f"Something went wrong. Please try again.")
 
     @roles.error
     async def arg_error(ctx, error):

@@ -70,13 +70,13 @@ def user_exists(server, user_name):
 
 
 # For checking whether details for users are already stored on the database
-def registered_check(check_id):
-    test = data_management.check_for_value(check_id)
-    if test:
-        already_exists = True
-    else:
-        already_exists = False
-    return already_exists
+# def registered_check(check_id):
+#     test = data_management.check_for_value(check_id)
+#     if test:
+#         already_exists = True
+#     else:
+#         already_exists = False
+#     return already_exists
 
 
 def check_role_priority(user):

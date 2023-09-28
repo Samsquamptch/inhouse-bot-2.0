@@ -1,6 +1,7 @@
 import pandas as pd
 import team_balancer
 import csv
+import sqlite3
 import yaml
 import random
 from yaml.loader import SafeLoader
@@ -45,7 +46,8 @@ def update_user_data(discord_id, columns, new_data):
 
 
 def check_for_value(value_check):
-    user_data = pd.read_csv("../../data/users.csv")
+    conn = sqlite3.connect('../../data/test.db')
+    user_data = pd.read_sql_query("SELECT * from Users", conn)
     if value_check not in user_data.values:
         variable = False
         return variable
@@ -55,22 +57,30 @@ def check_for_value(value_check):
 
 
 def view_user_data(discord_id):
-    user_data = pd.read_csv("../../data/users.csv")
+    conn = sqlite3.connect('../../data/test.db')
+    user_data = pd.read_sql_query("SELECT * from Users", conn)
     user_data_list = user_data.query(f'disc=={discord_id}').values.flatten().tolist()
     return user_data_list
 
 
 def add_user_data(player):
-    with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(player)
+    conn = sqlite3.connect('../../data/test.db')
+    cur = conn.cursor()
+    cur.execute("""INSERT INTO Users (disc, steam, mmr, pos1, pos2, pos3, pos4, pos5) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", player)
+    conn.commit()
+    conn.close()
+    # with open('../../data/users.csv', 'a', encoding='UTF8', newline='') as csv_file:
+    #     writer = csv.writer(csv_file)
+    #     writer.writerow(player)
 
 
 def remove_user_data(discord_id):
-    user_data = pd.read_csv("../../data/users.csv")
-    updated_user = user_data.query(f'disc=={discord_id}')
-    user_data = user_data.drop(updated_user.index)
-    user_data.to_csv("../../data/users.csv", index=False)
+    conn = sqlite3.connect('../../data/test.db')
+    cur = conn.cursor()
+    cur.execute("""DELETE FROM Users where disc=?""", [discord_id])
+    conn.commit()
+    conn.close()
 
 
 def assign_teams(queue_ids):
