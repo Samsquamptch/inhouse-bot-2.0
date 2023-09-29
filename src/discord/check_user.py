@@ -80,7 +80,7 @@ def badge_rank(mmr):
 def user_exists(server, user_name):
     try:
         user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = data_management.check_for_value(user_account.id, server)
+        user_in_database = data_management.check_for_value("disc", user_account.id, server)
     except StopIteration:
         user_in_database = False
         user_account = None

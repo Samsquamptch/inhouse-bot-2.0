@@ -44,6 +44,7 @@ def initialise_database(server):
     cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
                 pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER, last_updated timestamp)""")
     cur.close()
+    print("Database created successfully")
 
 
 def update_user_data(discord_id, column, new_data, server):
@@ -58,16 +59,21 @@ def update_user_data(discord_id, column, new_data, server):
     cur.close()
 
 
-def check_for_value(value_check, server):
+def check_for_value(column, value_check, server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
-    user_data = pd.read_sql_query("SELECT * from Users", conn)
-    conn.close()
-    if value_check not in user_data.values:
-        variable = False
-        return variable
-    else:
+    cur = conn.cursor()
+    cur.execute(f"SELECT EXISTS(SELECT 1 FROM Users WHERE {column} = ?)", [value_check])
+    if cur.fetchone():
+        conn.close()
         variable = True
         return variable
+    else:
+        conn.close()
+        variable = False
+        return variable
+    # user_data = pd.read_sql_query("SELECT * from Users", conn)
+    # if value_check not in user_data.values:
+
 
 
 def view_user_data(discord_id, server):

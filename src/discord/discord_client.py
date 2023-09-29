@@ -75,7 +75,7 @@ def run_discord_bot():
             return
         elif '<@' == user[0:2]:
             user_acc = await ctx.guild.fetch_member(user[2:-1])
-            user_check = data_management.check_for_value(int(user[2:-1]), ctx.guild)
+            user_check = data_management.check_for_value("disc", int(user[2:-1]), ctx.guild)
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
         chosen_server = next((x for x in server_list if x.server == ctx.guild))
@@ -94,8 +94,8 @@ def run_discord_bot():
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
-        disc_reg = data_management.check_for_value(ctx.author.id, ctx.guild)
-        steam_reg = data_management.check_for_value(dotabuff_id, ctx.guild)
+        disc_reg = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
+        steam_reg = data_management.check_for_value("steam", dotabuff_id, ctx.guild)
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif registered_role in ctx.author.roles or disc_reg:
@@ -106,15 +106,6 @@ def run_discord_bot():
             return
         await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
         await ctx.send("You have been registered. Please set your roles using !roles")
-
-    @bot.command()
-    async def sqlite(ctx):
-        conn = sqlite3.connect('../../data/test.db')
-        cur = conn.cursor()
-        cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
-                    pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER)""")
-
-        print("Opened database successfully")
 
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
