@@ -44,22 +44,14 @@ def user_embed(data_list, player_data, server):
         view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
     view_user_embed.add_field(name='Dotabuff',
                               value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
-                                    f'\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
-    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
+                                    f'\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC',
                               inline=True)
-    view_user_embed.add_field(name='Rank', value=f'{badge} \u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
-    # view_user_embed.add_field(name='Matches', value=f'0', inline=True)
-    # view_user_embed.add_field(name='Wins', value=f'0', inline=True)
-    # view_user_embed.add_field(name='Losses', value=f'0', inline=True)
+    view_user_embed.add_field(name='Rank', value=f'{badge} \u1CBC\u1CBC', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
-    view_user_embed.add_field(name=f'Carry: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[3]}', value=f'',
-                              inline=False)
-    view_user_embed.add_field(name=f'Midlane: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[4]}', value=f'',
-                              inline=False)
-    view_user_embed.add_field(name=f'Offlane:\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[5]}', value=f'',
-                              inline=False)
-    view_user_embed.add_field(name=f'Soft Support:\u1CBC\u1CBC {data_list[6]}', value=f'', inline=False)
-    view_user_embed.add_field(name=f'Hard Support: \u1CBC {data_list[7]}', value=f'', inline=False)
+    role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
+    for i in range(3, 8):
+        view_user_embed.add_field(name=f'{role_list[i-3]} ', value=f'{data_list[i]}', inline=False)
     return view_user_embed
 
 
