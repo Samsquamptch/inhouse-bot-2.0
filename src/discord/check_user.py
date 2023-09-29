@@ -52,11 +52,11 @@ def user_embed(data_list, player_data, server):
     # view_user_embed.add_field(name='Wins', value=f'0', inline=True)
     # view_user_embed.add_field(name='Losses', value=f'0', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
-    view_user_embed.add_field(name='Carry', value=f'{data_list[3]}', inline=False)
-    view_user_embed.add_field(name='Midlane', value=f'{data_list[4]}', inline=False)
-    view_user_embed.add_field(name='Offlane', value=f'{data_list[5]}', inline=False)
-    view_user_embed.add_field(name='Soft Support', value=f'{data_list[6]}', inline=False)
-    view_user_embed.add_field(name='Hard Support', value=f'{data_list[7]}', inline=False)
+    view_user_embed.add_field(name=f'Carry: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[3]}', value=f'', inline=False)
+    view_user_embed.add_field(name=f'Midlane: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[4]}', value=f'', inline=False)
+    view_user_embed.add_field(name=f'Offlane:\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[5]}', value=f'', inline=False)
+    view_user_embed.add_field(name=f'Soft Support:\u1CBC\u1CBC {data_list[6]}', value=f'', inline=False)
+    view_user_embed.add_field(name=f'Hard Support: \u1CBC {data_list[7]}', value=f'', inline=False)
     return view_user_embed
 
 
