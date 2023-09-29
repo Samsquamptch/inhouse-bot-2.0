@@ -1,9 +1,9 @@
 import pandas as pd
 import team_balancer
-import csv
 import sqlite3
 import yaml
 import random
+from datetime import datetime
 from yaml.loader import SafeLoader
 import networkx as nx
 from networkx.algorithms import bipartite
@@ -38,23 +38,28 @@ def update_config(server, category, sub_category, new_value):
         yaml.dump(data, f)
 
 
-def update_user_data(discord_id, column, new_data, mutli_value=None):
-    conn = sqlite3.connect('../../data/test.db')
+def initialise_database(server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
-    print(column)
+    cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
+                pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER, last_updated timestamp)""")
+    cur.close()
+
+
+def update_user_data(discord_id, column, new_data, server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+    cur = conn.cursor()
     if column == "roles":
         new_data.append(discord_id)
-        cur.execute("""UPDATE Users
-                            SET pos1 = ?, pos2 = ?, pos3 = ?, pos4 = ?, pos5 = ?
-                            WHERE disc=?""", new_data)
+        cur.execute("UPDATE Users SET pos1 = ?, pos2 = ?, pos3 = ?, pos4 = ?, pos5 = ? WHERE disc=?", new_data)
     else:
         cur.execute(f"UPDATE Users SET {column} = ? WHERE disc = ?", [new_data, discord_id])
     conn.commit()
     cur.close()
 
 
-def check_for_value(value_check):
-    conn = sqlite3.connect('../../data/test.db')
+def check_for_value(value_check, server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     user_data = pd.read_sql_query("SELECT * from Users", conn)
     conn.close()
     if value_check not in user_data.values:
@@ -65,34 +70,36 @@ def check_for_value(value_check):
         return variable
 
 
-def view_user_data(discord_id):
-    conn = sqlite3.connect('../../data/test.db')
-    user_data = pd.read_sql_query("SELECT * from Users WHERE disc=?", conn, params=[discord_id])
-    user_data_list = user_data.query(f'disc=={discord_id}').values.flatten().tolist()
-    return user_data_list
-
-
-def add_user_data(player):
-    conn = sqlite3.connect('../../data/test.db')
+def view_user_data(discord_id, server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
-    cur.execute("""INSERT INTO Users (disc, steam, mmr, pos1, pos2, pos3, pos4, pos5) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", player)
+    user_data_list = list(cur.execute("SELECT * from Users WHERE disc=?", [discord_id]))
+    return list(user_data_list[0])
+
+
+def add_user_data(player, server):
+    player.append(datetime.today().strftime('%Y-%m-%d'))
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+    cur = conn.cursor()
+    cur.execute("""INSERT INTO Users (disc, steam, mmr, pos1, pos2, pos3, pos4, pos5, last_updated) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", player)
     conn.commit()
     conn.close()
 
 
-def remove_user_data(discord_id):
-    conn = sqlite3.connect('../../data/test.db')
+def remove_user_data(discord_id, server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
     cur.execute("""DELETE FROM Users where disc=?""", [discord_id])
     conn.commit()
     conn.close()
 
 
-def assign_teams(queue_ids):
-    user_data = pd.read_csv("../../data/users.csv")
-    queue = user_data.query("disc in @queue_ids")
-    queue = queue.sort_values('mmr', ascending=False)
+def assign_teams(queue_ids, server):
+    id_tuple = tuple(queue_ids)
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+    user_data = pd.read_sql_query("SELECT * FROM Users WHERE disc IN {};".format(id_tuple), conn)
+    queue = user_data.sort_values('mmr', ascending=False)
     team_uno = team_balancer.sort_balancer(queue['mmr'].tolist())
     team_dos = team_balancer.mean_balancer(queue['mmr'].tolist())
     team_tres = team_balancer.draft_balancer(queue['mmr'].tolist())
@@ -145,8 +152,8 @@ def assign_teams(queue_ids):
     team2.at[pos2[5004], 'pos'] = 4
     team2.at[pos2[5005], 'pos'] = 5
     team2 = team2.sort_values('pos')
-    queue = pd.concat([team1, team2])
-    queue.to_csv("../../data/match.csv", index=False)
+    # queue = pd.concat([team1, team2])
+    # queue.to_csv("../../data/match.csv", index=False)
     # with open('../../data/activate.txt', 'r+') as f:
     #     f.truncate(0)
     #     f.write('yes')

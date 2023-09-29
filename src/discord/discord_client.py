@@ -21,6 +21,8 @@ def run_discord_bot():
         global server_list
         server_list = []
         for server in bot.guilds:
+            if not isfile(f'../../data/inhouse_{server.id}.db'):
+                data_management.initialise_database(server)
             if not isfile(f'../../data/{server.id}_config.yml'):
                 copyfile(f'../../data/default_config.yml', f'../../data/{server.id}_config.yml')
             check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
@@ -73,7 +75,7 @@ def run_discord_bot():
             return
         elif '<@' == user[0:2]:
             user_acc = await ctx.guild.fetch_member(user[2:-1])
-            user_check = data_management.check_for_value(int(user[2:-1]))
+            user_check = data_management.check_for_value(int(user[2:-1]), ctx.guild)
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
         chosen_server = next((x for x in server_list if x.server == ctx.guild))
@@ -84,7 +86,7 @@ def run_discord_bot():
         elif not user_check:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
         else:
-            user_data = data_management.view_user_data(user_acc.id)
+            user_data = data_management.view_user_data(user_acc.id, ctx.guild)
             await ctx.send(embed=check_user.user_embed(user_data, user_acc, ctx.guild))
 
     @bot.command()
@@ -92,8 +94,8 @@ def run_discord_bot():
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
-        disc_reg = data_management.check_for_value(ctx.author.id)
-        steam_reg = data_management.check_for_value(dotabuff_id)
+        disc_reg = data_management.check_for_value(ctx.author.id, ctx.guild)
+        steam_reg = data_management.check_for_value(dotabuff_id, ctx.guild)
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif registered_role in ctx.author.roles or disc_reg:
@@ -111,6 +113,7 @@ def run_discord_bot():
         cur = conn.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
                     pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER)""")
+
         print("Opened database successfully")
 
     @bot.command()
@@ -139,7 +142,7 @@ def run_discord_bot():
                     roles_list[n] = 2
                 case 5:
                     roles_list[n] = 1
-        data_management.update_user_data(ctx.author.id, "roles", roles_list)
+        data_management.update_user_data(ctx.author.id, "roles", roles_list, ctx.guild)
         await ctx.send("Thank you for updating your roles.")
 
     @register.error
@@ -152,15 +155,15 @@ def run_discord_bot():
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
-    # @roles.error
-    # async def arg_error(ctx, error):
-    #     if isinstance(error, commands.MissingRequiredArgument):
-    #         await ctx.send(f"Please input your role preferences when using the roles command. If you wanted to play support, "
-    #                        f"for example, you would enter:```\n!roles 1 1 1 5 5```\n")
-    #     elif isinstance(error, commands.BadArgument):
-    #         await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
-    #     else:
-    #         await ctx.send(f"Something went wrong. Please try again.")
+    @roles.error
+    async def arg_error(ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(f"Please input your role preferences when using the roles command. If you wanted to play support, "
+                           f"for example, you would enter:```\n!roles 1 1 1 5 5```\n")
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(f"Please only input integer values for your Dotabuff ID and MMR.")
+        else:
+            await ctx.send(f"Something went wrong. Please try again.")
 
     @vk.error
     async def arg_error(ctx, error):

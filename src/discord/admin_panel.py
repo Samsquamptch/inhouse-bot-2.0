@@ -26,7 +26,7 @@ class AdminEmbed(discord.ui.View):
         icon_url = server.icon.url
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
-            user_data = data_management.view_user_data(user.id)
+            user_data = data_management.view_user_data(user.id, server)
             # Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to
             # (which is higher number = more pref and lower number = less pref). This swap shows what users expect to see,
             # instead of what is actually happening behind the scenes (low num = more pref and high num = less pref)
@@ -63,7 +63,7 @@ class AdminEmbed(discord.ui.View):
             self.update_buttons()
             if list_data:
                 user = list_data[0]
-                user_data = data_management.view_user_data(user.id)
+                user_data = data_management.view_user_data(user.id, server)
                 update_embed = check_user.user_embed(user_data, user, server)
                 if interaction:
                     update_embed.set_footer(
@@ -190,7 +190,7 @@ class AdminEmbed(discord.ui.View):
             role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
             user_to_reject = self.unverified_list[0]
             await user_to_reject.remove_roles(role_inhouse)
-            user_data = data_management.view_user_data(self.unverified_list[0].id)
+            user_data = data_management.view_user_data(self.unverified_list[0].id, server)
             if user_data[2] >= 5000:
                 await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse for'
                                          f' being too high MMR')

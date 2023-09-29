@@ -37,6 +37,7 @@ def user_embed(data_list, player_data, server):
                 data_list[n] = 2
             case 5:
                 data_list[n] = 1
+    badge = badge_rank(data_list[2])
     view_user_embed = discord.Embed(title=f'{player_data.display_name}', description=f'{user_status}',
                                     color=user_clr)
     if player_data.avatar:
@@ -46,10 +47,10 @@ def user_embed(data_list, player_data, server):
                                     f'\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
     view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
                               inline=True)
-    view_user_embed.add_field(name='Rank', value=f'N/A \u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
-    view_user_embed.add_field(name='Matches', value=f'0', inline=True)
-    view_user_embed.add_field(name='Wins', value=f'0', inline=True)
-    view_user_embed.add_field(name='Losses', value=f'0', inline=True)
+    view_user_embed.add_field(name='Rank', value=f'{badge} \u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
+    # view_user_embed.add_field(name='Matches', value=f'0', inline=True)
+    # view_user_embed.add_field(name='Wins', value=f'0', inline=True)
+    # view_user_embed.add_field(name='Losses', value=f'0', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
     view_user_embed.add_field(name='Carry', value=f'{data_list[3]}', inline=False)
     view_user_embed.add_field(name='Midlane', value=f'{data_list[4]}', inline=False)
@@ -59,25 +60,31 @@ def user_embed(data_list, player_data, server):
     return view_user_embed
 
 
+def badge_rank(mmr):
+    match mmr:
+        case _ if mmr >= 4620:
+            return "Divine"
+        case _ if mmr >= 3850:
+            return "Ancient"
+        case _ if mmr >= 3080:
+            return "Legend"
+        case _ if mmr >= 2310:
+            return "Archon"
+        case _ if mmr >= 1540:
+            return "Crusader"
+        case _ if mmr >= 770:
+            return "Guardian"
+        case _ if mmr >= 1:
+            return "Herald"
+
 def user_exists(server, user_name):
     try:
         user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = data_management.check_for_value(user_account.id)
-    except AttributeError:
+        user_in_database = data_management.check_for_value(user_account.id, server)
+    except StopIteration:
         user_in_database = False
         user_account = None
     return user_in_database, user_account
-
-
-# For checking whether details for users are already stored on the database
-# def registered_check(check_id):
-#     test = data_management.check_for_value(check_id)
-#     if test:
-#         already_exists = True
-#     else:
-#         already_exists = False
-#     return already_exists
-
 
 def check_role_priority(user):
     core_roles = [user[3], user[4], user[5]]
