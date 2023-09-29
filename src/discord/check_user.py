@@ -52,9 +52,12 @@ def user_embed(data_list, player_data, server):
     # view_user_embed.add_field(name='Wins', value=f'0', inline=True)
     # view_user_embed.add_field(name='Losses', value=f'0', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
-    view_user_embed.add_field(name=f'Carry: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[3]}', value=f'', inline=False)
-    view_user_embed.add_field(name=f'Midlane: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[4]}', value=f'', inline=False)
-    view_user_embed.add_field(name=f'Offlane:\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[5]}', value=f'', inline=False)
+    view_user_embed.add_field(name=f'Carry: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[3]}', value=f'',
+                              inline=False)
+    view_user_embed.add_field(name=f'Midlane: \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[4]}', value=f'',
+                              inline=False)
+    view_user_embed.add_field(name=f'Offlane:\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC{data_list[5]}', value=f'',
+                              inline=False)
     view_user_embed.add_field(name=f'Soft Support:\u1CBC\u1CBC {data_list[6]}', value=f'', inline=False)
     view_user_embed.add_field(name=f'Hard Support: \u1CBC {data_list[7]}', value=f'', inline=False)
     return view_user_embed
@@ -62,20 +65,93 @@ def user_embed(data_list, player_data, server):
 
 def badge_rank(mmr):
     match mmr:
+        case _ if mmr >= 5620:
+            return "Immortal"
         case _ if mmr >= 4620:
-            return "Divine"
+            match mmr:
+                case _ if mmr >= 5420:
+                    return "Divine 5"
+                case _ if mmr >= 5220:
+                    return "Divine 4"
+                case _ if mmr >= 5020:
+                    return "Divine 3"
+                case _ if mmr >= 4820:
+                    return "Divine 2"
+                case _:
+                    return "Divine 1"
         case _ if mmr >= 3850:
-            return "Ancient"
+            match mmr:
+                case _ if mmr >= 4466:
+                    return "Ancient 5"
+                case _ if mmr >= 4312:
+                    return "Ancient 4"
+                case _ if mmr >= 4158:
+                    return "Ancient 3"
+                case _ if mmr >= 4004:
+                    return "Ancient 2"
+                case _:
+                    return "Ancient 1"
         case _ if mmr >= 3080:
-            return "Legend"
+            match mmr:
+                case _ if mmr >= 3696:
+                    return "Legend 5"
+                case _ if mmr >= 3542:
+                    return "Legend 4"
+                case _ if mmr >= 3388:
+                    return "Legend 3"
+                case _ if mmr >= 3234:
+                    return "Legend 2"
+                case _:
+                    return "Legend 1"
         case _ if mmr >= 2310:
-            return "Archon"
+            match mmr:
+                case _ if mmr >= 2926:
+                    return "Archon 5"
+                case _ if mmr >= 2772:
+                    return "Archon 4"
+                case _ if mmr >= 2618:
+                    return "Archon 3"
+                case _ if mmr >= 2464:
+                    return "Archon 2"
+                case _:
+                    return "Archon 1"
         case _ if mmr >= 1540:
-            return "Crusader"
+            match mmr:
+                case _ if mmr >= 2156:
+                    return "Crusader 5"
+                case _ if mmr >= 2002:
+                    return "Crusader 4"
+                case _ if mmr >= 1848:
+                    return "Crusader 3"
+                case _ if mmr >= 1694:
+                    return "Crusader 2"
+                case _:
+                    return "Crusader 1"
         case _ if mmr >= 770:
-            return "Guardian"
-        case _ if mmr >= 1:
-            return "Herald"
+            match mmr:
+                case _ if mmr >= 1386:
+                    return "Guardian 5"
+                case _ if mmr >= 1232:
+                    return "Guardian 4"
+                case _ if mmr >= 1078:
+                    return "Guardian 3"
+                case _ if mmr >= 924:
+                    return "Guardian 2"
+                case _:
+                    return "Guardian 1"
+        case _:
+            match mmr:
+                case _ if mmr >= 616:
+                    return "Herald 5"
+                case _ if mmr >= 462:
+                    return "Herald 4"
+                case _ if mmr >= 308:
+                    return "Herald 3"
+                case _ if mmr >= 154:
+                    return "Herald 2"
+                case _:
+                    return "Herald 1"
+
 
 def user_exists(server, user_name):
     try:
@@ -85,6 +161,7 @@ def user_exists(server, user_name):
         user_in_database = False
         user_account = None
     return user_in_database, user_account
+
 
 def check_role_priority(user):
     core_roles = [user[3], user[4], user[5]]
