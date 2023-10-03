@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import sqlite3
 import user_help
 import initialisation
 import data_management
@@ -35,17 +34,6 @@ def run_discord_bot():
         await ctx.send("Beginning setup of inhouse bot")
         await initialisation.ConfigButtons().config_start(ctx)
 
-    # @bot.command()
-    # async def refresh(ctx):
-    #     check_config = data_management.load_config_data(ctx.guild, 'CONFIG', 'setup_complete')
-    #     admin_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'admin_role')
-    #     admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
-    #     if check_config != 'Yes':
-    #         await ctx.send(
-    #             content="Config setup has not been completed. Please run !setup and follow the instructions to use this command")
-    #     elif admin_role in ctx.author.roles:
-    #         await initialisation.run_user_modules(ctx.guild)
-
     @bot.command()
     async def vk(ctx, user):
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
@@ -55,18 +43,18 @@ def run_discord_bot():
             user_acc = await ctx.guild.fetch_member(user[2:-1])
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        chosen_server = next((x for x in server_list if x.server == ctx.guild))
-        if not chosen_server:
+        chosen_server = next((x for x in server_list if x.server == ctx.guild.id), None)
+        if chosen_server is None:
             await ctx.send(content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
                            ephemeral=True)
-        elif ctx.author not in chosen_server.queued_players:
+        elif ctx.author not in chosen_server.inhouse.queued_players:
             await ctx.send(content=f'You aren\'t in the queue!', ephemeral=True)
-        elif len(chosen_server.queued_players) < 10:
+        elif len(chosen_server.inhouse.queued_players) < 10:
             await ctx.send(content=f'Votekick can only be used when the queue is full', ephemeral=True)
-        elif user_acc not in chosen_server.queued_players:
+        elif user_acc not in chosen_server.inhouse.queued_players:
             await ctx.send(content=f'{user} isn\'t in the queue', ephemeral=True)
         else:
-            await chosen_server.vote_kick(ctx.guild, user_acc, ctx.author, ctx.channel)
+            await chosen_server.inhouse.vote_kick(ctx.guild, user_acc, ctx.author, channel=ctx.channel)
 
     @bot.command()
     async def wh(ctx, user):
@@ -78,8 +66,8 @@ def run_discord_bot():
             user_check = data_management.check_for_value("disc", int(user[2:-1]), ctx.guild)
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        chosen_server = next((x for x in server_list if x.server == ctx.guild))
-        if not chosen_server:
+        chosen_server = next((x for x in server_list if x.server == ctx.guild.id), None)
+        if chosen_server is None:
             await ctx.send(
                 content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
                 ephemeral=True)
@@ -104,6 +92,12 @@ def run_discord_bot():
         elif steam_reg:
             await ctx.send("Your steam account is already registered!")
             return
+        chosen_server = next((x for x in server_list if x.server == ctx.guild.id), None)
+        if chosen_server is None:
+            await ctx.send(
+                content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
+                ephemeral=True)
+        chosen_server.admin.unverified_list.append(ctx.author)
         await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
         await ctx.send("You have been registered. Please set your roles using !roles")
 
@@ -121,18 +115,7 @@ def run_discord_bot():
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
             await ctx.send("Role preferences can only be between 1 (low) and 5 (high)")
             return
-        for n in range(0, 5):
-            match roles_list[n]:
-                case 1:
-                    roles_list[n] = 5
-                case 2:
-                    roles_list[n] = 4
-                case 3:
-                    roles_list[n] = 3
-                case 4:
-                    roles_list[n] = 2
-                case 5:
-                    roles_list[n] = 1
+        roles_list = check_user.flip_values(roles_list)
         data_management.update_user_data(ctx.author.id, "roles", roles_list, ctx.guild)
         await ctx.send("Thank you for updating your roles.")
 

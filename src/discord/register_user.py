@@ -139,6 +139,11 @@ class RolePreferenceSelect(discord.ui.View):
 
 
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
+    def __init__(self, admin):
+        super().__init__(timeout=None)
+        self.roles_dict = defaultdict(list)
+        self.admin = admin
+
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
@@ -175,9 +180,9 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                                     delete_after=10)
                             else:
                                 await register(interaction.user, steam_int, int_mmr, interaction.guild)
-                                # Modals cannot be sent from another modal, meaning users will have to manually set roles
+                                self.admin.unverified_list.append(interaction.user)
                                 await interaction.response.send_message(
-                                    'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',
+                                    'You\'ve been registered, please set your roles and wait to be vouched',
                                     view=RolePreferenceSelect(), ephemeral=True)
                         except ValueError:
                             await interaction.response.send_message(
@@ -196,9 +201,10 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 
 
 class RegisterButton(discord.ui.View):
-    def __init__(self, role_inhouse):
+    def __init__(self, role_inhouse, admin_panel):
         super().__init__(timeout=None)
         self.role_inhouse = role_inhouse
+        self.admin = admin_panel
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
@@ -207,15 +213,16 @@ class RegisterButton(discord.ui.View):
             await interaction.response.send_message(content="You are already registered", ephemeral=True,
                                                     delete_after=10)
         else:
-            await interaction.response.send_modal(RegisterUserModal())
+            await interaction.response.send_modal(RegisterUserModal(self.admin))
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.role_inhouse in interaction.user.roles:
             user_data = data_management.view_user_data(interaction.user.id, interaction.guild)
-            await interaction.response.send_message(embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
-                                                    ephemeral=True)
+            await interaction.response.send_message(
+                embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
+                ephemeral=True)
         else:
             await interaction.response.send_message(content="You need to register before you can see your details",
                                                     ephemeral=True)
@@ -230,6 +237,7 @@ class RegisterButton(discord.ui.View):
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
 
+
 async def register(register_user, steam_int, int_mmr, server):
     # Due to how the role balancer calculations work, number weighting is saved the opposite
     # to how users are used to (which is higher number = more pref and lower number = less pref).
@@ -241,7 +249,6 @@ async def register(register_user, steam_int, int_mmr, server):
     role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
     role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
     await register_user.add_roles(role_inhouse)
-    check_user.user_list("Add", register_user)
     notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
     notif_channel = discord.utils.get(server.channels, id=notif_id)
     await notif_channel.send(f'<@&{role_admin.id}> user <@{register_user.id}> has '

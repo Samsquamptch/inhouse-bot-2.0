@@ -27,24 +27,10 @@ class AdminEmbed(discord.ui.View):
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
             user_data = data_management.view_user_data(user.id, server)
-            # Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to
-            # (which is higher number = more pref and lower number = less pref). This swap shows what users expect to see,
-            # instead of what is actually happening behind the scenes (low num = more pref and high num = less pref)
-            data_numbers = [3, 4, 5, 6, 7]
-            for n in data_numbers:
-                match user_data[n]:
-                    case 1:
-                        user_data[n] = 5
-                    case 2:
-                        user_data[n] = 4
-                    case 3:
-                        user_data[n] = 3
-                    case 4:
-                        user_data[n] = 2
-                    case 5:
-                        user_data[n] = 1
+            user_data = check_user.flip_values(user_data)
             all_embed.add_field(name=user.display_name,
-                                value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) | Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
+                                value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})'
+                                      f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                                 inline=False)
         all_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         return all_embed
@@ -77,13 +63,6 @@ class AdminEmbed(discord.ui.View):
             self.update_buttons(len(user_list))
             user_list_page = self.get_current_page_data(user_list)
             await self.message.edit(embed=self.registered_embed(user_list_page, server, interaction), view=self)
-
-    def update_register_list(self):
-        registered_list = check_user.user_list("")
-        if registered_list:
-            for user in registered_list:
-                self.unverified_list.append(user)
-                check_user.user_list("Remove", user)
 
     def create_register_list(self, server):
         role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
@@ -159,7 +138,7 @@ class AdminEmbed(discord.ui.View):
             await user_to_verify.add_roles(role_verified)
             await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been verified for the inhouse')
             del self.unverified_list[0]
-            self.update_register_list()
+            # self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)
             await interaction.response.defer()
         else:
@@ -172,7 +151,7 @@ class AdminEmbed(discord.ui.View):
     async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            self.update_register_list()
+            # self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)
             await interaction.response.defer()
         else:
@@ -198,7 +177,7 @@ class AdminEmbed(discord.ui.View):
                 await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
                                          f' A dogmin will inform you why you were rejected.')
             del self.unverified_list[0]
-            self.update_register_list()
+            # self.update_register_list()
             await self.update_message(self.unverified_list, server, interaction)
             await interaction.response.defer()
         else:
@@ -215,6 +194,6 @@ class AdminEmbed(discord.ui.View):
             await interaction.response.defer()
         else:
             self.view_status = True
-            self.update_register_list()
+            # self.update_register_list()
             await self.update_message(self.unverified_list, interaction.guild, interaction)
             await interaction.response.defer()

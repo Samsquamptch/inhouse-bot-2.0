@@ -6,6 +6,14 @@ import select_menus
 import inhouse_queue
 
 
+class ServerViews:
+    def __init__(self, server_id, inhouse_view, admin_view):
+        super().__init__()
+        self.server = server_id
+        self.inhouse = inhouse_view
+        self.admin = admin_view
+
+
 class SetRolesModal(discord.ui.Modal, title='User Roles Configuration'):
     def __init__(self):
         super().__init__(timeout=None)
@@ -309,7 +317,7 @@ async def run_user_modules(server):
     # Send queue buttons and panel to queue channel
     await queue_channel.purge()
     inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
-    register_view = register_user.RegisterButton(discord.utils.get(server.roles, id=inhouse_id))
+    register_view = register_user.RegisterButton(discord.utils.get(server.roles, id=inhouse_id), verify_view)
     await queue_channel.send("New user? Please register here:", view=register_view)
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions())
@@ -318,4 +326,4 @@ async def run_user_modules(server):
                                               data_management.load_config_data(server, 'CONFIG'))
     await inhouse_view.send_embed(queue_channel)
     print("User settings created")
-    return inhouse_view
+    return ServerViews(server.id, inhouse_view, verify_view)

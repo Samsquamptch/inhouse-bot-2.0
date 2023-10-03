@@ -63,17 +63,13 @@ def check_for_value(column, value_check, server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
     cur.execute(f"SELECT EXISTS(SELECT 1 FROM Users WHERE {column} = ?)", [value_check])
-    if cur.fetchone():
-        conn.close()
-        variable = True
-        return variable
-    else:
-        conn.close()
+    item = cur.fetchone()[0]
+    if item == 0:
         variable = False
-        return variable
-    # user_data = pd.read_sql_query("SELECT * from Users", conn)
-    # if value_check not in user_data.values:
-
+    else:
+        variable = True
+    conn.close()
+    return variable
 
 
 def view_user_data(discord_id, server):

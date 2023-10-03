@@ -1,8 +1,6 @@
 import discord
 import data_management
 
-register_list = []
-
 
 def user_embed(data_list, player_data, server):
     roles_id = data_management.load_config_data(server, 'ROLES')
@@ -21,22 +19,7 @@ def user_embed(data_list, player_data, server):
     else:
         user_status = "User is not verified"
         user_clr = 0xFF0000
-    # Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to
-    # (which is higher number = more pref and lower number = less pref). This swap shows what users expect to see,
-    # instead of what is actually happening behind the scenes (low num = more pref and high num = less pref)
-    data_numbers = [3, 4, 5, 6, 7]
-    for n in data_numbers:
-        match data_list[n]:
-            case 1:
-                data_list[n] = 5
-            case 2:
-                data_list[n] = 4
-            case 3:
-                data_list[n] = 3
-            case 4:
-                data_list[n] = 2
-            case 5:
-                data_list[n] = 1
+    data_list = flip_values(data_list)
     badge = badge_rank(data_list[2])
     view_user_embed = discord.Embed(title=f'{player_data.display_name}', description=f'{user_status}',
                                     color=user_clr)
@@ -51,8 +34,28 @@ def user_embed(data_list, player_data, server):
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
     role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
     for i in range(3, 8):
-        view_user_embed.add_field(name=f'{role_list[i-3]} ', value=f'{data_list[i]}', inline=False)
+        view_user_embed.add_field(name=f'{role_list[i - 3]} ', value=f'{data_list[i]}', inline=False)
     return view_user_embed
+
+
+# Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to (which
+# is higher number = more pref and lower number = less pref). This swap shows what users expect to see, instead of what
+# is actually happening behind the scenes (low num = more pref and high num = less pref).
+def flip_values(data_list):
+    data_numbers = [3, 4, 5, 6, 7]
+    for n in data_numbers:
+        match data_list[n]:
+            case 1:
+                data_list[n] = 5
+            case 2:
+                data_list[n] = 4
+            case 3:
+                data_list[n] = 3
+            case 4:
+                data_list[n] = 2
+            case 5:
+                data_list[n] = 1
+    return data_list
 
 
 def badge_rank(mmr):
@@ -147,7 +150,9 @@ def badge_rank(mmr):
 
 def user_exists(server, user_name):
     try:
-        user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
+        registered_role_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+        registered_role = discord.utils.get(server.roles, id=registered_role_id)
+        user_account = next((x for x in registered_role.members if user_name.lower() in x.display_name.lower()))
         user_in_database = data_management.check_for_value("disc", user_account.id, server)
     except StopIteration:
         user_in_database = False
@@ -174,15 +179,3 @@ def check_role_priority(user):
             case _:
                 role_pref = "Balanced"
     return role_pref
-
-
-def user_list(list_condition, user=None):
-    global register_list
-    match list_condition:
-        case "Add":
-            register_list.append(user)
-        case "Remove":
-            register_list.remove(user)
-        case _:
-            pass
-    return register_list
