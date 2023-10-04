@@ -34,8 +34,8 @@ def run_discord_bot():
         await ctx.send("Beginning setup of inhouse bot")
         await initialisation.ConfigButtons().config_start(ctx)
 
-    @bot.command()
-    async def vk(ctx, user):
+    @bot.command(aliases=['vk'])
+    async def votekick(ctx, user):
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
@@ -56,11 +56,14 @@ def run_discord_bot():
         else:
             await chosen_server.inhouse.vote_kick(ctx.guild, user_acc, ctx.author, channel=ctx.channel)
 
-    @bot.command()
-    async def wh(ctx, user):
+    @bot.command(aliases=['wh', 'whois'])
+    async def who(ctx, user=None):
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
+        elif not user:
+            user_acc = await ctx.guild.fetch_member(ctx.author.id)
+            user_check = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
         elif '<@' == user[0:2]:
             user_acc = await ctx.guild.fetch_member(user[2:-1])
             user_check = data_management.check_for_value("disc", int(user[2:-1]), ctx.guild)
@@ -115,7 +118,7 @@ def run_discord_bot():
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
             await ctx.send("Role preferences can only be between 1 (low) and 5 (high)")
             return
-        roles_list = check_user.flip_values(roles_list)
+        roles_list = check_user.flip_values(roles_list, True)
         data_management.update_user_data(ctx.author.id, "roles", roles_list, ctx.guild)
         await ctx.send("Thank you for updating your roles.")
 
@@ -139,7 +142,7 @@ def run_discord_bot():
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
-    @vk.error
+    @votekick.error
     async def arg_error(ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
@@ -148,7 +151,7 @@ def run_discord_bot():
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
-    @wh.error
+    @who.error
     async def arg_error(ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
