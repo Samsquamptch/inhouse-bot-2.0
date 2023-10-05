@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import user_help
 import initialisation
 import data_management
 import check_user
@@ -104,6 +103,19 @@ def run_discord_bot():
         await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
         await ctx.send("You have been registered. Please set your roles using !roles")
 
+    @bot.command(aliases=['reset'])
+    @commands.is_owner()
+    async def clear_roles(ctx):
+        role_id = data_management.load_config_data(ctx.guild, 'ROLES')
+        registered_role = discord.utils.get(ctx.guild.roles, id=role_id['registered_role'])
+        verified_role = discord.utils.get(ctx.guild.roles, id=role_id['verified_role'])
+        user_list = [x for x in ctx.guild.members if verified_role in x.roles]
+        for user in user_list:
+            print(user.display_name)
+            await user.remove_roles(verified_role)
+            await user.remove_roles(registered_role)
+        await ctx.send("roles cleared")
+
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
@@ -160,10 +172,10 @@ def run_discord_bot():
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
-    @bot.command()
-    # Used to post the help button, currently not being worked on (name to be amended)
-    async def get_help(ctx):
-        await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
+    # @bot.command()
+    # # Used to post the help button, currently not being worked on (name to be amended)
+    # async def get_help(ctx):
+    #     await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
     bot.run(data_management.load_token())
 
