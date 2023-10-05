@@ -1,9 +1,9 @@
 import discord
 import check_user
 import data_management
+import datetime
 
-
-#Modal for editing user details (accessed via admin select menu)
+# Modal for editing user details (accessed via admin select menu)
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
     set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=5, required=False)
@@ -16,54 +16,56 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         server = interaction.user.guild
         roles_id = data_management.load_config_data(server, 'ROLES')
         check_if_exists = check_user.user_exists(server, user_name)
-        if check_if_exists[0]:
-            new_mmr = str(self.set_mmr)
-            if new_mmr != "":
-                try:
-                    int_new_mmr = int(new_mmr)
-                    data_management.update_user_data(check_if_exists[1].id, [2], int_new_mmr)
-                except ValueError:
-                    await interaction.response.send_message('Please only input numbers for mmr',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-            steam_id = str(self.new_dotabuff)
-            if steam_id != "":
-                try:
-                    steam_id = steam_id.split("players/")
-                    steam_id = steam_id[1].split('/')
-                    int_steam_id = int(steam_id[0])
-                    data_management.update_user_data(check_if_exists[1].id, [1], int_steam_id)
-                except ValueError:
-                    await interaction.response.send_message('Please enter a full Dotabuff URL when updating a user',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-            verify_role = str(self.remove_verify)
-            if verify_role != "":
-                if verify_role.lower() == "y":
-                    role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
-                    await check_if_exists[1].remove_roles(role_verified)
-                else:
-                    await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-            ban_time = str(self.ban_user)
-            if ban_time != "":
-                if ban_time.lower() == "y":
-                    role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
-                    if role_banned in check_if_exists[1].roles:
-                        await check_if_exists[1].remove_roles(role_banned)
-                    else:
-                        await check_if_exists[1].add_roles(role_banned)
-                else:
-                    await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-            await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
-                                                    ephemeral=True, delete_after=10)
-        else:
+        if not check_if_exists[0]:
             await interaction.response.send_message(f'User {self.player_name} does not exist in database',
                                                     ephemeral=True,
                                                     delete_after=10)
+            return
+        new_mmr = str(self.set_mmr)
+        if new_mmr != "":
+            try:
+                int_new_mmr = int(new_mmr)
+                data_management.update_user_data(check_if_exists[1].id, "mmr", int_new_mmr, server)
+            except ValueError:
+                await interaction.response.send_message('Please only input numbers for mmr',
+                                                        ephemeral=True,
+                                                        delete_after=10)
+        steam_id = str(self.new_dotabuff)
+        if steam_id != "":
+            try:
+                steam_id = steam_id.split("players/")
+                steam_id = steam_id[1].split('/')
+                int_steam_id = int(steam_id[0])
+                data_management.update_user_data(check_if_exists[1].id, "steam", int_steam_id, server)
+            except ValueError:
+                await interaction.response.send_message('Please enter a full Dotabuff URL when updating a user',
+                                                        ephemeral=True,
+                                                        delete_after=10)
+        verify_role = str(self.remove_verify)
+        if verify_role == "":
+            pass
+        elif verify_role.lower() == "y":
+            role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
+            await check_if_exists[1].remove_roles(role_verified)
+        else:
+            await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
+                                                    ephemeral=True,
+                                                    delete_after=10)
+        ban_time = str(self.ban_user)
+        if ban_time == "":
+            pass
+        elif ban_time.lower() == "y":
+            role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
+            if role_banned in check_if_exists[1].roles:
+                await check_if_exists[1].remove_roles(role_banned)
+            else:
+                await check_if_exists[1].add_roles(role_banned)
+        else:
+            await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
+                                                    ephemeral=True,
+                                                    delete_after=10)
+        await interaction.response.send_message(f'Details for user {self.player_name} have been updated',
+                                                ephemeral=True, delete_after=10)
 
 
 class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
@@ -83,12 +85,12 @@ class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
                     data_management.update_config(interaction.guild, 'CONFIG', item, settings_dict[item])
                 except ValueError:
                     await interaction.response.send_message(f'Please only input numbers for {item}',
-                                                            ephemeral=True,
-                                                            delete_after=10)
+                                                            ephemeral=True, delete_after=10)
         if str_queue_name != "":
             data_management.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
         await interaction.response.send_message(f'Server config file has been updated.',
                                                 ephemeral=True, delete_after=10)
+
 
 class ViewUserModal(discord.ui.Modal, title='View User'):
     player_name = discord.ui.TextInput(label='User\'s global name or username')
@@ -98,11 +100,52 @@ class ViewUserModal(discord.ui.Modal, title='View User'):
         server = interaction.user.guild
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
-            user_data = data_management.view_user_data(check_if_exists[1].id)
+            user_data = data_management.view_user_data(check_if_exists[1].id, interaction.guild)
             await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
                                                     ephemeral=True)
         else:
             await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
+                                                    delete_after=10)
+
+
+class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
+    set_mmr = discord.ui.TextInput(label='Request new MMR for user', max_length=5, required=False)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_mmr = str(self.set_mmr)
+        server = interaction.guild
+        roles_id = data_management.load_config_data(server, 'ROLES')
+        role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
+        if role_verified not in interaction.user.roles:
+            await interaction.response.send_message('You need to register before you can request an update!',
+                                                    ephemeral=True,
+                                                    delete_after=10)
+            return
+        user_data = data_management.view_user_data(interaction.user.id, interaction.guild)
+        date_str = user_data[8]
+        date_format = '%Y-%m-%d'
+        date_obj = datetime.datetime.strptime(date_str, date_format)
+        current_day = datetime.datetime.today()
+        if current_day < date_obj + datetime.timedelta(days=14):
+            await interaction.response.send_message('You can only request an MMR update every two weeks',
+                                                    ephemeral=True,
+                                                    delete_after=10)
+            return
+        try:
+            int_new_mmr = int(new_mmr)
+            data_management.update_user_data(interaction.user.id, "mmr", int_new_mmr, interaction.guild)
+            notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+            notif_channel = discord.utils.get(server.channels, id=notif_id)
+            role_id = data_management.load_config_data(server, 'ROLES')
+            role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
+            data_management.update_user_data(interaction.user.id, "last_updated",
+                                             datetime.datetime.today().strftime('%Y-%m-%d'), interaction.guild)
+            await notif_channel.send(f'<@&{role_admin.id}> User <@{interaction.user.id}> wants their MMR set to {new_mmr}')
+            await interaction.response.send_message("Your request has been sent to the notification channel.",
+                                                    ephemeral=True, delete_after=10)
+        except ValueError:
+            await interaction.response.send_message('Please only input numbers for mmr',
+                                                    ephemeral=True,
                                                     delete_after=10)
 
 
@@ -121,7 +164,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
                 role_inhouse = discord.utils.get(server.roles, id=roles_id['registered_role'])
                 role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                 await check_if_exists[1].remove_roles(role_inhouse, role_verified)
-                data_management.remove_user_data(check_if_exists[1].id)
+                data_management.remove_user_data(check_if_exists[1].id, server)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
                                                         delete_after=10)
             else:
@@ -133,7 +176,6 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
                                                     delete_after=10)
 
 
-
 # Select menu for users (above inhouse queue)
 class UserOptions(discord.ui.View):
     def __init__(self):
@@ -142,8 +184,7 @@ class UserOptions(discord.ui.View):
 
     @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user with their name"),
-        discord.SelectOption(label="Update", emoji="❗", description="Notify admins of MMR change (NOT WORKING YET)"),
-        discord.SelectOption(label="Ladder", emoji="🪜", description="View player leaderboards (NOT WORKING YET)"),
+        discord.SelectOption(label="Update", emoji="❗", description="Notify admins of MMR change"),
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -153,13 +194,7 @@ class UserOptions(discord.ui.View):
             case "Search":
                 await interaction.response.send_modal(ViewUserModal())
             case "Update":
-                await interaction.response.send_message(content="This feature has not yet been added", ephemeral=True,
-                                                        delete_after=10)
-            case "Ladder":
-                await interaction.response.send_message(content="This feature has not yet been added", ephemeral=True,
-                                                        delete_after=10)
-            case "Refresh":
-                await interaction.response.defer()
+                await interaction.response.send_modal(NotifyUpdateModal())
 
 
 # Select menu for administrators

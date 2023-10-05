@@ -32,9 +32,6 @@ def draft_balancer(list_mmr):
             team_order2[n + 1] = "Team 1"
     average1 = (radiant1 / 5) - (dire1 / 5)
     average2 = (radiant2 / 5) - (dire2 / 5)
-    print("Draft method")
-    print(average1)
-    print(average2)
     if abs(average1) < 100 and abs(average2) < 100:
         coin_flip = random.randint(1, 2)
         if coin_flip == 1:
@@ -72,9 +69,6 @@ def sort_balancer(list_mmr):
             dire2 -= list_mmr[n + 1]
     average1 = (radiant1 / 5) - (dire1 / 5)
     average2 = (radiant2 / 5) - (dire2 / 5)
-    print("Sort method")
-    print(average1)
-    print(average2)
     if abs(average1) < 100 and abs(average2) < 100:
         coin_flip = random.randint(1, 2)
         if coin_flip == 1:
@@ -118,9 +112,6 @@ def mean_balancer(list_mmr):
             team_order2[-(n + 1)] = "Team 1"
     average1 = (radiant1 / 5) - (dire1 / 5)
     average2 = (radiant2 / 5) - (dire2 / 5)
-    print("Sort method")
-    print(average1)
-    print(average2)
     if abs(average1) < 100 and abs(average2) < 100:
         coin_flip = random.randint(1, 2)
         if coin_flip == 1:

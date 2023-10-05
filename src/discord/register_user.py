@@ -38,7 +38,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [3], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos1", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Carry")
         if counter_check:
@@ -60,7 +60,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [4], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos2", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Midlane")
         if counter_check:
@@ -82,7 +82,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [5], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos3", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Offlane")
         if counter_check:
@@ -104,7 +104,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [6], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos4", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Soft Support")
         if counter_check:
@@ -126,7 +126,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, [7], select_item.values[0])
+        data_management.update_user_data(interaction.user.id, "pos5", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Hard Support")
         if counter_check:
@@ -139,13 +139,18 @@ class RolePreferenceSelect(discord.ui.View):
 
 
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
+    def __init__(self, admin):
+        super().__init__(timeout=None)
+        self.roles_dict = defaultdict(list)
+        self.admin = admin
+
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        disc_reg = check_user.registered_check(interaction.user.id)
+        disc_reg = data_management.check_for_value("disc", interaction.user.id, interaction.guild)
         if disc_reg:
             await interaction.response.send_message(
                 'Your discord account is already registered to the database, please contact an admin for assistance',
@@ -154,7 +159,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         else:
             try:
                 int_mmr = int(mmr)
-                if int_mmr > 15000:
+                if int_mmr < 1 or int_mmr > 15000:
                     await interaction.response.send_message('Please enter a valid MMR',
                                                             ephemeral=True,
                                                             delete_after=10)
@@ -167,17 +172,17 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                             steam = steam[0]
                         try:
                             steam_int = int(steam)
-                            steam_reg = check_user.registered_check(steam_int)
+                            steam_reg = data_management.check_for_value("steam", steam_int, interaction.guild)
                             if steam_reg:
                                 await interaction.response.send_message(
                                     'Your dotabuff account is already registered to the database, please contact an admin for assistance',
                                     ephemeral=True,
                                     delete_after=10)
                             else:
-                                register(interaction.user, steam_int, int_mmr, interaction.user.guild)
-                                # Modals cannot be sent from another modal, meaning users will have to manually set roles
+                                await register(interaction.user, steam_int, int_mmr, interaction.guild)
+                                self.admin.unverified_list.append(interaction.user)
                                 await interaction.response.send_message(
-                                    'You\'ve been registered, please use the appropriate button to set your roles and wait to be vouched',
+                                    'You\'ve been registered, please set your roles and wait to be vouched',
                                     view=RolePreferenceSelect(), ephemeral=True)
                         except ValueError:
                             await interaction.response.send_message(
@@ -196,9 +201,10 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 
 
 class RegisterButton(discord.ui.View):
-    def __init__(self, role_inhouse):
+    def __init__(self, role_inhouse, admin_panel):
         super().__init__(timeout=None)
         self.role_inhouse = role_inhouse
+        self.admin = admin_panel
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
@@ -207,15 +213,16 @@ class RegisterButton(discord.ui.View):
             await interaction.response.send_message(content="You are already registered", ephemeral=True,
                                                     delete_after=10)
         else:
-            await interaction.response.send_modal(RegisterUserModal())
+            await interaction.response.send_modal(RegisterUserModal(self.admin))
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.role_inhouse in interaction.user.roles:
-            user_data = data_management.view_user_data(interaction.user.id)
-            await interaction.response.send_message(embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
-                                                    ephemeral=True)
+            user_data = data_management.view_user_data(interaction.user.id, interaction.guild)
+            await interaction.response.send_message(
+                embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
+                ephemeral=True)
         else:
             await interaction.response.send_message(content="You need to register before you can see your details",
                                                     ephemeral=True)
@@ -230,18 +237,18 @@ class RegisterButton(discord.ui.View):
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
 
+
 async def register(register_user, steam_int, int_mmr, server):
     # Due to how the role balancer calculations work, number weighting is saved the opposite
     # to how users are used to (which is higher number = more pref and lower number = less pref).
     # Swaps have been implemented where required for user output to avoid confusion
     player = [register_user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
-    data_management.add_user_data(player)
+    data_management.add_user_data(player, server)
     # Adds the inhouse role to the user once their details have been added to the register
     role_id = data_management.load_config_data(server, 'ROLES')
     role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
     role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
     await register_user.add_roles(role_inhouse)
-    check_user.user_list("Add", register_user)
     notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
     notif_channel = discord.utils.get(server.channels, id=notif_id)
     await notif_channel.send(f'<@&{role_admin.id}> user <@{register_user.id}> has '
