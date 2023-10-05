@@ -75,8 +75,8 @@ def do_dota_wait(lobby):
 
 
 @dota.on('starting_queue')
-def do_queue(lobby, idList):
-    dota.emit('queue_full', idList)
+def do_queue(lobby, id_list):
+    dota.emit('queue_full', id_list)
     print('Queue Full...')
 
 
@@ -112,12 +112,12 @@ def check_queue():
 def message_check(c, message):
     if message.text.startswith('!'):
         if message.text == '!start':
-            players = []
-            users = dota.lobby.all_members
-            for user in users:
-                if user.team == 1 or user.team == 0:
-                    players.append(user)
-            if players == []:
+            player_list = dota.lobby.all_members
+            players = [x for x in player_list if x.team == 1 or x.team == 0]
+            # for user in player_list:
+            #     if user.team == 1 or user.team == 0:
+            #         players.append(user)
+            if not players:
                 print('No Players')
                 return False
             for player in players:

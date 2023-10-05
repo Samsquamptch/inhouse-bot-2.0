@@ -156,9 +156,9 @@ def assign_teams(queue_ids, server):
     team2 = team2.sort_values('pos')
     # queue = pd.concat([team1, team2])
     # queue.to_csv("../../data/match.csv", index=False)
-    # with open('../../data/activate.txt', 'r+') as f:
-    #     f.truncate(0)
-    #     f.write('yes')
+    with open('../../data/activate.txt', 'r+') as f:
+        f.truncate(0)
+        f.write('yes')
     return team1['disc'].tolist(), team2['disc'].tolist()
 
 
