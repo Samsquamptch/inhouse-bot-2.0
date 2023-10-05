@@ -152,8 +152,8 @@ def badge_rank(mmr):
 
 
 def user_exists(server, user_name):
-  registered_role_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
-  registered_role = discord.utils.get(server.roles, id=registered_role_id)
+    registered_role_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+    registered_role = discord.utils.get(server.roles, id=registered_role_id)
     try:
         user_account = next((x for x in registered_role.members if user_name.lower() in x.display_name.lower()))
         user_in_database = data_management.check_for_value(user_account.id)
