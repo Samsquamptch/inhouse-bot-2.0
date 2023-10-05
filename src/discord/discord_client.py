@@ -60,7 +60,7 @@ def run_discord_bot():
         chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        elif not user:
+        elif user is None:
             user_acc = await ctx.guild.fetch_member(ctx.author.id)
             user_check = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
         elif '<@' == user[0:2]:
