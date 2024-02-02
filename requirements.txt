@@ -1,7 +1,9 @@
-pandas
+pandas~=2.0.3
 numpy
-pyyaml
+pyyaml~=6.0.1
 pyspark
 psycopg2
-dota2
-steam
+dota2~=1.1.0
+steam~=1.4.4
+discord~=2.3.2
+networkx~=3.1
