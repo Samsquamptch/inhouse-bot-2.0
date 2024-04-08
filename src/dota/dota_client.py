@@ -5,12 +5,13 @@ import dota2
 import os
 import sys
 import connections
-from connections import getCredentialsSteam
+from connections import get_steam_credentials
 import logging
 from eventemitter import EventEmitter
 from multiprocessing.connection import Client
 import time
 import pandas as pd
+
 class Status:
     def __init__(self):
         self.gameIDs = []
@@ -22,7 +23,7 @@ stat = Status()
 event = EventEmitter()
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
-(user, password) = getCredentialsSteam()
+(user, password) = get_steam_credentials()
 client = SteamClient()
 dota = Dota2Client(client)
 Manager = dota2.features.chat.ChannelManager(dota, 'logger')
@@ -34,15 +35,16 @@ def start_dota():
     print("Running...")
  
 
-#@dota.on('ready')
-#def fetch_profile_card():
-    #dota.request_profile_card(70388657)
+@dota.on('ready')
+def fetch_profile_card():
+    dota.request_profile_card(70388657)
 
 @client.on('disconnected')
 def kill_lobby():
     dota.destroy_lobby()
+
 @dota.on('dota_welcome')
-def create_base_lobby(filler):
+def create_base_lobby():
 
     dota.destroy_lobby()
     opt = {
@@ -70,6 +72,7 @@ def do_dota_wait(lobby):
 def do_queue(lobby, idList):
     dota.emit('queue_full', idList)
     print('Queue Full...')
+
 @dota.on('queue_full')
 def dota_invite(ids):    
     print('Inviting...')
@@ -82,6 +85,7 @@ def dota_invite(ids):
 @dota.on('lobby_changed')
 def change_lobby(lobby):
     pass
+
 @event.on('check_queue')
 def check_queue():
     if os.path.isfile('data/activate.txt'):
@@ -93,6 +97,7 @@ def check_queue():
         dota.emit('queue_full', ids)
     time.sleep(0.1)
     event.emit('check_queue')
+
 @Manager.on('message')
 def message_check(c, message):
     if message.text.startswith('!'):
