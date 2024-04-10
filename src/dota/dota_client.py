@@ -6,7 +6,6 @@ import dota2
 import os
 import sys
 import connections
-from connections import get_steam_credentials
 import logging
 from eventemitter import EventEmitter
 from multiprocessing.connection import Client
@@ -24,7 +23,7 @@ stat = Status()
 event = EventEmitter()
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
-(user, password) = get_steam_credentials()
+(user, password) = connections.get_steam_credentials()
 client = SteamClient()
 dota = Dota2Client(client)
 Manager = dota2.features.chat.ChannelManager(dota, 'logger')
@@ -48,15 +47,16 @@ def delete_lobby(filler):
 
 @dota.on('make_lobby')
 def create_new_lobby():
+    league_id = connections.get_league_id()
     opt = {
         'game_name': 'DH Test Lobby',
         'server_region': dota2.enums.EServerRegion.Europe,
         'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
-        'leagueid' : 14994,
+        'leagueid': league_id,
         'fill_with_bots': False,
         'allow_spectating': True,
         'allow_cheats': False,
-        'allchat': False,
+        'allchat': True,
         'dota_tv_delay': 0,
         'pause_setting': 0
     }
@@ -64,13 +64,22 @@ def create_new_lobby():
     dota.channels.join_lobby_channel()
     Manager.join_lobby_channel()
     # dota.join_practice_lobby_broadcast_channel(channel=1)
-    # dota.join_practice_lobby()
-    # dota.join_practice_lobby_team()  # jump to unassigned players
 
-@dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
-def do_dota_wait(lobby):
-    dota.emit('start_queue', lobby)
 
+# @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
+# def do_dota_wait(lobby):
+#     dota.emit('start_queue', lobby)
+
+@dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
+def print_state(lobby):
+    if int(dota.lobby.state) == 0:
+        print(str("UI"))
+    elif int(dota.lobby.state) == 1:
+        print(str("Setup"))
+    elif int(dota.lobby.state) == 2:
+        print(str("Run"))
+    elif int(dota.lobby.state) == 3:
+        print(str("End"))
 
 # @dota.on('starting_queue')
 # def do_queue(lobby, idList):
@@ -120,7 +129,7 @@ def message_check(c, message):
                 dota.launch_practice_lobby()
             else:
                 print("Number of players is only " + str(len(players)))
-# #
+
 # def check_users():
 #     pass
 
