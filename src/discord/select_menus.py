@@ -72,11 +72,13 @@ class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
     mmr_limit = discord.ui.TextInput(label='Set MMR limit', required=False)
     queue_name = discord.ui.TextInput(label='Set inhouse queue name', required=False)
     afk_timer = discord.ui.TextInput(label='Set afk time', required=False)
+    league_id = discord.ui.TextInput(label='Set league ID', required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
         str_mmr_limit = str(self.mmr_limit)
         str_queue_name = str(self.queue_name)
         str_afk_timer = str(self.afk_timer)
+        str_league_id = str(self.league_id)
         settings_dict = {'mmr_limit': str_mmr_limit, 'afk_time': str_afk_timer}
         for item in settings_dict:
             if settings_dict[item] != "":
@@ -88,6 +90,12 @@ class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
                                                             ephemeral=True, delete_after=10)
         if str_queue_name != "":
             data_management.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
+        if str_league_id != "":
+            try:
+                data_management.update_league(str_league_id)
+            except ValueError:
+                await interaction.response.send_message(f'Please only input numbers for the league ID',
+                                                        ephemeral=True, delete_after=10)
         await interaction.response.send_message(f'Server config file has been updated.',
                                                 ephemeral=True, delete_after=10)
 

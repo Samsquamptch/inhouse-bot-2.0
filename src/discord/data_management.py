@@ -30,6 +30,14 @@ def load_config_data(server, category, sub_category=None):
         return data[category][sub_category]
 
 
+def update_league(new_value):
+    with open(f'../../credentials/credentials_steam.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+        data['LEAGUE'] = int(new_value)
+        with open(f'../../credentials/credentials_steam.yml', 'w') as f:
+            yaml.dump(data, f)
+
+
 def update_config(server, category, sub_category, new_value):
     with open(f'../../data/{server.id}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
@@ -43,6 +51,10 @@ def initialise_database(server):
     cur = conn.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
                 pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER, last_updated timestamp)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS Matches(Id INTEGER PRIMARY KEY AUTOINCREMENT,	MatchId	INTEGER,
+                Lobby INTEGER, Running INTEGER, Rad_1 INTEGER, Rad_2 INTEGER, Rad_3 INTEGER, Rad_4 INTEGER,
+                Rad_5 INTEGER, Dire_1 INTEGER, Dire_2 INTEGER, Dire_3 INTEGER, Dire_4 INTEGER, Dire_5 INTEGER,
+                start_time timestamp)""")
     cur.close()
     print("Database created successfully")
 

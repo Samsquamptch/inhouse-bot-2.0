@@ -39,9 +39,14 @@ def kill_lobby():
     dota.destroy_lobby()
 
 @dota.on('dota_welcome')
-def delete_lobby(filler):
+def startup_lobby(filler):
     dota.destroy_lobby()
-    print("!")
+    sleep(5)
+    dota.emit('make_lobby')
+
+@dota.on('match_end')
+def renew_lobby(filler):
+    dota.destroy_lobby()
     sleep(5)
     dota.emit('make_lobby')
 
@@ -80,6 +85,26 @@ def print_state(lobby):
         print(str("Run"))
     elif int(dota.lobby.state) == 3:
         print(str("End"))
+        dota.emit('match_end')
+
+@Manager.on('message')
+def message_check(c, message):
+    print("message!")
+    if message.text.startswith('!'):
+        if message.text == '!start':
+            print("test2")
+            players = []
+            users = dota.lobby.all_members
+            for user in users:
+                if user.team == 1 or user.team == 0:
+                    players.append(user)
+            if not players:
+                print('No Players')
+                return False
+            elif len(players) == 10:
+                dota.launch_practice_lobby()
+            else:
+                print("Number of players is only " + str(len(players)))
 
 # @dota.on('starting_queue')
 # def do_queue(lobby, idList):
@@ -111,24 +136,6 @@ def print_state(lobby):
 #     time.sleep(0.1)
 #     event.emit('check_queue')
 #
-@Manager.on('message')
-def message_check(c, message):
-    print("message!")
-    if message.text.startswith('!'):
-        if message.text == '!start':
-            print("test2")
-            players = []
-            users = dota.lobby.all_members
-            for user in users:
-                if user.team == 1 or user.team == 0:
-                    players.append(user)
-            if not players:
-                print('No Players')
-                return False
-            elif len(players) == 10:
-                dota.launch_practice_lobby()
-            else:
-                print("Number of players is only " + str(len(players)))
 
 # def check_users():
 #     pass
