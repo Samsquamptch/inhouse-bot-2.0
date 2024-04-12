@@ -9,10 +9,15 @@ import networkx as nx
 from networkx.algorithms import bipartite
 
 
-def load_token():
-    with open('../../credentials/discord_token.yml') as f:
+def discord_credentials(item):
+    with open('../../credentials/bot_credentials.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
-    return data['TOKEN']
+    return data[item]
+
+def steam_login():
+    with open('../../credentials/bot_credentials.yml') as f:
+        data = yaml.safe_load(f)
+        return (data['USERNAME'], data['PASSWORD'])
 
 
 def load_default_config(category):
@@ -22,7 +27,7 @@ def load_default_config(category):
 
 
 def load_config_data(server, category, sub_category=None):
-    with open(f'../../data/{server.id}_config.yml') as f:
+    with open(f'../../data/{server}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
     if sub_category is None:
         return data[category]

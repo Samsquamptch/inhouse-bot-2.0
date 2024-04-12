@@ -222,7 +222,7 @@ class InhouseQueue(discord.ui.View):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
         queue_teams = data_management.assign_teams(queue_ids, server)
-        queue_name = data_management.load_config_data(self.server, 'CONFIG', 'queue_name')
+        queue_name = data_management.load_config_data(self.server.id, 'CONFIG', 'queue_name')
         queue_embed = discord.Embed(title=f"{queue_name} QUEUE", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
         icon_url = server.icon.url
@@ -281,7 +281,7 @@ class InhouseQueue(discord.ui.View):
         else:
             embed_desc = "The queue is currently empty. You can change this!"
             embed_clr = 0xFF0000
-        queue_name = data_management.load_config_data(self.server, 'CONFIG', 'queue_name')
+        queue_name = data_management.load_config_data(self.server.id, 'CONFIG', 'queue_name')
         queue_embed = discord.Embed(title=f"{queue_name} QUEUE", description=f'{embed_desc}',
                                     color=embed_clr)
         queue_length = len(queue_list)

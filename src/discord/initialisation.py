@@ -238,8 +238,8 @@ class ConfigButtons(discord.ui.View):
 
 
 async def confirm_configuration(interaction):
-    channel_id = data_management.load_config_data(interaction.guild, 'CHANNELS', 'admin_channel')
-    role_id = data_management.load_config_data(interaction.guild, 'ROLES', 'admin_role')
+    channel_id = data_management.load_config_data(interaction.guild.id, 'CHANNELS', 'admin_channel')
+    role_id = data_management.load_config_data(interaction.guild.id, 'ROLES', 'admin_role')
     admin_channel = discord.utils.get(interaction.guild.channels, id=channel_id)
     admin_role = discord.utils.get(interaction.guild.roles, id=role_id)
     await admin_channel.set_permissions(admin_role, read_messages=True)
@@ -304,26 +304,26 @@ async def create_channels(interaction, cat_str, channel_dict):
 
 
 async def run_user_modules(server):
-    channel_id = data_management.load_config_data(server, 'CHANNELS')
+    channel_id = data_management.load_config_data(server.id, 'CHANNELS')
     admin_channel = discord.utils.get(server.channels, id=channel_id['admin_channel'])
     queue_channel = discord.utils.get(server.channels, id=channel_id['queue_channel'])
     # Send admin panel to admin channel
     await admin_channel.purge()
-    verify_view = admin_panel.AdminEmbed(data_management.load_config_data(server, 'ROLES'))
+    verify_view = admin_panel.AdminEmbed(data_management.load_config_data(server.id, 'ROLES'))
     await verify_view.send_embed(admin_channel, server)
     await admin_channel.send("More options are available via the drop-down menu below",
                              view=select_menus.AdminOptions())
     print("Admin settings created")
     # Send queue buttons and panel to queue channel
     await queue_channel.purge()
-    inhouse_id = data_management.load_config_data(server, 'ROLES', 'registered_role')
+    inhouse_id = data_management.load_config_data(server.id, 'ROLES', 'registered_role')
     register_view = register_user.RegisterButton(discord.utils.get(server.roles, id=inhouse_id), verify_view)
     await queue_channel.send("New user? Please register here:", view=register_view)
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions())
-    inhouse_view = inhouse_queue.InhouseQueue(server, data_management.load_config_data(server, 'ROLES'),
-                                              data_management.load_config_data(server, 'CHANNELS'),
-                                              data_management.load_config_data(server, 'CONFIG'))
+    inhouse_view = inhouse_queue.InhouseQueue(server, data_management.load_config_data(server.id, 'ROLES'),
+                                              data_management.load_config_data(server.id, 'CHANNELS'),
+                                              data_management.load_config_data(server.id, 'CONFIG'))
     await inhouse_view.send_embed(queue_channel)
     print("User settings created")
     return ServerViews(server.id, inhouse_view, verify_view)

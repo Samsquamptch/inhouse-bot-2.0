@@ -3,6 +3,7 @@ from discord.ext import commands
 import initialisation
 import data_management
 import check_user
+import dota_client
 import register_user
 from os.path import isfile
 from shutil import copyfile
@@ -23,7 +24,7 @@ def run_discord_bot():
                 data_management.initialise_database(server)
             if not isfile(f'../../data/{server.id}_config.yml'):
                 copyfile(f'../../data/default_config.yml', f'../../data/{server.id}_config.yml')
-            check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
+            check_config = data_management.load_config_data(server.id, 'CONFIG', 'setup_complete')
             if check_config == 'Yes':
                 server_list.append(await initialisation.run_user_modules(server))
 
@@ -35,7 +36,7 @@ def run_discord_bot():
 
     @bot.command(aliases=['vk'])
     async def votekick(ctx, user):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif '<@' == user[0:2]:
@@ -57,7 +58,7 @@ def run_discord_bot():
 
     @bot.command(aliases=['wh', 'whois'])
     async def who(ctx, user=None):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif user is None:
@@ -81,8 +82,8 @@ def run_discord_bot():
 
     @bot.command()
     async def register(ctx, dotabuff_id: int, mmr: int):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
-        registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         disc_reg = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
         steam_reg = data_management.check_for_value("steam", dotabuff_id, ctx.guild)
@@ -105,8 +106,14 @@ def run_discord_bot():
             await ctx.send("You have been registered. Please set your roles using !roles")
 
     @bot.command()
+    @commands.is_owner()
     async def forward_assist(ctx):
         data_management.initialise_database(ctx.guild)
+
+    # @bot.command()
+    # @commands.is_owner()
+    # async def start_lobby(ctx):
+    #     dota_client.run_dota_bot(ctx.guild)
 
     # @bot.command(aliases=['reset'])
     # @commands.is_owner()
@@ -123,8 +130,8 @@ def run_discord_bot():
 
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
-        registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         roles_list = [pos1, pos2, pos3, pos4, pos5]
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
@@ -184,8 +191,7 @@ def run_discord_bot():
     # async def get_help(ctx):
     #     await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
-    bot.run(data_management.load_token())
-
+    bot.run(data_management.discord_credentials('TOKEN'))
 
 if __name__ == '__main__':
     run_discord_bot()

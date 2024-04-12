@@ -14,7 +14,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
-        roles_id = data_management.load_config_data(server, 'ROLES')
+        roles_id = data_management.load_config_data(server.id, 'ROLES')
         check_if_exists = check_user.user_exists(server, user_name)
         if not check_if_exists[0]:
             await interaction.response.send_message(f'User {self.player_name} does not exist in database',
@@ -142,9 +142,9 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
         try:
             int_new_mmr = int(new_mmr)
             data_management.update_user_data(interaction.user.id, "mmr", int_new_mmr, interaction.guild)
-            notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+            notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
             notif_channel = discord.utils.get(server.channels, id=notif_id)
-            role_id = data_management.load_config_data(server, 'ROLES')
+            role_id = data_management.load_config_data(server.id, 'ROLES')
             role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
             data_management.update_user_data(interaction.user.id, "last_updated",
                                              datetime.datetime.today().strftime('%Y-%m-%d'), interaction.guild)
@@ -168,7 +168,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             if delete_conf.lower() == "y":
-                roles_id = data_management.load_config_data(server, 'ROLES')
+                roles_id = data_management.load_config_data(server.id, 'ROLES')
                 role_inhouse = discord.utils.get(server.roles, id=roles_id['registered_role'])
                 role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                 await check_if_exists[1].remove_roles(role_inhouse, role_verified)
