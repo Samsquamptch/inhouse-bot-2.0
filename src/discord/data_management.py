@@ -60,9 +60,36 @@ def initialise_database(server):
                 Lobby INTEGER, Running INTEGER, Rad_1 INTEGER, Rad_2 INTEGER, Rad_3 INTEGER, Rad_4 INTEGER,
                 Rad_5 INTEGER, Dire_1 INTEGER, Dire_2 INTEGER, Dire_3 INTEGER, Dire_4 INTEGER, Dire_5 INTEGER,
                 start_time timestamp)""")
-    cur.close()
+    cur.execute("""CREATE TABLE IF NOT EXISTS Autolobby(Id INTEGER PRIMARY KEY, Active INTEGER)""")
+    conn.commit
+    conn.close()
+    setup_autolobby(server)
     print("Database created successfully")
 
+
+def setup_autolobby(server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+    cur = conn.cursor()
+    data = [1, 0]
+    cur.execute("""INSERT INTO Autolobby (Id, Active) VALUES (?, ?)""", data)
+    conn.commit()
+    conn.close()
+
+def update_autolobby(server_id, value):
+    conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
+    cur = conn.cursor()
+    cur.execute("""UPDATE Autolobby SET Active = ? WHERE Id = ?""", value)
+    conn.commit()
+    conn.close()
+
+def check_autolobby(server_id):
+    conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
+    cur = conn.cursor()
+    cur.execute("SELECT Active from Autolobby where Id=?", [1])
+    match_state = cur.fetchone()[0]
+    print(match_state)
+    conn.close()
+    return match_state
 
 def update_user_data(discord_id, column, new_data, server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
@@ -93,6 +120,7 @@ def view_user_data(discord_id, server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
     user_data_list = list(cur.execute("SELECT * from Users WHERE disc=?", [discord_id]))
+    conn.close()
     return list(user_data_list[0])
 
 

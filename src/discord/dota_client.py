@@ -13,7 +13,6 @@ def run_dota_bot():
     client = SteamClient()
     dota = Dota2Client(client)
     Manager = dota2.features.chat.ChannelManager(dota, 'logger')
-    admins = [279050958, 28707060, 73877347, 61904034]
     server = data_management.discord_credentials('SERVER')
 
     @client.on('logged_on')
@@ -49,26 +48,13 @@ def run_dota_bot():
 
     @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
     def print_state(lobby):
-        if int(dota.lobby.state) == 0:
-            print(str("Lobby"))
-        elif int(dota.lobby.state) == 1:
-            print(str("Setup"))
-        elif int(dota.lobby.state) == 2:
-            print(str("Run"))
-        elif int(dota.lobby.state) == 3:
-            print(str("End"))
+        if int(dota.lobby.state) == 3:
+            data_management.update_autolobby(server, [0, 1])
+            print("Queue will be cleared")
             dota.destroy_lobby()
             sleep(10)
             dota.emit('make_lobby')
-
-    @Manager.on('message')
-    def message_check(c, message):
-        print(message.persona_name + " said: " + message.text)
-        if message.text == '!kill' and message.account_id in admins:
-            dota.destroy_lobby()
-            sleep(5)
-            dota.emit('make_lobby')
-        elif message.text == '!start':
+        elif int(dota.lobby.state) == 0:
             players = []
             users = dota.lobby.all_members
             for user in users:

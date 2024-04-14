@@ -3,7 +3,6 @@ from discord.ext import commands
 import initialisation
 import data_management
 import check_user
-import dota_client
 import register_user
 from os.path import isfile
 from shutil import copyfile
@@ -105,15 +104,17 @@ def run_discord_bot():
             await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
             await ctx.send("You have been registered. Please set your roles using !roles")
 
+    #Use this if the bot is being updated from an older version to a newer one (post database).
+    #This initialises the missing tables (one is useless, the other needed for autolobby)
     @bot.command()
     @commands.is_owner()
     async def forward_assist(ctx):
         data_management.initialise_database(ctx.guild)
 
-    # @bot.command()
-    # @commands.is_owner()
-    # async def start_lobby(ctx):
-    #     dota_client.run_dota_bot(ctx.guild)
+    @bot.command()
+    @commands.is_owner()
+    async def stop_lobby(ctx):
+        data_management.update_autolobby(ctx.guild.id, [0, 1])
 
     # @bot.command(aliases=['reset'])
     # @commands.is_owner()
@@ -193,5 +194,8 @@ def run_discord_bot():
 
     bot.run(data_management.discord_credentials('TOKEN'))
 
-if __name__ == '__main__':
-    run_discord_bot()
+run_discord_bot()
+
+#
+# if __name__ == '__main__':
+#     run_discord_bot()
