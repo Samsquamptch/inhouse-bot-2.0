@@ -19,6 +19,8 @@ def run_discord_bot():
         global server_list
         server_list = []
         for server in bot.guilds:
+            print(server)
+            print(server.id)
             if not isfile(f'../../data/inhouse_{server.id}.db'):
                 data_management.initialise_database(server)
             if not isfile(f'../../data/{server.id}_config.yml'):
