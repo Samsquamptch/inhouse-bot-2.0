@@ -24,6 +24,11 @@ def steam_login():
         data = yaml.safe_load(f)
         return (data['USERNAME'], data['PASSWORD'])
 
+def steam_login_2():
+    with open('../../credentials/bot_credentials_2.yml') as f:
+        data = yaml.safe_load(f)
+        return (data['USERNAME'], data['PASSWORD'])
+
 
 def load_default_config(category):
     with open('../../data/default_config.yml') as f:

@@ -9,7 +9,7 @@ from datetime import date
 
 def run_dota_bot():
     logging.basicConfig(filename=f'../../data/{date.today()}.-dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
-    (user, password) = data_management.steam_login()
+    (user, password) = data_management.steam_login_2()
     client = SteamClient()
     dota = Dota2Client(client)
     Manager = dota2.features.chat.ChannelManager(dota, 'logger')
