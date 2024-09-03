@@ -14,6 +14,11 @@ def discord_credentials(item):
         data = yaml.load(f, Loader=SafeLoader)
     return data[item]
 
+def discord_credentials_2(item):
+    with open('../../credentials/bot_credentials_2.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data[item]
+
 def steam_login():
     with open('../../credentials/bot_credentials.yml') as f:
         data = yaml.safe_load(f)
