@@ -112,8 +112,18 @@ def run_discord_bot():
         data_management.initialise_database(ctx.guild)
 
     @bot.command()
-    @commands.is_owner()
     async def stop_lobby(ctx):
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        admin_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
+        admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
+        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
+            print("fail1")
+            return
+        if admin_role not in ctx.author.roles:
+            print("fail2")
+            await ctx.send("You need to be an admin to use this command, bozo!")
+            return
+        print("pass")
         data_management.update_autolobby(ctx.guild.id, [0, 1])
 
     # @bot.command(aliases=['reset'])
@@ -137,7 +147,7 @@ def run_discord_bot():
         roles_list = [pos1, pos2, pos3, pos4, pos5]
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        elif not registered_role:
+        elif registered_role not in ctx.author.roles:
             await ctx.send("You need to register before you set your roles!")
             return
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
