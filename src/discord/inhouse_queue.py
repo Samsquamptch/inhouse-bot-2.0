@@ -21,7 +21,7 @@ class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
     async def on_submit(self, interaction: discord.Interaction):
         server = interaction.guild
         self.user_name = str(self.player_name)
-        if self.user_name.lower() == "all" or self.user_name == "clear":
+        if self.user_name.lower() == "all" or self.user_name.lower() == "clear":
             self.clear_users = True
             await interaction.response.defer()
         else:
@@ -450,13 +450,7 @@ class InhouseQueue(discord.ui.View):
             await interaction.response.send_modal(admin_modal)
             await admin_modal.wait()
             if admin_modal.clear_users:
-                # self.afk_dict.clear()
-                # self.votekick_dict.clear()
-                # self.queued_players.clear()
-                # await self.update_message(self.queued_players, server, 'Clear', interaction.user)
-                # await self.waiting_room_transfer(server)
-                # await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
-                self.bot_clear_queue(server, interaction)
+                await self.bot_clear_queue(server, interaction)
             elif not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
                 await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
             else:
