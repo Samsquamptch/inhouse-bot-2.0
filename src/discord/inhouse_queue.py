@@ -189,6 +189,14 @@ class InhouseQueue(discord.ui.View):
                     self.afk_dict[user.id] = datetime.datetime.now(tz=None)
                     asyncio.create_task(self.afk_ping(user, notif_channel))
 
+    @tasks.loop(minutes=1)
+    async def match_end_check(self, server):
+        print("Checking")
+        if data_management.check_autolobby(server.id) == 0:
+            await self.bot_clear_queue(server)
+        else:
+            pass
+
     async def afk_ping(self, user, channel):
         afk_check_ping = AfkCheckButtons()
         afk_check_ping.check_user = user
@@ -202,15 +210,17 @@ class InhouseQueue(discord.ui.View):
         else:
             self.afk_dict[user.id] = datetime.datetime.now(tz=None)
 
-    # async def test_add_user(self, interaction: discord.Interaction):
-    #     server = interaction.guild
-    #     test_list = ["Hamma", "PharmarMarosh", "Lekandor", "Boo", "Abfr0", "greenman", "Glimmy", "Rock Bottom",
-    #                  "Teky"]
-    #     for user in test_list:
-    #         check_if_exists = check_user.user_exists(server, user)
-    #         if user not in self.queued_players:
-    #             self.queued_players.append(check_if_exists[1])
-    #     print(self.queued_players)
+    async def bot_clear_queue(self, server, interaction=None):
+        self.afk_dict.clear()
+        self.votekick_dict.clear()
+        self.queued_players.clear()
+        if (interaction == None):
+            await self.update_message(self.queued_players, server, 'Autolobby')
+        else:
+            await self.update_message(self.queued_players, server, 'Clear', interaction.user)
+            await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
+        self.match_end_check.stop()
+        await self.waiting_room_transfer(server)
 
     async def send_embed(self, channel):
         self.preload_modal.channel_id = self.channel_id
@@ -222,7 +232,7 @@ class InhouseQueue(discord.ui.View):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
         queue_teams = data_management.assign_teams(queue_ids, server)
-        queue_name = data_management.load_config_data(self.server, 'CONFIG', 'queue_name')
+        queue_name = data_management.load_config_data(self.server.id, 'CONFIG', 'queue_name')
         queue_embed = discord.Embed(title=f"{queue_name} QUEUE", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
         icon_url = server.icon.url
@@ -281,7 +291,7 @@ class InhouseQueue(discord.ui.View):
         else:
             embed_desc = "The queue is currently empty. You can change this!"
             embed_clr = 0xFF0000
-        queue_name = data_management.load_config_data(self.server, 'CONFIG', 'queue_name')
+        queue_name = data_management.load_config_data(self.server.id, 'CONFIG', 'queue_name')
         queue_embed = discord.Embed(title=f"{queue_name} QUEUE", description=f'{embed_desc}',
                                     color=embed_clr)
         queue_length = len(queue_list)
@@ -312,6 +322,8 @@ class InhouseQueue(discord.ui.View):
                 queue_embed.add_field(name='', value=f'{action_user.display_name} was kicked from queue')
             case 'Clear':
                 queue_embed.add_field(name='', value=f'Queue was cleared by {action_user.display_name}')
+            case 'Autlobby':
+                queue_embed.add_field(name='', value=f'Queue was cleared by Autolobby')
             case _:
                 pass
         if queue_list:
@@ -326,12 +338,16 @@ class InhouseQueue(discord.ui.View):
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
             channel = discord.utils.get(server.channels, id=self.channel_id['queue_channel'])
+            data_management.update_autolobby(server.id, [1, 1])
+            print("Loaded")
             await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
                                f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
                                f'<@{queue_list[3].id}> <@{queue_list[4].id}> <@{queue_list[5].id}>'
                                f'<@{queue_list[6].id}> <@{queue_list[7].id}> <@{queue_list[8].id}>'
                                f'<@{queue_list[9].id}>', delete_after=600)
+            self.match_end_check.start(server)
         else:
+            self.match_end_check.stop()
             await self.message.edit(embed=self.create_embed(queue_list, server, action, update_user), view=self)
 
     async def waiting_room_transfer(self, server):
@@ -434,12 +450,13 @@ class InhouseQueue(discord.ui.View):
             await interaction.response.send_modal(admin_modal)
             await admin_modal.wait()
             if admin_modal.clear_users:
-                self.afk_dict.clear()
-                self.votekick_dict.clear()
-                self.queued_players.clear()
-                await self.update_message(self.queued_players, server, 'Clear', interaction.user)
-                await self.waiting_room_transfer(server)
-                await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
+                # self.afk_dict.clear()
+                # self.votekick_dict.clear()
+                # self.queued_players.clear()
+                # await self.update_message(self.queued_players, server, 'Clear', interaction.user)
+                # await self.waiting_room_transfer(server)
+                # await interaction.followup.send(content=f'queue has been cleared', ephemeral=True)
+                self.bot_clear_queue(server, interaction)
             elif not admin_modal.user_acc or admin_modal.user_acc not in self.queued_players:
                 await interaction.followup.send(content=f'{admin_modal.user_name} isn\'t in the queue', ephemeral=True)
             else:
@@ -466,13 +483,3 @@ class InhouseQueue(discord.ui.View):
         else:
             await interaction.response.send_message(content="You can't initiate a votekick if you're not in the queue!",
                                                     ephemeral=True, delete_after=5)
-
-    # @discord.ui.button(label="Add User (test)", emoji="🖥️",
-    #                    style=discord.ButtonStyle.blurple)
-    # async def add_user_test(self, interaction: discord.Interaction, button: discord.ui.Button):
-    #     server = interaction.user.guild
-    #     role_admin = discord.utils.get(server.roles, id=self.roles_id['admin_role'])
-    #     if role_admin in interaction.user.roles:
-    #         await self.test_add_user(interaction)
-    #         await self.update_message(self.queued_players, server)
-    #         await interaction.response.defer()

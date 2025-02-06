@@ -23,7 +23,7 @@ def run_discord_bot():
                 data_management.initialise_database(server)
             if not isfile(f'../../data/{server.id}_config.yml'):
                 copyfile(f'../../data/default_config.yml', f'../../data/{server.id}_config.yml')
-            check_config = data_management.load_config_data(server, 'CONFIG', 'setup_complete')
+            check_config = data_management.load_config_data(server.id, 'CONFIG', 'setup_complete')
             if check_config == 'Yes':
                 server_list.append(await initialisation.run_user_modules(server))
 
@@ -35,7 +35,7 @@ def run_discord_bot():
 
     @bot.command(aliases=['vk'])
     async def votekick(ctx, user):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif '<@' == user[0:2]:
@@ -57,7 +57,7 @@ def run_discord_bot():
 
     @bot.command(aliases=['wh', 'whois'])
     async def who(ctx, user=None):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif user is None:
@@ -81,8 +81,8 @@ def run_discord_bot():
 
     @bot.command()
     async def register(ctx, dotabuff_id: int, mmr: int):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
-        registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         disc_reg = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
         steam_reg = data_management.check_for_value("steam", dotabuff_id, ctx.guild)
@@ -99,32 +99,55 @@ def run_discord_bot():
             await ctx.send(
                 content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
                 ephemeral=True)
-        chosen_server.admin.unverified_list.append(ctx.author)
-        await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
-        await ctx.send("You have been registered. Please set your roles using !roles")
+        else:
+            chosen_server.admin.unverified_list.append(ctx.author)
+            await register_user.register(ctx.author, dotabuff_id, mmr, ctx.guild)
+            await ctx.send("You have been registered. Please set your roles using !roles")
 
-    @bot.command(aliases=['reset'])
+    #Use this if the bot is being updated from an older version to a newer one (post database).
+    #This initialises the missing tables (one is useless, the other needed for autolobby)
+    @bot.command()
     @commands.is_owner()
-    async def clear_roles(ctx):
-        role_id = data_management.load_config_data(ctx.guild, 'ROLES')
-        registered_role = discord.utils.get(ctx.guild.roles, id=role_id['registered_role'])
-        verified_role = discord.utils.get(ctx.guild.roles, id=role_id['verified_role'])
-        user_list = [x for x in ctx.guild.members if verified_role in x.roles]
-        for user in user_list:
-            print(user.display_name)
-            await user.remove_roles(verified_role)
-            await user.remove_roles(registered_role)
-        await ctx.send("roles cleared")
+    async def forward_assist(ctx):
+        data_management.initialise_database(ctx.guild)
+
+    @bot.command()
+    async def stop_lobby(ctx):
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        admin_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
+        admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
+        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
+            print("fail1")
+            return
+        if admin_role not in ctx.author.roles:
+            print("fail2")
+            await ctx.send("You need to be an admin to use this command, bozo!")
+            return
+        print("pass")
+        data_management.update_autolobby(ctx.guild.id, [0, 1])
+
+    # @bot.command(aliases=['reset'])
+    # @commands.is_owner()
+    # async def clear_roles(ctx):
+    #     role_id = data_management.load_config_data(ctx.guild, 'ROLES')
+    #     registered_role = discord.utils.get(ctx.guild.roles, id=role_id['registered_role'])
+    #     verified_role = discord.utils.get(ctx.guild.roles, id=role_id['verified_role'])
+    #     user_list = [x for x in ctx.guild.members if verified_role in x.roles]
+    #     for user in user_list:
+    #         print(user.display_name)
+    #         await user.remove_roles(verified_role)
+    #         await user.remove_roles(registered_role)
+    #     await ctx.send("roles cleared")
 
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
-        chat_channel = data_management.load_config_data(ctx.guild, 'CHANNELS', 'chat_channel')
-        registered_role_id = data_management.load_config_data(ctx.guild, 'ROLES', 'registered_role')
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         roles_list = [pos1, pos2, pos3, pos4, pos5]
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        elif not registered_role:
+        elif registered_role not in ctx.author.roles:
             await ctx.send("You need to register before you set your roles!")
             return
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
@@ -169,16 +192,20 @@ def run_discord_bot():
             await ctx.send(
                 f"Please input the user you wish to look up"
                 f"```\n!wh Jam!```\n")
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(f"User is not registered with inhouse bot")
         else:
-            await ctx.send(f"Something went wrong. Please try again.")
+            await ctx.send(f"User not found, they probably aren't registered!")
 
     # @bot.command()
     # # Used to post the help button, currently not being worked on (name to be amended)
     # async def get_help(ctx):
     #     await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
-    bot.run(data_management.load_token())
+    bot.run(data_management.discord_credentials('TOKEN'))
 
+run_discord_bot()
 
-if __name__ == '__main__':
-    run_discord_bot()
+#
+# if __name__ == '__main__':
+#     run_discord_bot()

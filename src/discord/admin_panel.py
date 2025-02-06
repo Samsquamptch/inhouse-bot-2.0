@@ -131,7 +131,7 @@ class AdminEmbed(discord.ui.View):
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+            notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
             notif_channel = discord.utils.get(server.channels, id=notif_id)
             role_verified = discord.utils.get(server.roles, id=self.roles_id['verified_role'])
             user_to_verify = self.unverified_list[0]
@@ -164,7 +164,7 @@ class AdminEmbed(discord.ui.View):
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+            notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
             notif_channel = discord.utils.get(server.channels, id=notif_id)
             role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
             user_to_reject = self.unverified_list[0]
