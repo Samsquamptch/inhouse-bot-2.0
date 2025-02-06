@@ -60,6 +60,13 @@ def update_config(server, category, sub_category, new_value):
     with open(f'../../data/{server.id}_config.yml', 'w') as f:
         yaml.dump(data, f)
 
+def initialise_server_list():
+    conn = sqlite3.connect(f'../../data/inhouses.db')
+    cur = conn.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS Servers(Id INTEGER PRIMARY KEY, ServerId INTEGER)""")
+    conn.commit
+    conn.close()
+    print("server list created successfully")
 
 def initialise_database(server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')

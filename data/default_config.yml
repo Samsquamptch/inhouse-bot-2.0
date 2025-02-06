@@ -19,7 +19,7 @@ CONFIG:
 DOTA:
   lobby_name: 'Inhouse Lobby'
   all_chat: False
-  server_region: EUROPE
+  server_region: 3
   league_id: 0
   dotatv_delay: 0
 

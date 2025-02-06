@@ -82,13 +82,13 @@ def run_discord_bot():
     @bot.command()
     async def register(ctx, dotabuff_id: int, mmr: int):
         chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
+            return
         registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         disc_reg = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
         steam_reg = data_management.check_for_value("steam", dotabuff_id, ctx.guild)
-        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
-            return
-        elif registered_role in ctx.author.roles or disc_reg:
+        if registered_role in ctx.author.roles or disc_reg:
             await ctx.send("Your discord account is already registered!")
             return
         elif steam_reg:
@@ -114,40 +114,41 @@ def run_discord_bot():
     @bot.command()
     async def stop_lobby(ctx):
         chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
+            return
         admin_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
         admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
-        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
-            print("fail1")
-            return
         if admin_role not in ctx.author.roles:
-            print("fail2")
-            await ctx.send("You need to be an admin to use this command, bozo!")
+            await ctx.send("Only admins are allowed to use this command")
             return
-        print("pass")
-        data_management.update_autolobby(ctx.guild.id, [0, 1])
+        else:
+            data_management.update_autolobby(ctx.guild.id, [0, 1])
+            await ctx.send("Please wait for up to a minute for the queue to clear")
 
-    # @bot.command(aliases=['reset'])
-    # @commands.is_owner()
-    # async def clear_roles(ctx):
-    #     role_id = data_management.load_config_data(ctx.guild, 'ROLES')
-    #     registered_role = discord.utils.get(ctx.guild.roles, id=role_id['registered_role'])
-    #     verified_role = discord.utils.get(ctx.guild.roles, id=role_id['verified_role'])
-    #     user_list = [x for x in ctx.guild.members if verified_role in x.roles]
-    #     for user in user_list:
-    #         print(user.display_name)
-    #         await user.remove_roles(verified_role)
-    #         await user.remove_roles(registered_role)
-    #     await ctx.send("roles cleared")
+    @bot.command()
+    async def start_lobby(ctx):
+        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
+            return
+        admin_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
+        admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
+        if admin_role not in ctx.author.roles:
+            await ctx.send("Only admins are allowed to use this command")
+            return
+        else:
+            data_management.update_autolobby(ctx.guild.id, [1, 1])
+            await ctx.send("Please wait for up to a minute for the lobby to start")
 
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
         chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
+            return
         registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         roles_list = [pos1, pos2, pos3, pos4, pos5]
-        if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
-            return
-        elif registered_role not in ctx.author.roles:
+        if registered_role not in ctx.author.roles:
+          
             await ctx.send("You need to register before you set your roles!")
             return
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
@@ -196,11 +197,6 @@ def run_discord_bot():
             await ctx.send(f"User is not registered with inhouse bot")
         else:
             await ctx.send(f"User not found, they probably aren't registered!")
-
-    # @bot.command()
-    # # Used to post the help button, currently not being worked on (name to be amended)
-    # async def get_help(ctx):
-    #     await ctx.send("Require assistance? Check our help options", view=user_help.HelpButton())
 
     bot.run(data_management.discord_credentials('TOKEN'))
 

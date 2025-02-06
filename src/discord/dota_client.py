@@ -8,7 +8,7 @@ from datetime import date
 
 
 def run_dota_bot():
-    logging.basicConfig(filename=f'../../data/{date.today()}.-dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
+    # logging.basicConfig(filename=f'../../data/{date.today()}.-dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
     (user, password) = data_management.steam_login()
     client = SteamClient()
     dota = Dota2Client(client)
@@ -65,6 +65,11 @@ def run_dota_bot():
                 return False
             elif len(players) == 10:
                 dota.launch_practice_lobby()
+            elif len(players) == 1:
+                print('test')
+                dota.destroy_lobby()
+                sleep(10)
+                client.disconnect()
             else:
                 print("Number of players is only " + str(len(players)))
 
