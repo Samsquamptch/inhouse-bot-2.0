@@ -148,6 +148,7 @@ def run_discord_bot():
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         roles_list = [pos1, pos2, pos3, pos4, pos5]
         if registered_role not in ctx.author.roles:
+          
             await ctx.send("You need to register before you set your roles!")
             return
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
