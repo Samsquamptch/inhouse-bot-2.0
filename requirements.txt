@@ -7,3 +7,5 @@ dota2~=1.1.0
 steam~=1.4.4
 discord~=2.3.2
 networkx~=3.1
+
+python-dotenv~=1.0.1
