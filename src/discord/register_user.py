@@ -245,11 +245,11 @@ async def register(register_user, steam_int, int_mmr, server):
     player = [register_user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
     data_management.add_user_data(player, server)
     # Adds the inhouse role to the user once their details have been added to the register
-    role_id = data_management.load_config_data(server, 'ROLES')
+    role_id = data_management.load_config_data(server.id, 'ROLES')
     role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
     role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
     await register_user.add_roles(role_inhouse)
-    notif_id = data_management.load_config_data(server, 'CHANNELS', 'notification_channel')
+    notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
     notif_channel = discord.utils.get(server.channels, id=notif_id)
     await notif_channel.send(f'<@&{role_admin.id}> user <@{register_user.id}> has '
                              f'registered for the inhouse and requires verification')

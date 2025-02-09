@@ -1,5 +1,5 @@
 pandas~=2.0.3
-numpy
+numpy~=1.26.4
 pyyaml~=6.0.1
 pyspark
 psycopg2
@@ -7,3 +7,5 @@ dota2~=1.1.0
 steam~=1.4.4
 discord~=2.3.2
 networkx~=3.1
+
+python-dotenv~=1.0.1

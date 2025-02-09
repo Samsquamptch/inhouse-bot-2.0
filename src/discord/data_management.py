@@ -7,12 +7,65 @@ from datetime import datetime
 from yaml.loader import SafeLoader
 import networkx as nx
 from networkx.algorithms import bipartite
+from dotenv import get_key
 
 
-def load_token():
-    with open('../../credentials/discord_token.yml') as f:
+def get_db_connection():
+    conn = sqlite3.connect(f'../../data/inhouse.db')
+    return conn
+
+
+def get_discord_token():
+    return get_key("../../credentials/.env", "TOKEN")
+
+
+def check_server_in_db(server):
+    conn = get_db_connection()
+    check = conn.cursor().execute("""SELECT * FROM Server WHERE Server = ?; """, [server.id]).fetchall()
+    conn.close()
+    return check
+
+
+def add_server_to_db(server):
+    conn = get_db_connection()
+    conn.cursor().execute("""INSERT INTO Server (Server) VALUES (?)""", [server.id])
+    conn.commit()
+    conn.close()
+    return
+
+def check_server_settings(server):
+    conn = get_db_connection()
+    server_details = list(conn.cursor().execute("""SELECT ServerSettings.ServerId FROM ServerSettings INNER JOIN Server
+                                                on ServerSettings.ServerId = Server.Id
+                                                WHERE Server.Server = ?""",
+                                                [server.id]).fetchall())
+    conn.close()
+    print(server_details)
+    return server_details
+
+
+def discord_credentials(item):
+    with open('../../credentials/bot_credentials.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
-    return data['TOKEN']
+    return data[item]
+
+
+def discord_credentials_2(item):
+    with open('../../credentials/bot_credentials_2.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+    return data[item]
+
+
+def steam_login():
+    with open('../../credentials/bot_credentials.yml') as f:
+        data = yaml.safe_load(f)
+        return (data['USERNAME'], data['PASSWORD'])
+
+
+def steam_login_2():
+    with open('../../credentials/bot_credentials_2.yml') as f:
+        data = yaml.safe_load(f)
+        return (data['USERNAME'], data['PASSWORD'])
 
 
 def load_default_config(category):
@@ -21,13 +74,19 @@ def load_default_config(category):
     return data[category]
 
 
-def load_config_data(server, category, sub_category=None):
-    with open(f'../../data/{server.id}_config.yml') as f:
+def load_config_data(server, category):
+    with open(f'../../data/{server}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
-    if sub_category is None:
-        return data[category]
-    else:
-        return data[category][sub_category]
+    print(category)
+    return data
+
+
+def update_league(new_value):
+    with open(f'../../credentials/credentials_steam.yml') as f:
+        data = yaml.load(f, Loader=SafeLoader)
+        data['LEAGUE'] = int(new_value)
+        with open(f'../../credentials/credentials_steam.yml', 'w') as f:
+            yaml.dump(data, f)
 
 
 def update_config(server, category, sub_category, new_value):
@@ -38,13 +97,56 @@ def update_config(server, category, sub_category, new_value):
         yaml.dump(data, f)
 
 
+def initialise_server_list():
+    conn = sqlite3.connect(f'../../data/inhouses.db')
+    cur = conn.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS Servers(Id INTEGER PRIMARY KEY, ServerId INTEGER)""")
+    conn.commit
+    conn.close()
+    print("server list created successfully")
+
+
 def initialise_database(server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
                 pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER, last_updated timestamp)""")
-    cur.close()
+    cur.execute("""CREATE TABLE IF NOT EXISTS Matches(Id INTEGER PRIMARY KEY AUTOINCREMENT,	MatchId	INTEGER,
+                Lobby INTEGER, Running INTEGER, Rad_1 INTEGER, Rad_2 INTEGER, Rad_3 INTEGER, Rad_4 INTEGER,
+                Rad_5 INTEGER, Dire_1 INTEGER, Dire_2 INTEGER, Dire_3 INTEGER, Dire_4 INTEGER, Dire_5 INTEGER,
+                start_time timestamp)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS Autolobby(Id INTEGER PRIMARY KEY, Active INTEGER)""")
+    conn.commit
+    conn.close()
+    setup_autolobby(server)
     print("Database created successfully")
+
+
+def setup_autolobby(server):
+    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+    cur = conn.cursor()
+    data = [1, 0]
+    cur.execute("""INSERT INTO Autolobby (Id, Active) VALUES (?, ?)""", data)
+    conn.commit()
+    conn.close()
+
+
+def update_autolobby(server_id, value):
+    conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
+    cur = conn.cursor()
+    cur.execute("""UPDATE Autolobby SET Active = ? WHERE Id = ?""", value)
+    conn.commit()
+    conn.close()
+
+
+def check_autolobby(server_id):
+    conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
+    cur = conn.cursor()
+    cur.execute("SELECT Active from Autolobby where Id=?", [1])
+    match_state = cur.fetchone()[0]
+    print(match_state)
+    conn.close()
+    return match_state
 
 
 def update_user_data(discord_id, column, new_data, server):
@@ -76,6 +178,7 @@ def view_user_data(discord_id, server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
     user_data_list = list(cur.execute("SELECT * from Users WHERE disc=?", [discord_id]))
+    conn.close()
     return list(user_data_list[0])
 
 
