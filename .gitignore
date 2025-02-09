@@ -1,6 +1,4 @@
 data/activate.txt
-data/users.csv
 data/match.csv
-data/userstest.csv
 data/inhouse.db
-data/credentials.env
+

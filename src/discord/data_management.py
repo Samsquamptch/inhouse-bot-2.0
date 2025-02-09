@@ -7,6 +7,41 @@ from datetime import datetime
 from yaml.loader import SafeLoader
 import networkx as nx
 from networkx.algorithms import bipartite
+from dotenv import get_key
+
+
+def get_db_connection():
+    conn = sqlite3.connect(f'../../data/inhouse.db')
+    return conn
+
+
+def get_discord_token():
+    return get_key("../../credentials/.env", "TOKEN")
+
+
+def check_server_in_db(server):
+    conn = get_db_connection()
+    check = conn.cursor().execute("""SELECT * FROM Server WHERE Server = ?; """, [server.id]).fetchall()
+    conn.close()
+    return check
+
+
+def add_server_to_db(server):
+    conn = get_db_connection()
+    conn.cursor().execute("""INSERT INTO Server (Server) VALUES (?)""", [server.id])
+    conn.commit()
+    conn.close()
+    return
+
+def check_server_settings(server):
+    conn = get_db_connection()
+    server_details = list(conn.cursor().execute("""SELECT ServerSettings.ServerId FROM ServerSettings INNER JOIN Server
+                                                on ServerSettings.ServerId = Server.Id
+                                                WHERE Server.Server = ?""",
+                                                [server.id]).fetchall())
+    conn.close()
+    print(server_details)
+    return server_details
 
 
 def discord_credentials(item):
@@ -14,15 +49,18 @@ def discord_credentials(item):
         data = yaml.load(f, Loader=SafeLoader)
     return data[item]
 
+
 def discord_credentials_2(item):
     with open('../../credentials/bot_credentials_2.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
     return data[item]
 
+
 def steam_login():
     with open('../../credentials/bot_credentials.yml') as f:
         data = yaml.safe_load(f)
         return (data['USERNAME'], data['PASSWORD'])
+
 
 def steam_login_2():
     with open('../../credentials/bot_credentials_2.yml') as f:
@@ -36,13 +74,11 @@ def load_default_config(category):
     return data[category]
 
 
-def load_config_data(server, category, sub_category=None):
+def load_config_data(server, category):
     with open(f'../../data/{server}_config.yml') as f:
         data = yaml.load(f, Loader=SafeLoader)
-    if sub_category is None:
-        return data[category]
-    else:
-        return data[category][sub_category]
+    print(category)
+    return data
 
 
 def update_league(new_value):
@@ -60,6 +96,7 @@ def update_config(server, category, sub_category, new_value):
     with open(f'../../data/{server.id}_config.yml', 'w') as f:
         yaml.dump(data, f)
 
+
 def initialise_server_list():
     conn = sqlite3.connect(f'../../data/inhouses.db')
     cur = conn.cursor()
@@ -67,6 +104,7 @@ def initialise_server_list():
     conn.commit
     conn.close()
     print("server list created successfully")
+
 
 def initialise_database(server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
@@ -92,12 +130,14 @@ def setup_autolobby(server):
     conn.commit()
     conn.close()
 
+
 def update_autolobby(server_id, value):
     conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
     cur = conn.cursor()
     cur.execute("""UPDATE Autolobby SET Active = ? WHERE Id = ?""", value)
     conn.commit()
     conn.close()
+
 
 def check_autolobby(server_id):
     conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
@@ -107,6 +147,7 @@ def check_autolobby(server_id):
     print(match_state)
     conn.close()
     return match_state
+
 
 def update_user_data(discord_id, column, new_data, server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')

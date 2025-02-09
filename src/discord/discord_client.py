@@ -19,12 +19,9 @@ def run_discord_bot():
         global server_list
         server_list = []
         for server in bot.guilds:
-            if not isfile(f'../../data/inhouse_{server.id}.db'):
-                data_management.initialise_database(server)
-            if not isfile(f'../../data/{server.id}_config.yml'):
-                copyfile(f'../../data/default_config.yml', f'../../data/{server.id}_config.yml')
-            check_config = data_management.load_config_data(server.id, 'CONFIG', 'setup_complete')
-            if check_config == 'Yes':
+            if not data_management.check_server_in_db(server):
+                data_management.add_server_to_db(server)
+            if data_management.check_server_settings(server):
                 server_list.append(await initialisation.run_user_modules(server))
 
     @bot.command()
@@ -198,7 +195,7 @@ def run_discord_bot():
         else:
             await ctx.send(f"User not found, they probably aren't registered!")
 
-    bot.run(data_management.discord_credentials('TOKEN'))
+    bot.run(data_management.get_discord_token())
 
 run_discord_bot()
 

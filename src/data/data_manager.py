@@ -80,7 +80,7 @@ def update_bot_token():
     data_interface.set_env_variable("TOKEN", token)
 
 
-def main():
+def start_data_manager():
     if not data_interface.database_exists():
         print("Database contains no tables, creating now")
         data_interface.create_tables()
@@ -102,4 +102,5 @@ def main():
     print("Exiting program. Thank you for using database manager!")
     return
 
-main()
+
+start_data_manager()

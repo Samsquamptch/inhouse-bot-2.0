@@ -1,5 +1,4 @@
 import sqlite3
-
 import dotenv
 
 
@@ -9,15 +8,15 @@ def get_db_connection():
 
 
 def set_env_variable(key, newvalue):
-    dotenv.set_key("credentials.env", key, newvalue)
+    dotenv.set_key("../../credentials/.env", key, newvalue)
 
 
 def get_env_variable(key):
-    return dotenv.get_key("credentials.env", key)
+    return dotenv.get_key("../../credentials/.env", key)
 
 
 def delete_env_variable(key):
-    dotenv.unset_key("credentials.env", key)
+    dotenv.unset_key("../../credentials/.env", key)
 
 
 def get_reference_list(identifier=None):
@@ -33,11 +32,11 @@ def get_reference_list(identifier=None):
 
 def get_reference_server(identifier):
     conn = get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
     login_list = list(conn.cursor().execute("""SELECT ServerId FROM SteamLogin
                                             WHERE Title = ? OR ServerId = ?""", [identifier, identifier]).fetchall())
     conn.close()
-    for item in login_list:
-        server = str(item[0])
+    server = str(login_list[0])
     return server
 
 
@@ -82,7 +81,7 @@ def create_tables():
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INT PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
         MMR INT, Verified BOOL, Pos1 INT, Pos2 INT,Pos3 INT, Pos4 INT, Pos5 INT, LastUpdated DATETIME)""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Server(Id INTEGER PRIMARY KEY, Server BIGINT, AdminChannel BIGINT,
-        QueueChannel BIGINT GlobalChannel BIGINT ChatChannel BIGINT ChampionRole BIGINT)""")
+        QueueChannel BIGINT, GlobalChannel BIGINT, ChatChannel BIGINT, ChampionRole BIGINT)""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserStats(UserId INT, ServerId INT, Wins INT, Losses INT,
         FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS ServerSettings(ServerId INT UNIQUE, AfkTimer INT, SkillFloor INT,
