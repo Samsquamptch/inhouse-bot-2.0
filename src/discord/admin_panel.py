@@ -1,6 +1,6 @@
 import discord
 import check_user
-import data_management
+import discord_service
 
 
 class AdminEmbed(discord.ui.View):
@@ -26,7 +26,7 @@ class AdminEmbed(discord.ui.View):
         icon_url = server.icon.url
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
-            user_data = data_management.view_user_data(user.id, server)
+            user_data = discord_service.view_user_data(user.id, server)
             user_data = check_user.flip_values(user_data)
             all_embed.add_field(name=user.display_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})'
@@ -49,7 +49,7 @@ class AdminEmbed(discord.ui.View):
             self.update_buttons()
             if list_data:
                 user = list_data[0]
-                user_data = data_management.view_user_data(user.id, server)
+                user_data = discord_service.view_user_data(user.id, server)
                 update_embed = check_user.user_embed(user_data, user, server)
                 if interaction:
                     update_embed.set_footer(
@@ -131,7 +131,7 @@ class AdminEmbed(discord.ui.View):
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
+            notif_id = discord_service.load_config_data(server.id, 'CHANNELS', 'notification_channel')
             notif_channel = discord.utils.get(server.channels, id=notif_id)
             role_verified = discord.utils.get(server.roles, id=self.roles_id['verified_role'])
             user_to_verify = self.unverified_list[0]
@@ -164,12 +164,12 @@ class AdminEmbed(discord.ui.View):
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
+            notif_id = discord_service.load_config_data(server.id, 'CHANNELS', 'notification_channel')
             notif_channel = discord.utils.get(server.channels, id=notif_id)
             role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
             user_to_reject = self.unverified_list[0]
             await user_to_reject.remove_roles(role_inhouse)
-            user_data = data_management.view_user_data(self.unverified_list[0].id, server)
+            user_data = discord_service.view_user_data(self.unverified_list[0].id, server)
             if user_data[2] >= 5000:
                 await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse for'
                                          f' being too high MMR')

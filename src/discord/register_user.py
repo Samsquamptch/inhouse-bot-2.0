@@ -1,5 +1,5 @@
 import discord
-import data_management
+import discord_service
 import check_user
 from collections import defaultdict
 
@@ -38,7 +38,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, "pos1", select_item.values[0], interaction.guild)
+        discord_service.update_user_data(interaction.user.id, "pos1", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Carry")
         if counter_check:
@@ -60,7 +60,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, "pos2", select_item.values[0], interaction.guild)
+        discord_service.update_user_data(interaction.user.id, "pos2", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Midlane")
         if counter_check:
@@ -82,7 +82,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, "pos3", select_item.values[0], interaction.guild)
+        discord_service.update_user_data(interaction.user.id, "pos3", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Offlane")
         if counter_check:
@@ -104,7 +104,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, "pos4", select_item.values[0], interaction.guild)
+        discord_service.update_user_data(interaction.user.id, "pos4", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Soft Support")
         if counter_check:
@@ -126,7 +126,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        data_management.update_user_data(interaction.user.id, "pos5", select_item.values[0], interaction.guild)
+        discord_service.update_user_data(interaction.user.id, "pos5", select_item.values[0], interaction.guild)
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Hard Support")
         if counter_check:
@@ -150,7 +150,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        disc_reg = data_management.check_for_value("disc", interaction.user.id, interaction.guild)
+        disc_reg = discord_service.check_for_value("disc", interaction.user.id, interaction.guild)
         if disc_reg:
             await interaction.response.send_message(
                 'Your discord account is already registered to the database, please contact an admin for assistance',
@@ -172,7 +172,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                             steam = steam[0]
                         try:
                             steam_int = int(steam)
-                            steam_reg = data_management.check_for_value("steam", steam_int, interaction.guild)
+                            steam_reg = discord_service.check_for_value("steam", steam_int, interaction.guild)
                             if steam_reg:
                                 await interaction.response.send_message(
                                     'Your dotabuff account is already registered to the database, please contact an admin for assistance',
@@ -219,7 +219,7 @@ class RegisterButton(discord.ui.View):
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.role_inhouse in interaction.user.roles:
-            user_data = data_management.view_user_data(interaction.user.id, interaction.guild)
+            user_data = discord_service.view_user_data(interaction.user.id, interaction.guild)
             await interaction.response.send_message(
                 embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
                 ephemeral=True)
@@ -243,13 +243,13 @@ async def register(register_user, steam_int, int_mmr, server):
     # to how users are used to (which is higher number = more pref and lower number = less pref).
     # Swaps have been implemented where required for user output to avoid confusion
     player = [register_user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
-    data_management.add_user_data(player, server)
+    discord_service.add_user_data(player, server)
     # Adds the inhouse role to the user once their details have been added to the register
-    role_id = data_management.load_config_data(server.id, 'ROLES')
+    role_id = discord_service.load_config_data(server.id, 'ROLES')
     role_inhouse = discord.utils.get(server.roles, id=role_id['registered_role'])
     role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
     await register_user.add_roles(role_inhouse)
-    notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
+    notif_id = discord_service.load_config_data(server.id, 'CHANNELS', 'notification_channel')
     notif_channel = discord.utils.get(server.channels, id=notif_id)
     await notif_channel.send(f'<@&{role_admin.id}> user <@{register_user.id}> has '
                              f'registered for the inhouse and requires verification')

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import tasks
-import data_management
+import discord_service
 import check_user
 import datetime
 import asyncio
@@ -110,7 +110,7 @@ class WaitingRoom(discord.ui.View):
         queue_embed = discord.Embed(title="Inhouse Waiting List", description=f'{embed_desc}',
                                     color=embed_clr)
         for user in queue_list:
-            user_data = data_management.view_user_data(user.id, self.server)
+            user_data = discord_service.view_user_data(user.id, self.server)
             queue_embed.add_field(name=user.display_name, value=f'MMR: {user_data[2]}', inline=True)
         update_time = datetime.datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         queue_embed.set_footer(text=f'Waiting list updated at: {update_time}')
@@ -192,7 +192,7 @@ class InhouseQueue(discord.ui.View):
     @tasks.loop(minutes=1)
     async def match_end_check(self, server):
         print("Checking")
-        if data_management.check_autolobby(server.id) == 0:
+        if discord_service.check_autolobby(server.id) == 0:
             await self.bot_clear_queue(server)
         else:
             pass
@@ -231,8 +231,8 @@ class InhouseQueue(discord.ui.View):
     def full_queue_embed(self, queue_list, server):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = data_management.assign_teams(queue_ids, server)
-        queue_name = data_management.load_config_data(self.server.id, 'CONFIG', 'queue_name')
+        queue_teams = discord_service.assign_teams(queue_ids, server)
+        queue_name = discord_service.load_config_data(self.server.id, 'CONFIG', 'queue_name')
         queue_embed = discord.Embed(title=f"{queue_name} QUEUE", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
         icon_url = server.icon.url
@@ -248,8 +248,8 @@ class InhouseQueue(discord.ui.View):
         while x < 5:
             user_acc_radiant = discord.utils.get(server.members, id=radiant_team[x])
             user_acc_dire = discord.utils.get(server.members, id=dire_team[x])
-            user_radiant = data_management.view_user_data(radiant_team[x], server)
-            user_dire = data_management.view_user_data(dire_team[x], server)
+            user_radiant = discord_service.view_user_data(radiant_team[x], server)
+            user_dire = discord_service.view_user_data(dire_team[x], server)
             mmr_total_radiant = mmr_total_radiant + user_radiant[2]
             mmr_total_dire = mmr_total_dire + user_dire[2]
             queue_embed.add_field(name=f'{queue_roles[x]}',
@@ -291,7 +291,7 @@ class InhouseQueue(discord.ui.View):
         else:
             embed_desc = "The queue is currently empty. You can change this!"
             embed_clr = 0xFF0000
-        queue_name = data_management.load_config_data(self.server.id, 'CONFIG', 'queue_name')
+        queue_name = discord_service.load_config_data(self.server.id, 'CONFIG', 'queue_name')
         queue_embed = discord.Embed(title=f"{queue_name} QUEUE", description=f'{embed_desc}',
                                     color=embed_clr)
         queue_length = len(queue_list)
@@ -306,7 +306,7 @@ class InhouseQueue(discord.ui.View):
         queue_embed.set_thumbnail(url=f'{icon_url}')
         mmr_total = 0
         for user in queue_list:
-            user_data = data_management.view_user_data(user.id, server)
+            user_data = discord_service.view_user_data(user.id, server)
             mmr_total = mmr_total + user_data[2]
             role_preference = check_user.check_role_priority(user_data)
             queue_embed.add_field(name=user.display_name,
@@ -338,7 +338,7 @@ class InhouseQueue(discord.ui.View):
             await self.message.edit(embed=self.full_queue_embed(queue_list, server), view=self)
             await self.preload_modal.send_embed(server)
             channel = discord.utils.get(server.channels, id=self.channel_id['queue_channel'])
-            data_management.update_autolobby(server.id, [1, 1])
+            discord_service.update_autolobby(server.id, [1, 1])
             print("Loaded")
             await channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
                                f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'

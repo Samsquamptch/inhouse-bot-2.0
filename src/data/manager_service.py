@@ -4,6 +4,7 @@ import dotenv
 
 def get_db_connection():
     conn = sqlite3.connect(f'../../data/inhouse.db')
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -60,12 +61,15 @@ def edit_credentials(identifier, username, password):
 
 def add_credentials(title, server, username, password):
     conn = get_db_connection()
-    conn.cursor().execute("""INSERT INTO SteamLogin (Title, ServerId) Values (?, ?)""",
-                          [title, server])
-    set_env_variable(server + "username", username)
-    set_env_variable(server + "password", password)
-    conn.commit()
-    conn.close()
+    try:
+        conn.cursor().execute("""INSERT INTO SteamLogin (Title, ServerId) Values (?, ?)""",
+                              [title, server])
+        set_env_variable(server + "username", username)
+        set_env_variable(server + "password", password)
+        conn.commit()
+        conn.close()
+    except sqlite3.IntegrityError:
+        print("Server does not exist within the database!")
     return
 
 

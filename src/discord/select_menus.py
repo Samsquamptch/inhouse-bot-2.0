@@ -1,6 +1,6 @@
 import discord
 import check_user
-import data_management
+import discord_service
 import datetime
 
 # Modal for editing user details (accessed via admin select menu)
@@ -14,7 +14,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     async def on_submit(self, interaction: discord.Interaction):
         user_name = str(self.player_name)
         server = interaction.user.guild
-        roles_id = data_management.load_config_data(server.id, 'ROLES')
+        roles_id = discord_service.load_config_data(server.id, 'ROLES')
         check_if_exists = check_user.user_exists(server, user_name)
         if not check_if_exists[0]:
             await interaction.response.send_message(f'User {self.player_name} does not exist in database',
@@ -25,7 +25,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         if new_mmr != "":
             try:
                 int_new_mmr = int(new_mmr)
-                data_management.update_user_data(check_if_exists[1].id, "mmr", int_new_mmr, server)
+                discord_service.update_user_data(check_if_exists[1].id, "mmr", int_new_mmr, server)
             except ValueError:
                 await interaction.response.send_message('Please only input numbers for mmr',
                                                         ephemeral=True,
@@ -36,7 +36,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                 steam_id = steam_id.split("players/")
                 steam_id = steam_id[1].split('/')
                 int_steam_id = int(steam_id[0])
-                data_management.update_user_data(check_if_exists[1].id, "steam", int_steam_id, server)
+                discord_service.update_user_data(check_if_exists[1].id, "steam", int_steam_id, server)
             except ValueError:
                 await interaction.response.send_message('Please enter a full Dotabuff URL when updating a user',
                                                         ephemeral=True,
@@ -84,15 +84,15 @@ class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
             if settings_dict[item] != "":
                 try:
                     settings_dict[item] = int(settings_dict[item])
-                    data_management.update_config(interaction.guild, 'CONFIG', item, settings_dict[item])
+                    discord_service.update_config(interaction.guild, 'CONFIG', item, settings_dict[item])
                 except ValueError:
                     await interaction.response.send_message(f'Please only input numbers for {item}',
                                                             ephemeral=True, delete_after=10)
         if str_queue_name != "":
-            data_management.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
+            discord_service.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
         if str_league_id != "":
             try:
-                data_management.update_league(str_league_id)
+                discord_service.update_league(str_league_id)
             except ValueError:
                 await interaction.response.send_message(f'Please only input numbers for the league ID',
                                                         ephemeral=True, delete_after=10)
@@ -108,7 +108,7 @@ class ViewUserModal(discord.ui.Modal, title='View User'):
         server = interaction.user.guild
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
-            user_data = data_management.view_user_data(check_if_exists[1].id, interaction.guild)
+            user_data = discord_service.view_user_data(check_if_exists[1].id, interaction.guild)
             await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
                                                     ephemeral=True)
         else:
@@ -122,14 +122,14 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
     async def on_submit(self, interaction: discord.Interaction):
         new_mmr = str(self.set_mmr)
         server = interaction.guild
-        roles_id = data_management.load_config_data(server, 'ROLES')
+        roles_id = discord_service.load_config_data(server, 'ROLES')
         role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
         if role_verified not in interaction.user.roles:
             await interaction.response.send_message('You need to register before you can request an update!',
                                                     ephemeral=True,
                                                     delete_after=10)
             return
-        user_data = data_management.view_user_data(interaction.user.id, interaction.guild)
+        user_data = discord_service.view_user_data(interaction.user.id, interaction.guild)
         date_str = user_data[8]
         date_format = '%Y-%m-%d'
         date_obj = datetime.datetime.strptime(date_str, date_format)
@@ -141,12 +141,12 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
             return
         try:
             int_new_mmr = int(new_mmr)
-            data_management.update_user_data(interaction.user.id, "mmr", int_new_mmr, interaction.guild)
-            notif_id = data_management.load_config_data(server.id, 'CHANNELS', 'notification_channel')
+            discord_service.update_user_data(interaction.user.id, "mmr", int_new_mmr, interaction.guild)
+            notif_id = discord_service.load_config_data(server.id, 'CHANNELS', 'notification_channel')
             notif_channel = discord.utils.get(server.channels, id=notif_id)
-            role_id = data_management.load_config_data(server.id, 'ROLES')
+            role_id = discord_service.load_config_data(server.id, 'ROLES')
             role_admin = discord.utils.get(server.roles, id=role_id['admin_role'])
-            data_management.update_user_data(interaction.user.id, "last_updated",
+            discord_service.update_user_data(interaction.user.id, "last_updated",
                                              datetime.datetime.today().strftime('%Y-%m-%d'), interaction.guild)
             await notif_channel.send(f'<@&{role_admin.id}> User <@{interaction.user.id}> wants their MMR set to {new_mmr}')
             await interaction.response.send_message("Your request has been sent to the notification channel.",
@@ -168,11 +168,11 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             if delete_conf.lower() == "y":
-                roles_id = data_management.load_config_data(server.id, 'ROLES')
+                roles_id = discord_service.load_config_data(server.id, 'ROLES')
                 role_inhouse = discord.utils.get(server.roles, id=roles_id['registered_role'])
                 role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
                 await check_if_exists[1].remove_roles(role_inhouse, role_verified)
-                data_management.remove_user_data(check_if_exists[1].id, server)
+                discord_service.remove_user_data(check_if_exists[1].id, server)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
                                                         delete_after=10)
             else:

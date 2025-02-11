@@ -1,4 +1,4 @@
-import data_interface
+import manager_service
 
 
 def view_steam_credentials():

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import initialisation
-import data_management
+import discord_service
 import check_user
 import register_user
 from os.path import isfile
@@ -19,9 +19,9 @@ def run_discord_bot():
         global server_list
         server_list = []
         for server in bot.guilds:
-            if not data_management.check_server_in_db(server):
-                data_management.add_server_to_db(server)
-            if data_management.check_server_settings(server):
+            if not discord_service.check_server_in_db(server):
+                discord_service.add_server_to_db(server)
+            if discord_service.check_server_settings(server):
                 server_list.append(await initialisation.run_user_modules(server))
 
     @bot.command()
@@ -32,7 +32,7 @@ def run_discord_bot():
 
     @bot.command(aliases=['vk'])
     async def votekick(ctx, user):
-        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        chat_channel = discord_service.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif '<@' == user[0:2]:
@@ -54,15 +54,15 @@ def run_discord_bot():
 
     @bot.command(aliases=['wh', 'whois'])
     async def who(ctx, user=None):
-        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        chat_channel = discord_service.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
         elif user is None:
             user_acc = await ctx.guild.fetch_member(ctx.author.id)
-            user_check = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
+            user_check = discord_service.check_for_value("disc", ctx.author.id, ctx.guild)
         elif '<@' == user[0:2]:
             user_acc = await ctx.guild.fetch_member(user[2:-1])
-            user_check = data_management.check_for_value("disc", int(user[2:-1]), ctx.guild)
+            user_check = discord_service.check_for_value("disc", int(user[2:-1]), ctx.guild)
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
         chosen_server = next((x for x in server_list if x.server == ctx.guild.id), None)
@@ -73,18 +73,18 @@ def run_discord_bot():
         elif not user_check:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
         else:
-            user_data = data_management.view_user_data(user_acc.id, ctx.guild)
+            user_data = discord_service.view_user_data(user_acc.id, ctx.guild)
             await ctx.send(embed=check_user.user_embed(user_data, user_acc, ctx.guild))
 
     @bot.command()
     async def register(ctx, dotabuff_id: int, mmr: int):
-        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        chat_channel = discord_service.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
+        registered_role_id = discord_service.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
-        disc_reg = data_management.check_for_value("disc", ctx.author.id, ctx.guild)
-        steam_reg = data_management.check_for_value("steam", dotabuff_id, ctx.guild)
+        disc_reg = discord_service.check_for_value("disc", ctx.author.id, ctx.guild)
+        steam_reg = discord_service.check_for_value("steam", dotabuff_id, ctx.guild)
         if registered_role in ctx.author.roles or disc_reg:
             await ctx.send("Your discord account is already registered!")
             return
@@ -103,45 +103,41 @@ def run_discord_bot():
 
     #Use this if the bot is being updated from an older version to a newer one (post database).
     #This initialises the missing tables (one is useless, the other needed for autolobby)
-    @bot.command()
-    @commands.is_owner()
-    async def forward_assist(ctx):
-        data_management.initialise_database(ctx.guild)
 
     @bot.command()
     async def stop_lobby(ctx):
-        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        chat_channel = discord_service.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        admin_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
+        admin_role_id = discord_service.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
         admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
         if admin_role not in ctx.author.roles:
             await ctx.send("Only admins are allowed to use this command")
             return
         else:
-            data_management.update_autolobby(ctx.guild.id, [0, 1])
+            discord_service.update_autolobby(ctx.guild.id, [0, 1])
             await ctx.send("Please wait for up to a minute for the queue to clear")
 
     @bot.command()
     async def start_lobby(ctx):
-        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        chat_channel = discord_service.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        admin_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
+        admin_role_id = discord_service.load_config_data(ctx.guild.id, 'ROLES', 'admin_role')
         admin_role = discord.utils.get(ctx.guild.roles, id=admin_role_id)
         if admin_role not in ctx.author.roles:
             await ctx.send("Only admins are allowed to use this command")
             return
         else:
-            data_management.update_autolobby(ctx.guild.id, [1, 1])
+            discord_service.update_autolobby(ctx.guild.id, [1, 1])
             await ctx.send("Please wait for up to a minute for the lobby to start")
 
     @bot.command()
     async def roles(ctx, pos1: int, pos2: int, pos3: int, pos4: int, pos5: int):
-        chat_channel = data_management.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
+        chat_channel = discord_service.load_config_data(ctx.guild.id, 'CHANNELS', 'chat_channel')
         if ctx.channel != discord.utils.get(ctx.guild.channels, id=chat_channel):
             return
-        registered_role_id = data_management.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
+        registered_role_id = discord_service.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
         registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
         roles_list = [pos1, pos2, pos3, pos4, pos5]
         if registered_role not in ctx.author.roles:
@@ -152,7 +148,7 @@ def run_discord_bot():
             await ctx.send("Role preferences can only be between 1 (low) and 5 (high)")
             return
         roles_list = check_user.flip_values(roles_list, True)
-        data_management.update_user_data(ctx.author.id, "roles", roles_list, ctx.guild)
+        discord_service.update_user_data(ctx.author.id, "roles", roles_list, ctx.guild)
         await ctx.send("Thank you for updating your roles.")
 
     @register.error
@@ -195,7 +191,7 @@ def run_discord_bot():
         else:
             await ctx.send(f"User not found, they probably aren't registered!")
 
-    bot.run(data_management.get_discord_token())
+    bot.run(discord_service.get_discord_token())
 
 run_discord_bot()
 

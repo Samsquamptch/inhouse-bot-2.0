@@ -12,6 +12,7 @@ from dotenv import get_key
 
 def get_db_connection():
     conn = sqlite3.connect(f'../../data/inhouse.db')
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -33,45 +34,33 @@ def add_server_to_db(server):
     conn.close()
     return
 
+
 def check_server_settings(server):
     conn = get_db_connection()
     server_details = list(conn.cursor().execute("""SELECT ServerSettings.ServerId FROM ServerSettings INNER JOIN Server
                                                 on ServerSettings.ServerId = Server.Id
                                                 WHERE Server.Server = ?""",
-                                                [server.id]).fetchall())
+                                                [server.id]))
     conn.close()
     print(server_details)
     return server_details
 
 
-def discord_credentials(item):
-    with open('../../credentials/bot_credentials.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    return data[item]
+def register_server(server, setup_list):
+    conn = get_db_connection()
+    conn.cursor().execute("""UPDATE Server SET AdminChannel = ?, QueueChannel = ?, GlobalChannel = ?,
+                            ChatChannel = ? WHERE Server = ?""", [setup_list[0], setup_list[1], setup_list[2],
+                                                                  setup_list[3], server.id])
+    conn.commit()
+    conn.close()
 
 
-def discord_credentials_2(item):
-    with open('../../credentials/bot_credentials_2.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    return data[item]
-
-
-def steam_login():
-    with open('../../credentials/bot_credentials.yml') as f:
-        data = yaml.safe_load(f)
-        return (data['USERNAME'], data['PASSWORD'])
-
-
-def steam_login_2():
-    with open('../../credentials/bot_credentials_2.yml') as f:
-        data = yaml.safe_load(f)
-        return (data['USERNAME'], data['PASSWORD'])
-
-
-def load_default_config(category):
-    with open('../../data/default_config.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    return data[category]
+def add_default_settings(server):
+    conn = get_db_connection()
+    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName)
+                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "Inhouse Queue")""", [server.id])
+    conn.commit()
+    conn.close()
 
 
 def load_config_data(server, category):
@@ -95,32 +84,6 @@ def update_config(server, category, sub_category, new_value):
     data[category][sub_category] = new_value
     with open(f'../../data/{server.id}_config.yml', 'w') as f:
         yaml.dump(data, f)
-
-
-def initialise_server_list():
-    conn = sqlite3.connect(f'../../data/inhouses.db')
-    cur = conn.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS Servers(Id INTEGER PRIMARY KEY, ServerId INTEGER)""")
-    conn.commit
-    conn.close()
-    print("server list created successfully")
-
-
-def initialise_database(server):
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
-    cur = conn.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS Users(disc INTEGER PRIMARY KEY, steam INTEGER, mmr INTEGER, 
-                pos1 INTEGER, pos2 INTEGER, pos3 INTEGER, pos4 INTEGER, pos5 INTEGER, last_updated timestamp)""")
-    cur.execute("""CREATE TABLE IF NOT EXISTS Matches(Id INTEGER PRIMARY KEY AUTOINCREMENT,	MatchId	INTEGER,
-                Lobby INTEGER, Running INTEGER, Rad_1 INTEGER, Rad_2 INTEGER, Rad_3 INTEGER, Rad_4 INTEGER,
-                Rad_5 INTEGER, Dire_1 INTEGER, Dire_2 INTEGER, Dire_3 INTEGER, Dire_4 INTEGER, Dire_5 INTEGER,
-                start_time timestamp)""")
-    cur.execute("""CREATE TABLE IF NOT EXISTS Autolobby(Id INTEGER PRIMARY KEY, Active INTEGER)""")
-    conn.commit
-    conn.close()
-    setup_autolobby(server)
-    print("Database created successfully")
-
 
 def setup_autolobby(server):
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')

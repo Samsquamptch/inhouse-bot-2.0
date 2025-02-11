@@ -2,18 +2,18 @@ from steam.client import SteamClient
 from dota2.client import Dota2Client
 from time import sleep
 import dota2
-import data_management
+import discord_service
 import logging
 from datetime import date
 
 
 def run_dota_bot():
-    logging.basicConfig(filename=f'../../data/{date.today()}.-dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
-    (user, password) = data_management.steam_login_2()
+    # logging.basicConfig(filename=f'../../data/{date.today()}.-dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
+    (user, password) = discord_service.steam_login()
     client = SteamClient()
     dota = Dota2Client(client)
     Manager = dota2.features.chat.ChannelManager(dota, 'logger')
-    server = data_management.discord_credentials_2('SERVER')
+    server = discord_service.discord_credentials('SERVER')
 
     @client.on('logged_on')
     def start_dota():
@@ -28,7 +28,7 @@ def run_dota_bot():
 
     @dota.on('make_lobby')
     def create_new_lobby():
-        dota_settings = data_management.load_config_data(server, 'DOTA')
+        dota_settings = discord_service.load_config_data(server, 'DOTA')
         opt = {
             'game_name': dota_settings['lobby_name'],
             'server_region': dota_settings['server_region'],
@@ -41,7 +41,7 @@ def run_dota_bot():
             'dota_tv_delay': dota_settings['spectator_delay'],
             'pause_setting': 0
         }
-        dota.create_practice_lobby(password="chad", options=opt)
+        dota.create_practice_lobby(password="woof", options=opt)
         sleep(3)
         dota.channels.join_lobby_channel()
         Manager.join_lobby_channel()
@@ -49,7 +49,7 @@ def run_dota_bot():
     @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
     def print_state(lobby):
         if int(dota.lobby.state) == 3:
-            data_management.update_autolobby(server, [0, 1])
+            discord_service.update_autolobby(server, [0, 1])
             print("Queue will be cleared")
             dota.destroy_lobby()
             sleep(10)
@@ -65,6 +65,11 @@ def run_dota_bot():
                 return False
             elif len(players) == 10:
                 dota.launch_practice_lobby()
+            elif len(players) == 1:
+                print('test')
+                dota.destroy_lobby()
+                sleep(10)
+                client.disconnect()
             else:
                 print("Number of players is only " + str(len(players)))
 

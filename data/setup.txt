@@ -1,5 +1,8 @@
-Welcome to the doghouse inhouse bot setup! By using this command, you'll be able to set the roles and channels your inhouse bot uses. The two options for you to choose are:
-- Automated setup does everything for you, creating the default roles and channels (you may need to reorganise these afterwards).
-- Manual setup allows you to specify role and channel names, which will be created if they don't already exist on the server.
-If using manual setup. You will first need to set the category and channels. If you already have a category, associated channels, and/or roles you want to use, please enter them into the relevant modal and the bot will set them.
-Please select the option which best suits your needs:
+Welcome to the inhouse bot 2.0 setup! By using this command, you'll be able to set the channels the bot uses for your server.
+Please press the "Configure Settings" button to add the ID for each required channel in the appropriate field. Once this is complete, press the "Confirm button" to finish setup.
+The required channels are:
+- Admin Channel
+- Queue Channel
+- Global Queue Channel
+- Chat Channel
+More details can be found on the GitHub setup page
