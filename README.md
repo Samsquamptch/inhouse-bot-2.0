@@ -19,10 +19,10 @@ also required for any additional Discord Servers added to the bot.
 
 Before beginning setup, please enable Developer Mode (this can be found in Discord Settings > Advanced) and follow the steps 
 outlined in the "Creating a Bot Account" section [of this guide](https://discordpy.readthedocs.io/en/stable/discord.html). 
-The instructions below assume you will be using a cloud-based virtual machine running some version of Linux for setup, 
-although it's entirely  possible for you to run this bot on your Windows PC at home if you really wanted to (don't do this, 
-please). Oracle Cloud offer a free tier which is capable of running this bot without issue and a guide on how to use Oracle 
-Cloud [can be found here](https://docs.oracle.com/en/learn/oci-basics-tutorial/#introduction). 
+The instructions below assume you will be using a cloud-based virtualization running some version of Linux for setup (such 
+as Ubuntu or Oracle Linux), although it's entirely possible for you to run this bot on your personal computer if you wanted 
+to. Oracle Cloud offer a free tier which is capable of running this bot without issue and a guide on how to use Oracle Cloud 
+[can be found here](https://docs.oracle.com/en/learn/oci-basics-tutorial/#introduction). 
 
 ### Step One
 
