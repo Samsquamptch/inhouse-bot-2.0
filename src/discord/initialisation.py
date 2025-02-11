@@ -13,6 +13,7 @@ class ServerViews:
         self.inhouse = inhouse_view
         self.admin = admin_view
 
+
 class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
     def __init__(self):
         super().__init__(timeout=None)
@@ -22,6 +23,7 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
     queue_channel = discord.ui.TextInput(label='Set queue channel')
     global_channel = discord.ui.TextInput(label='Set global queue channel')
     chat_channel = discord.ui.TextInput(label='Set chat channel')
+
     async def on_submit(self, interaction: discord.Interaction):
         try:
             admin_str = str(self.admin_channel)
@@ -34,7 +36,7 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
             chat_id = int(chat_str)
         except ValueError:
             await interaction.response.send_message(content="please only enter numbers for the Channel IDs",
-                                                     ephemeral=True)
+                                                    ephemeral=True)
             return
         channel_list = [admin_id, queue_id, global_id, chat_id]
         for channel in channel_list:
@@ -49,6 +51,7 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
         self.confirmed = True
         return
 
+
 class ConfigButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -59,16 +62,17 @@ class ConfigButtons(discord.ui.View):
 
     async def config_start(self, ctx):
         self.config_user = ctx.author
-        await self.button_state(False)
         self.message = await ctx.channel.send(self.setup_guide[0], view=self)
 
     async def button_state(self, setup_status):
-        print(setup_status)
+        # False means confirm button can be pressed (i.e. channels have been configured). True means setup is complete
+        # and both buttons are disabled
         if not setup_status:
-            self.confirm_button.disabled = True
-        else:
             self.confirm_button.disabled = False
-
+        else:
+            self.confirm_button.disabled = True
+            self.set_channels_button.disabled = True
+        await self.message.edit(view=self)
 
     @discord.ui.button(label="Set Channels", emoji="🔧",
                        style=discord.ButtonStyle.green)
@@ -78,14 +82,20 @@ class ConfigButtons(discord.ui.View):
         setup_modal = SetupModal()
         await interaction.response.send_modal(setup_modal)
         await setup_modal.wait()
-        await self.button_state(setup_modal.confirmed)
+        if setup_modal.confirmed:
+            await self.button_state(False)
 
     @discord.ui.button(label="Confirm", emoji="✅",
-                       style=discord.ButtonStyle.green)
+                       style=discord.ButtonStyle.green, disabled=True)
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user != self.config_user:
             return
+        if discord_service.check_server_settings(interaction.guild):
+            await interaction.response.send_message(
+                content="default settings already configured",
+                ephemeral=True)
         discord_service.add_default_settings(interaction.guild)
+        await self.button_state(True)
         await interaction.response.send_message(
             content="Channels have been registered and defauls settings added. Please amend these via the admin panel",
             ephemeral=True)

@@ -21,8 +21,8 @@ def run_discord_bot():
         for server in bot.guilds:
             if not discord_service.check_server_in_db(server):
                 discord_service.add_server_to_db(server)
-            if discord_service.check_server_settings(server):
-                server_list.append(await initialisation.run_user_modules(server))
+            # if discord_service.check_server_settings(server):
+            #     server_list.append(await initialisation.run_user_modules(server))
 
     @bot.command()
     @commands.is_owner()

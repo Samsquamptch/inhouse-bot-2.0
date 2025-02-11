@@ -42,7 +42,6 @@ def check_server_settings(server):
                                                 WHERE Server.Server = ?""",
                                                 [server.id]))
     conn.close()
-    print(server_details)
     return server_details
 
 
