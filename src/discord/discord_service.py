@@ -47,9 +47,9 @@ def check_server_settings(server):
 
 def register_server(server, setup_list):
     conn = get_db_connection()
-    conn.cursor().execute("""UPDATE Server SET AdminChannel = ?, QueueChannel = ?, GlobalChannel = ?,
-                            ChatChannel = ? WHERE Server = ?""", [setup_list[0], setup_list[1], setup_list[2],
-                                                                  setup_list[3], server.id])
+    conn.cursor().execute("""UPDATE Server SET AdminChannel = ?, QueueChannel = ?, GlobalChannel = ?, ChatChannel = ?, 
+                                AdminRole = ? WHERE Server = ?""", [setup_list[0], setup_list[1], setup_list[2],
+                                                                  setup_list[3], setup_list[4], server.id])
     conn.commit()
     conn.close()
 
@@ -61,6 +61,28 @@ def add_default_settings(server):
     conn.commit()
     conn.close()
 
+def load_channel_id(server, channel_name):
+    conn = get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    channel_id = list(conn.cursor().execute(f'SELECT {channel_name} FROM Server where Server = ?', [server.id]).fetchall())
+    conn.close()
+    return channel_id[0]
+
+def get_unverified_users(server):
+    conn = get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    unverified_list = list(conn.cursor().execute("""SELECT UserId FROM UserServer WHERE ServerId = ? AND Verified IS NULL""",
+                          [server.id]).fetchall())
+    conn.close()
+    return unverified_list
+
+
+def set_verification(user_id, verified):
+    conn = get_db_connection()
+    conn.cursor().execute("""UPDATE UserServer SET Verified = ? WHERE UserId = ?""", [verified, user_id])
+    conn.commit()
+    conn.close()
+    return
 
 def load_config_data(server, category):
     with open(f'../../data/{server}_config.yml') as f:
@@ -123,8 +145,8 @@ def update_user_data(discord_id, column, new_data, server):
     cur.close()
 
 
-def check_for_value(column, value_check, server):
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+def check_for_value(column, value_check):
+    conn = sqlite3.connect(f'../../data/inhouse.db')
     cur = conn.cursor()
     cur.execute(f"SELECT EXISTS(SELECT 1 FROM Users WHERE {column} = ?)", [value_check])
     item = cur.fetchone()[0]
@@ -148,7 +170,7 @@ def add_user_data(player, server):
     player.append(datetime.today().strftime('%Y-%m-%d'))
     conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
     cur = conn.cursor()
-    cur.execute("""INSERT INTO Users (disc, steam, mmr, pos1, pos2, pos3, pos4, pos5, last_updated) 
+    cur.execute("""INSERT INTO Users (Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5, LastUpdated) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", player)
     conn.commit()
     conn.close()

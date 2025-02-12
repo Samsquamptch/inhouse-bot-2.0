@@ -4,10 +4,12 @@ import discord_service
 
 
 class AdminEmbed(discord.ui.View):
-    def __init__(self, roles_id):
+    def __init__(self, chat_channel, admin_channel, server):
         super().__init__(timeout=None)
-        self.unverified_list = []
-        self.roles_id = roles_id
+        self.unverified_list = discord_service.get_unverified_users(server)
+        self.chat_channel = chat_channel
+        self.admin_channel = admin_channel
+        self.server = server
         self.message = None
 
     view_status = True
@@ -15,10 +17,9 @@ class AdminEmbed(discord.ui.View):
     # Sep variable must be kept below 25 as embed fields limit is 25
     sep = 10
 
-    async def send_embed(self, channel, server):
-        self.create_register_list(server)
-        self.message = await channel.send(view=self)
-        await self.update_message(self.unverified_list, server)
+    async def send_embed(self):
+        self.message = await self.admin_channel.send(view=self)
+        await self.update_message(self.unverified_list)
 
     def registered_embed(self, data_list, server, interaction):
         all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',
@@ -44,41 +45,36 @@ class AdminEmbed(discord.ui.View):
             empty_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         return empty_embed
 
-    async def update_message(self, list_data, server, interaction=None):
+    async def update_message(self, list_data, interaction=None):
         if self.view_status:
             self.update_buttons()
             if list_data:
                 user = list_data[0]
-                user_data = discord_service.view_user_data(user.id, server)
-                update_embed = check_user.user_embed(user_data, user, server)
+                user_data = discord_service.view_user_data(user.id, self.server)
+                update_embed = check_user.user_embed(user_data, user, self.server)
                 if interaction:
                     update_embed.set_footer(
                         text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
                 await self.message.edit(embed=update_embed, view=self)
             else:
                 await self.message.edit(embed=self.empty_embed(interaction), view=self)
-        else:
-            role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
-            user_list = [user for user in role_inhouse.members]
-            self.update_buttons(len(user_list))
-            user_list_page = self.get_current_page_data(user_list)
-            await self.message.edit(embed=self.registered_embed(user_list_page, server, interaction), view=self)
+        # else:
+        #     role_inhouse = discord.utils.get(self.server.roles, id=self.roles_id['registered_role'])
+        #     user_list = [user for user in role_inhouse.members]
+        #     self.update_buttons(len(user_list))
+        #     user_list_page = self.get_current_page_data(user_list)
+        #     await self.message.edit(embed=self.registered_embed(user_list_page, interaction), view=self)
 
-    def create_register_list(self, server):
-        role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
-        role_verified = discord.utils.get(server.roles, id=self.roles_id['verified_role'])
-        self.unverified_list = [user for user in role_inhouse.members if role_verified not in user.roles]
-
-    def get_current_page_data(self, user_list):
-        until_item = self.current_page * self.sep
-        from_item = until_item - self.sep
-        if self.current_page == 1:
-            from_item = 0
-            until_item = self.sep
-        elif self.current_page == int(len(user_list) / self.sep):
-            from_item = self.current_page * self.sep - self.sep
-            until_item = len(user_list)
-        return user_list[from_item:until_item]
+    # def get_current_page_data(self, user_list):
+    #     until_item = self.current_page * self.sep
+    #     from_item = until_item - self.sep
+    #     if self.current_page == 1:
+    #         from_item = 0
+    #         until_item = self.sep
+    #     elif self.current_page == int(len(user_list) / self.sep):
+    #         from_item = self.current_page * self.sep - self.sep
+    #         until_item = len(user_list)
+    #     return user_list[from_item:until_item]
 
     def update_buttons(self, list_length=None):
         if self.view_status:
@@ -129,71 +125,55 @@ class AdminEmbed(discord.ui.View):
     @discord.ui.button(label="Verify User", emoji="✅",
                        style=discord.ButtonStyle.green)
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.user.guild
         if self.view_status:
-            notif_id = discord_service.load_config_data(server.id, 'CHANNELS', 'notification_channel')
-            notif_channel = discord.utils.get(server.channels, id=notif_id)
-            role_verified = discord.utils.get(server.roles, id=self.roles_id['verified_role'])
-            user_to_verify = self.unverified_list[0]
-            await user_to_verify.add_roles(role_verified)
-            await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been verified for the inhouse')
+            discord_service.set_verification(self.unverified_list[0], True)
+            await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been verified for the inhouse')
             del self.unverified_list[0]
-            # self.update_register_list()
-            await self.update_message(self.unverified_list, server, interaction)
+            await self.update_message(self.unverified_list, interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page -= 1
-            await self.update_message(self.unverified_list, server, interaction)
+            await self.update_message(self.unverified_list, interaction)
 
     @discord.ui.button(label="Refresh", emoji="♻",
                        style=discord.ButtonStyle.blurple)
     async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            # self.update_register_list()
-            await self.update_message(self.unverified_list, server, interaction)
+            await self.update_message(self.unverified_list, interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page = 1
-            await self.update_message(self.unverified_list, server, interaction)
+            await self.update_message(self.unverified_list, interaction)
 
     @discord.ui.button(label="Reject User", emoji="❌",
                        style=discord.ButtonStyle.red)
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
-        server = interaction.user.guild
         if self.view_status:
-            notif_id = discord_service.load_config_data(server.id, 'CHANNELS', 'notification_channel')
-            notif_channel = discord.utils.get(server.channels, id=notif_id)
-            role_inhouse = discord.utils.get(server.roles, id=self.roles_id['registered_role'])
-            user_to_reject = self.unverified_list[0]
-            await user_to_reject.remove_roles(role_inhouse)
-            user_data = discord_service.view_user_data(self.unverified_list[0].id, server)
-            if user_data[2] >= 5000:
-                await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse for'
-                                         f' being too high MMR')
-            else:
-                await notif_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
-                                         f' A dogmin will inform you why you were rejected.')
+            discord_service.set_verification(self.unverified_list[0], False)
+            await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
+                                     f' An admin will inform you why you were rejected.')
             del self.unverified_list[0]
-            # self.update_register_list()
-            await self.update_message(self.unverified_list, server, interaction)
+            await self.update_message(self.unverified_list, interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page += 1
-            await self.update_message(self.unverified_list, server, interaction)
+            await self.update_message(self.unverified_list, interaction)
 
     @discord.ui.button(label="View Registered Users", emoji="📋",
                        style=discord.ButtonStyle.grey)
     async def change_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.view_status:
-            self.view_status = False
-            await self.update_message(self.unverified_list, interaction.guild, interaction)
-            await interaction.response.defer()
-        else:
-            self.view_status = True
-            # self.update_register_list()
-            await self.update_message(self.unverified_list, interaction.guild, interaction)
-            await interaction.response.defer()
+        await interaction.response.defer()
+        #TODO: Rework this to show info on number of registered users, banned users, etc.
+
+        # if self.view_status:
+        #     self.view_status = False
+        #     await self.update_message(self.unverified_list, interaction.guild, interaction)
+        #     await interaction.response.defer()
+        # else:
+        #     self.view_status = True
+        #     await self.update_message(self.unverified_list, interaction.guild, interaction)
+        #     await interaction.response.defer()

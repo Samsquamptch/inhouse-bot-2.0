@@ -156,7 +156,7 @@ def user_exists(server, user_name):
     registered_role = discord.utils.get(server.roles, id=registered_role_id)
     try:
         user_account = next((x for x in registered_role.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = discord_service.check_for_value('disc', user_account.id, server)
+        user_in_database = discord_service.check_for_value('disc', user_account.id)
     except StopIteration:
         user_account = None
         user_in_database = False
