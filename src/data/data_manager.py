@@ -1,11 +1,11 @@
-import data_interface
+import manager_service
 
 
 def view_steam_credentials():
     exit_loop = False
     while not exit_loop:
         print("Saved steam login credentials\n")
-        login_list = data_interface.get_reference_list()
+        login_list = manager_service.get_reference_list()
         if not login_list:
             print("[NONE]")
         else:
@@ -34,20 +34,20 @@ def add_steam_credentials():
     server = input("Please paste the Server ID (refer to the setup guide for more details):\n")
     username = input("Please input the username of the steam account:\n")
     password = input("Please input the password of the steam account:\n")
-    data_interface.add_credentials(title, server, username, password)
+    manager_service.add_credentials(title, server, username, password)
 
 
 def edit_steam_credentials():
     identifier = input("Please input the title or paste the Server ID of the credentials you wish to change:\n")
     username = input("Please input the username of the steam account:\n")
     password = input("Please input the password of the steam account:\n")
-    data_interface.edit_credentials(identifier, username, password)
+    manager_service.edit_credentials(identifier, username, password)
     print("Credentials updated")
 
 
 def delete_steam_credentials():
     identifier = input("Please input the title or paste the Server ID of the credentials you wish to delete:\n")
-    login_list = data_interface.get_reference_list(identifier)
+    login_list = manager_service.get_reference_list(identifier)
     if not login_list:
         print("no credentials match this record")
         return
@@ -61,7 +61,7 @@ def delete_steam_credentials():
                 "Details you wish to delete are:\n" + credentials[0] + " | " + server_id)
     confirm = input("Are you sure you wish to delete this record (enter 'yes' to confirm)\n")
     if confirm == "yes":
-        data_interface.delete_credentials(identifier)
+        manager_service.delete_credentials(identifier)
         print("Record deleted")
     else:
         return
@@ -77,13 +77,13 @@ def update_bot_token():
     token = input("Please paste your Discord Bot Token here (leave empty to skip this step):\n")
     if not token:
         return
-    data_interface.set_env_variable("TOKEN", token)
+    manager_service.set_env_variable("TOKEN", token)
 
 
 def start_data_manager():
-    if not data_interface.database_exists():
+    if not manager_service.database_exists():
         print("Database contains no tables, creating now")
-        data_interface.create_tables()
+        manager_service.create_tables()
     exit_loop = False
     while not exit_loop:
         print("Welcome to the Database Manager. Please input the number that matches the option you want.")
