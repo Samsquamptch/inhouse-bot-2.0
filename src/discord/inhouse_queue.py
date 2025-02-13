@@ -1,11 +1,12 @@
 import discord
 from discord.ext import tasks
-import discord_service
+import client_db_manager
 import check_user
 import datetime
 import asyncio
 from zoneinfo import ZoneInfo
 from collections import defaultdict
+from src.discord import team_balancer
 
 
 # The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
@@ -109,7 +110,7 @@ class WaitingRoom(discord.ui.View):
         queue_embed = discord.Embed(title="Inhouse Waiting List", description=f'{embed_desc}',
                                     color=embed_clr)
         for user in queue_list:
-            user_data = discord_service.view_user_data(user.id)
+            user_data = client_db_manager.view_user_data(user.id)
             queue_embed.add_field(name=user.display_name, value=f'MMR: {user_data[2]}', inline=True)
         update_time = datetime.datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         queue_embed.set_footer(text=f'Waiting list updated at: {update_time}')
@@ -144,8 +145,8 @@ class InhouseQueue(discord.ui.View):
         self.message = None
         self.status = False
         self.server = server
-        self.admin_role = discord_service.load_admin_role(server)
-        self.champion_role = discord_service.load_champion_role(server)
+        self.admin_role = client_db_manager.load_admin_role(server)
+        self.champion_role = client_db_manager.load_champion_role(server)
 
     async def vote_kick(self, kick_victim, vote_user, interaction=None):
         if kick_victim.id not in self.votekick_dict:
@@ -193,7 +194,7 @@ class InhouseQueue(discord.ui.View):
     async def match_end_check(self):
         print("Checking")
         # TODO: Update to check new autolobby system (when in use)
-        # if discord_service.check_autolobby(self.server.id) == 0:
+        # if client_db_manager.check_autolobby(self.server.id) == 0:
         #     await self.bot_clear_queue()
         # else:
         #     pass
@@ -231,7 +232,7 @@ class InhouseQueue(discord.ui.View):
     def full_queue_embed(self, queue_list):
         queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = discord_service.assign_teams(queue_ids)
+        queue_teams = team_balancer.assign_teams(queue_ids)
         queue_embed = discord.Embed(title=f"{self.queue_name} QUEUE", description=f'Queue is full, please join the lobby!',
                                     color=0x00ff00)
         icon_url = self.server.icon.url
@@ -247,8 +248,8 @@ class InhouseQueue(discord.ui.View):
         while x < 5:
             user_acc_radiant = discord.utils.get(self.server.members, id=radiant_team[x])
             user_acc_dire = discord.utils.get(self.server.members, id=dire_team[x])
-            user_radiant = discord_service.view_user_data(radiant_team[x])
-            user_dire = discord_service.view_user_data(dire_team[x])
+            user_radiant = client_db_manager.view_user_data(radiant_team[x])
+            user_dire = client_db_manager.view_user_data(dire_team[x])
             mmr_total_radiant = mmr_total_radiant + user_radiant[2]
             mmr_total_dire = mmr_total_dire + user_dire[2]
             queue_embed.add_field(name=f'{queue_roles[x]}',
@@ -303,7 +304,7 @@ class InhouseQueue(discord.ui.View):
         queue_embed.set_thumbnail(url=f'{icon_url}')
         mmr_total = 0
         for user in queue_list:
-            user_data = discord_service.view_user_data(user.id)
+            user_data = client_db_manager.view_user_data(user.id)
             mmr_total = mmr_total + user_data[2]
             role_preference = check_user.check_role_priority(user_data)
             queue_embed.add_field(name=user.display_name,
@@ -334,7 +335,7 @@ class InhouseQueue(discord.ui.View):
         if len(queue_list) >= 10:
             await self.message.edit(embed=self.full_queue_embed(queue_list), view=self)
             await self.preload_modal.send_embed()
-            # discord_service.update_autolobby(self.server.id, [1, 1])
+            # client_db_manager.update_autolobby(self.server.id, [1, 1])
             print("Loaded")
             await self.chat_channel.send(f'Queue has popped, can the following users please head to the lobby: \n'
                                f'<@{queue_list[0].id}> <@{queue_list[1].id}> <@{queue_list[2].id}>'
@@ -374,7 +375,7 @@ class InhouseQueue(discord.ui.View):
     @discord.ui.button(label="Join Queue", emoji="✅",
                        style=discord.ButtonStyle.green)
     async def join_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
-        user_status = discord_service.get_user_status(interaction.user, interaction.guild)
+        user_status = client_db_manager.get_user_status(interaction.user, interaction.guild)
         if user_status[1] == 1:
             await interaction.response.send_message(content="You are currently banned from joining the queue",
                                                     ephemeral=True, delete_after=5)

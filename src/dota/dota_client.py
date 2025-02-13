@@ -2,7 +2,6 @@ from steam.client import SteamClient
 from dota2.client import Dota2Client
 from time import sleep
 import dota2
-import discord_service
 import logging
 from datetime import date
 

@@ -1,11 +1,11 @@
 import math
 import discord
-import discord_service
+import client_db_manager
 
 
 def user_embed(data_list, player_data, server):
-    role_champion = discord_service.load_champion_role(server)
-    user_status = discord_service.get_user_status(player_data, server)
+    role_champion = client_db_manager.load_champion_role(server)
+    user_status = client_db_manager.get_user_status(player_data, server)
     if user_status[1] == 1:
         user_status = "User is currently banned 😢"
         user_clr = 0x000000
@@ -96,7 +96,7 @@ def badge_rank(mmr):
 def user_exists(server, user_name):
     try:
         user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = discord_service.check_discord_exists(user_account.id)
+        user_in_database = client_db_manager.check_discord_exists(user_account.id)
     except StopIteration:
         user_account = None
         user_in_database = False
