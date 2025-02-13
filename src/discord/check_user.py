@@ -1,3 +1,4 @@
+import math
 import discord
 import discord_service
 
@@ -64,89 +65,32 @@ def badge_rank(mmr):
         case _ if mmr >= 5620:
             return "Immortal"
         case _ if mmr >= 4620:
-            match mmr:
-                case _ if mmr >= 5420:
-                    return "Divine 5"
-                case _ if mmr >= 5220:
-                    return "Divine 4"
-                case _ if mmr >= 5020:
-                    return "Divine 3"
-                case _ if mmr >= 4820:
-                    return "Divine 2"
-                case _:
-                    return "Divine 1"
+            badge = "Divine"
+            mmr = mmr - 4620
+            return badge + str(math.ceil(mmr / 200))
         case _ if mmr >= 3850:
-            match mmr:
-                case _ if mmr >= 4466:
-                    return "Ancient 5"
-                case _ if mmr >= 4312:
-                    return "Ancient 4"
-                case _ if mmr >= 4158:
-                    return "Ancient 3"
-                case _ if mmr >= 4004:
-                    return "Ancient 2"
-                case _:
-                    return "Ancient 1"
+            badge = "Ancient "
+            mmr = mmr - 3850
+            return badge + str(math.ceil(mmr / 154))
         case _ if mmr >= 3080:
-            match mmr:
-                case _ if mmr >= 3696:
-                    return "Legend 5"
-                case _ if mmr >= 3542:
-                    return "Legend 4"
-                case _ if mmr >= 3388:
-                    return "Legend 3"
-                case _ if mmr >= 3234:
-                    return "Legend 2"
-                case _:
-                    return "Legend 1"
+            badge = "Legend "
+            mmr = mmr - 3080
+            return badge + str(math.ceil(mmr / 154))
         case _ if mmr >= 2310:
-            match mmr:
-                case _ if mmr >= 2926:
-                    return "Archon 5"
-                case _ if mmr >= 2772:
-                    return "Archon 4"
-                case _ if mmr >= 2618:
-                    return "Archon 3"
-                case _ if mmr >= 2464:
-                    return "Archon 2"
-                case _:
-                    return "Archon 1"
+            badge = "Archon "
+            mmr = mmr - 2310
+            return badge + str(math.ceil(mmr / 154))
         case _ if mmr >= 1540:
-            match mmr:
-                case _ if mmr >= 2156:
-                    return "Crusader 5"
-                case _ if mmr >= 2002:
-                    return "Crusader 4"
-                case _ if mmr >= 1848:
-                    return "Crusader 3"
-                case _ if mmr >= 1694:
-                    return "Crusader 2"
-                case _:
-                    return "Crusader 1"
+            badge = "Crusader "
+            mmr = mmr - 1540
+            return badge + str(math.ceil(mmr / 154))
         case _ if mmr >= 770:
-            match mmr:
-                case _ if mmr >= 1386:
-                    return "Guardian 5"
-                case _ if mmr >= 1232:
-                    return "Guardian 4"
-                case _ if mmr >= 1078:
-                    return "Guardian 3"
-                case _ if mmr >= 924:
-                    return "Guardian 2"
-                case _:
-                    return "Guardian 1"
+            badge = "Guardian "
+            mmr = mmr - 770
+            return badge + str(math.ceil(mmr / 154))
         case _:
-            match mmr:
-                case _ if mmr >= 616:
-                    return "Herald 5"
-                case _ if mmr >= 462:
-                    return "Herald 4"
-                case _ if mmr >= 308:
-                    return "Herald 3"
-                case _ if mmr >= 154:
-                    return "Herald 2"
-                case _:
-                    return "Herald 1"
+            badge = "Herald "
+            return badge + str(math.ceil(mmr / 154))
 
 
 def user_exists(server, user_name):
