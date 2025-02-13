@@ -119,9 +119,9 @@ async def run_user_modules(server):
     await queue_channel.send("New user? Please register here:", view=register_view)
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions())
-    # inhouse_view = inhouse_queue.InhouseQueue(server, discord_service.load_config_data(server.id, 'ROLES'),
-    #                                           discord_service.load_config_data(server.id, 'CHANNELS'),
-    #                                           discord_service.load_config_data(server.id, 'CONFIG'))
-    # await inhouse_view.send_embed(queue_channel)
-    # print("User settings created")
-    # return ServerViews(server.id, inhouse_view, verify_view)
+    queue_settings = discord_service.load_server_settings(server)
+    inhouse_view = inhouse_queue.InhouseQueue(server, chat_channel, queue_channel, queue_settings[0], queue_settings[1],
+    queue_settings[2], queue_settings[3])
+    await inhouse_view.send_embed()
+    print("User settings created")
+    return ServerViews(server.id, inhouse_view, verify_view)

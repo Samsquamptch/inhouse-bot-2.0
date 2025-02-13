@@ -3,8 +3,7 @@ import discord_service
 
 
 def user_embed(data_list, player_data, server):
-    champion_id = discord_service.load_champion_role(server)
-    role_champion = discord.utils.get(server.roles, id=champion_id)
+    role_champion = discord_service.load_champion_role(server)
     user_status = discord_service.get_user_status(player_data, server)
     if user_status[1] == 1:
         user_status = "User is currently banned 😢"
@@ -151,10 +150,8 @@ def badge_rank(mmr):
 
 
 def user_exists(server, user_name):
-    registered_role_id = discord_service.load_config_data(server.id, 'ROLES', 'registered_role')
-    registered_role = discord.utils.get(server.roles, id=registered_role_id)
     try:
-        user_account = next((x for x in registered_role.members if user_name.lower() in x.display_name.lower()))
+        user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
         user_in_database = discord_service.check_discord_exists(user_account.id)
     except StopIteration:
         user_account = None

@@ -252,8 +252,8 @@ async def register_user(user, steam_int, int_mmr, server):
 
 async def register_notification(user, server):
     # Adds the inhouse role to the user once their details have been added to the register
-    admin_id = discord_service.load_admin_role(server)
+    admin_role = discord_service.load_admin_role(server)
     channel_chat_id = discord_service.load_channel_id(server, 'ChatChannel')
     chat_channel = discord.utils.get(server.channels, id=channel_chat_id)
-    await chat_channel.send(f'<@&{admin_id}> user <@{user.id}> has '
+    await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
                             f'registered for the inhouse and requires verification')

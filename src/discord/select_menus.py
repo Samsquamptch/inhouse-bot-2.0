@@ -84,12 +84,12 @@ class ChangeConfigModal(discord.ui.Modal, title='Change Settings'):
             if settings_dict[item] != "":
                 try:
                     settings_dict[item] = int(settings_dict[item])
-                    discord_service.update_config(interaction.guild, 'CONFIG', item, settings_dict[item])
+                    discord_service.update_config(interaction.guild, item, settings_dict[item])
                 except ValueError:
                     await interaction.response.send_message(f'Please only input numbers for {item}',
                                                             ephemeral=True, delete_after=10)
         if str_queue_name != "":
-            discord_service.update_config(interaction.guild, 'CONFIG', 'queue_name', str_queue_name.upper())
+            discord_service.update_config(interaction.guild, 'queue_name', str_queue_name.upper())
         if str_league_id != "":
             try:
                 discord_service.update_league(str_league_id)
