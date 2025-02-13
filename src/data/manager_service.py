@@ -82,20 +82,18 @@ def database_exists():
 
 def create_tables():
     conn = get_db_connection()
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INT PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INTEGER PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
         MMR INT, Pos1 INT, Pos2 INT,Pos3 INT, Pos4 INT, Pos5 INT, LastUpdated DATETIME)""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Server(Id INTEGER PRIMARY KEY, Server BIGINT, AdminChannel BIGINT,
         QueueChannel BIGINT, GlobalChannel BIGINT, ChatChannel BIGINT, ChampionRole BIGINT, AdminRole BIGINT)""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserServer(UserId INT, ServerId INT, Verified BOOL, Wins INT,
-        Losses INT, FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserServer(UserId INT, ServerId INT, Verified BOOL, Banned BOOL, 
+        Wins INT, Losses INT, FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS ServerSettings(ServerId INT UNIQUE, AfkTimer INT, SkillFloor INT,
         SkillCeiling INT, QueueName CHAR, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS GlobalQueue(ServerId INT UNIQUE, PublicListing BOOL, InviteLink CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, AllChat BOOL, Region INT,
         LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Banned(UserId INT NOT NULL, ServerId INT NOT NULL,
-        FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id), PRIMARY KEY(UserId, ServerId))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS SteamLogin(ServerId INT UNIQUE, Title CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.close()

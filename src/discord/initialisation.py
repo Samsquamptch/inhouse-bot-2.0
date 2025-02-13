@@ -112,13 +112,13 @@ async def run_user_modules(server):
                              view=select_menus.AdminOptions())
     print("Admin settings created")
     # Send queue buttons and panel to queue channel
-    # channel_queue_id = discord_service.load_channel_id(server, 'QueueChannel')
-    # queue_channel = discord.utils.get(server.channels, id=channel_queue_id)
-    # await queue_channel.purge()
-    # register_view = register_user.RegisterButton(discord.utils.get(server.roles, id=inhouse_id), verify_view)
-    # await queue_channel.send("New user? Please register here:", view=register_view)
-    # await queue_channel.send("Already registered? More options are available via the drop-down menu below",
-    #                          view=select_menus.UserOptions())
+    channel_queue_id = discord_service.load_channel_id(server, 'QueueChannel')
+    queue_channel = discord.utils.get(server.channels, id=channel_queue_id)
+    await queue_channel.purge()
+    register_view = register_user.RegisterButton(verify_view)
+    await queue_channel.send("New user? Please register here:", view=register_view)
+    await queue_channel.send("Already registered? More options are available via the drop-down menu below",
+                             view=select_menus.UserOptions())
     # inhouse_view = inhouse_queue.InhouseQueue(server, discord_service.load_config_data(server.id, 'ROLES'),
     #                                           discord_service.load_config_data(server.id, 'CHANNELS'),
     #                                           discord_service.load_config_data(server.id, 'CONFIG'))

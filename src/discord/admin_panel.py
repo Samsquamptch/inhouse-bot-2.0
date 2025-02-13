@@ -50,7 +50,7 @@ class AdminEmbed(discord.ui.View):
             self.update_buttons()
             if list_data:
                 user = list_data[0]
-                user_data = discord_service.view_user_data(user.id, self.server)
+                user_data = discord_service.view_user_data(user.id)
                 update_embed = check_user.user_embed(user_data, user, self.server)
                 if interaction:
                     update_embed.set_footer(
@@ -126,7 +126,7 @@ class AdminEmbed(discord.ui.View):
                        style=discord.ButtonStyle.green)
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
-            discord_service.set_verification(self.unverified_list[0], True)
+            discord_service.set_verification(self.unverified_list[0], interaction.guild, True)
             await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been verified for the inhouse')
             del self.unverified_list[0]
             await self.update_message(self.unverified_list, interaction)
@@ -152,7 +152,7 @@ class AdminEmbed(discord.ui.View):
                        style=discord.ButtonStyle.red)
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
-            discord_service.set_verification(self.unverified_list[0], False)
+            discord_service.set_verification(self.unverified_list[0], interaction.guild, False)
             await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
                                      f' An admin will inform you why you were rejected.')
             del self.unverified_list[0]

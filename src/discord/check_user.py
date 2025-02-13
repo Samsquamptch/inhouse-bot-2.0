@@ -3,17 +3,16 @@ import discord_service
 
 
 def user_embed(data_list, player_data, server):
-    roles_id = discord_service.load_config_data(server.id, 'ROLES')
-    role_verified = discord.utils.get(server.roles, id=roles_id['verified_role'])
-    role_banned = discord.utils.get(server.roles, id=roles_id['banned_role'])
-    role_champion = discord.utils.get(server.roles, id=roles_id['champions_role'])
-    if role_banned in player_data.roles:
+    champion_id = discord_service.load_champion_role(server)
+    role_champion = discord.utils.get(server.roles, id=champion_id)
+    user_status = discord_service.get_user_status(player_data, server)
+    if user_status[1] == 1:
         user_status = "User is currently banned 😢"
         user_clr = 0x000000
     elif role_champion in player_data.roles:
         user_status = "User is a champion!"
         user_clr = 0xFFD700
-    elif role_verified in player_data.roles:
+    elif user_status[0] == 1:
         user_status = "User is verified"
         user_clr = 0x00ff00
     else:
@@ -156,7 +155,7 @@ def user_exists(server, user_name):
     registered_role = discord.utils.get(server.roles, id=registered_role_id)
     try:
         user_account = next((x for x in registered_role.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = discord_service.check_for_value('disc', user_account.id)
+        user_in_database = discord_service.check_discord_exists(user_account.id)
     except StopIteration:
         user_account = None
         user_in_database = False

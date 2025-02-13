@@ -1,3 +1,4 @@
+import discord.utils
 import pandas as pd
 import team_balancer
 import sqlite3
@@ -38,8 +39,7 @@ def add_server_to_db(server):
 def check_server_settings(server):
     conn = get_db_connection()
     server_details = list(conn.cursor().execute("""SELECT ServerSettings.ServerId FROM ServerSettings INNER JOIN Server
-                                                on ServerSettings.ServerId = Server.Id
-                                                WHERE Server.Server = ?""",
+                                                ON ServerSettings.ServerId = Server.Id WHERE Server.Server = ?""",
                                                 [server.id]))
     conn.close()
     return server_details
@@ -49,7 +49,7 @@ def register_server(server, setup_list):
     conn = get_db_connection()
     conn.cursor().execute("""UPDATE Server SET AdminChannel = ?, QueueChannel = ?, GlobalChannel = ?, ChatChannel = ?, 
                                 AdminRole = ? WHERE Server = ?""", [setup_list[0], setup_list[1], setup_list[2],
-                                                                  setup_list[3], setup_list[4], server.id])
+                                                                    setup_list[3], setup_list[4], server.id])
     conn.commit()
     conn.close()
 
@@ -57,66 +57,146 @@ def register_server(server, setup_list):
 def add_default_settings(server):
     conn = get_db_connection()
     conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName)
-                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "Inhouse Queue")""", [server.id])
+                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "Inhouse Queue")""",
+                          [server.id])
     conn.commit()
     conn.close()
+
 
 def load_channel_id(server, channel_name):
     conn = get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
-    channel_id = list(conn.cursor().execute(f'SELECT {channel_name} FROM Server where Server = ?', [server.id]).fetchall())
+    channel_id = list(
+        conn.cursor().execute(f'SELECT {channel_name} FROM Server where Server = ?', [server.id]).fetchall())
     conn.close()
     return channel_id[0]
+
+
+def load_admin_role(server):
+    return load_id_from_server(server, "AdminRole")
+
+
+def load_champion_role(server):
+    return load_id_from_server(server, "ChampionRole")
+
+
+def load_id_from_server(server, column):
+    conn = get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    column_id = list(
+        conn.cursor().execute(f'SELECT {column} FROM Server where Server = ?', [server.id]).fetchall())
+    conn.close()
+    return column_id[0]
+
+
+def get_user_status(user, server):
+    conn = get_db_connection()
+    user_status = list(
+        conn.cursor().execute("""SELECT UserServer.Verified, UserServer.Banned FROM UserServer JOIN User 
+        ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
+                              [user.id, server.id]))
+    conn.close()
+    return list(user_status[0])
+
+
+def user_registered(user):
+    conn = get_db_connection()
+    user_id = list(conn.cursor().execute("""SELECT UserServer.UserId FROM UserServer INNER JOIN User ON 
+                                            User.Id = UserServer.UserId WHERE User.Discord = ?""", [user.id]))
+    conn.close()
+    return user_id
+
+
+def get_user_id(user):
+    conn = get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    user_id = list(conn.cursor().execute("""SELECT Id FROM User WHERE Discord = ?""", [user.id]))
+    conn.close()
+    if not user_id:
+        return 0
+    return user_id [0]
+
+
+def get_server_id(server):
+    conn = get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    server_id = list(conn.cursor().execute("""SELECT Id FROM Server WHERE Server = ?""", [server.id]))
+    conn.close()
+    return server_id[0]
+
+
+def auto_register(user, server):
+    user_id = get_user_id(user)
+    if user_id == 0:
+        return False
+    server_id = get_server_id(server)
+    conn = get_db_connection()
+    conn.cursor().execute("""INSERT INTO UserServer (UserId, ServerId, Banned) VALUES (?, ?, 0)""",
+                          [user_id, server_id])
+    conn.commit()
+    conn.close()
+    return True
+
 
 def get_unverified_users(server):
     conn = get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
-    unverified_list = list(conn.cursor().execute("""SELECT UserId FROM UserServer WHERE ServerId = ? AND Verified IS NULL""",
-                          [server.id]).fetchall())
+    unverified_ids = (
+        list(conn.cursor().execute("SELECT User.Discord FROM UserServer INNER JOIN Server ON Server.Id = UserServer.ServerId "
+                                   "JOIN User ON User.Id = UserServer.UserId WHERE Server.Server = ? AND UserServer.Verified "
+                                   "IS NULL", [server.id]).fetchall())
+    )
     conn.close()
+    unverified_list = []
+    for user_id in unverified_ids:
+        unverified_list.append(discord.utils.get(server.members, id=user_id))
     return unverified_list
 
 
-def set_verification(user_id, verified):
+def set_verification(user, server, verified):
     conn = get_db_connection()
-    conn.cursor().execute("""UPDATE UserServer SET Verified = ? WHERE UserId = ?""", [verified, user_id])
+    user_id = get_user_id(user)
+    server_id = get_server_id(server)
+    conn.cursor().execute("UPDATE UserServer SET Verified = ? WHERE UserId = ? AND ServerId = ?",
+                          [verified, user_id, server_id])
     conn.commit()
     conn.close()
     return
 
-def load_config_data(server, category):
-    with open(f'../../data/{server}_config.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    print(category)
-    return data
 
+# def load_config_data(server, category):
+#     with open(f'../../data/{server}_config.yml') as f:
+#         data = yaml.load(f, Loader=SafeLoader)
+#     print(category)
+#     return data
+#
+#
+# def update_league(new_value):
+#     with open(f'../../credentials/credentials_steam.yml') as f:
+#         data = yaml.load(f, Loader=SafeLoader)
+#         data['LEAGUE'] = int(new_value)
+#         with open(f'../../credentials/credentials_steam.yml', 'w') as f:
+#             yaml.dump(data, f)
+#
+#
+# def update_config(server, category, sub_category, new_value):
+#     with open(f'../../data/{server.id}_config.yml') as f:
+#         data = yaml.load(f, Loader=SafeLoader)
+#     data[category][sub_category] = new_value
+#     with open(f'../../data/{server.id}_config.yml', 'w') as f:
+#         yaml.dump(data, f)
 
-def update_league(new_value):
-    with open(f'../../credentials/credentials_steam.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-        data['LEAGUE'] = int(new_value)
-        with open(f'../../credentials/credentials_steam.yml', 'w') as f:
-            yaml.dump(data, f)
-
-
-def update_config(server, category, sub_category, new_value):
-    with open(f'../../data/{server.id}_config.yml') as f:
-        data = yaml.load(f, Loader=SafeLoader)
-    data[category][sub_category] = new_value
-    with open(f'../../data/{server.id}_config.yml', 'w') as f:
-        yaml.dump(data, f)
 
 def setup_autolobby(server):
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
-    cur = conn.cursor()
+    conn = get_db_connection()
     data = [1, 0]
-    cur.execute("""INSERT INTO Autolobby (Id, Active) VALUES (?, ?)""", data)
+    conn.cursor().execute("""INSERT INTO Autolobby (Id, Active) VALUES (?, ?)""", data)
     conn.commit()
     conn.close()
 
 
 def update_autolobby(server_id, value):
-    conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""UPDATE Autolobby SET Active = ? WHERE Id = ?""", value)
     conn.commit()
@@ -124,7 +204,7 @@ def update_autolobby(server_id, value):
 
 
 def check_autolobby(server_id):
-    conn = sqlite3.connect(f'../../data/inhouse_{server_id}.db')
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT Active from Autolobby where Id=?", [1])
     match_state = cur.fetchone()[0]
@@ -133,22 +213,30 @@ def check_autolobby(server_id):
     return match_state
 
 
-def update_user_data(discord_id, column, new_data, server):
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+def update_user_data(discord_id, column, new_data):
+    conn = get_db_connection()
     cur = conn.cursor()
     if column == "roles":
         new_data.append(discord_id)
-        cur.execute("UPDATE Users SET pos1 = ?, pos2 = ?, pos3 = ?, pos4 = ?, pos5 = ? WHERE disc=?", new_data)
+        cur.execute("UPDATE Users SET Pos1 = ?, Pos2 = ?, Pos3 = ?, Pos4 = ?, Pos5 = ? WHERE disc=?", new_data)
     else:
-        cur.execute(f"UPDATE Users SET {column} = ? WHERE disc = ?", [new_data, discord_id])
+        cur.execute(f"UPDATE User SET {column} = ? WHERE Discord = ?", [new_data, discord_id])
     conn.commit()
     cur.close()
 
 
+def check_discord_exists(user_id):
+    return check_for_value("Discord", user_id)
+
+
+def check_steam_exists(steam_id):
+    return check_for_value("Steam", steam_id)
+
+
 def check_for_value(column, value_check):
-    conn = sqlite3.connect(f'../../data/inhouse.db')
+    conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(f"SELECT EXISTS(SELECT 1 FROM Users WHERE {column} = ?)", [value_check])
+    cur.execute(f"SELECT EXISTS(SELECT 1 FROM User WHERE {column} = ?)", [value_check])
     item = cur.fetchone()[0]
     if item == 0:
         variable = False
@@ -158,35 +246,33 @@ def check_for_value(column, value_check):
     return variable
 
 
-def view_user_data(discord_id, server):
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
-    cur = conn.cursor()
-    user_data_list = list(cur.execute("SELECT * from Users WHERE disc=?", [discord_id]))
+def view_user_data(discord_id):
+    conn = get_db_connection()
+    user_data_list = list(conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5, LastUpdated FROM "
+                                      "User WHERE Discord=?", [discord_id]))
     conn.close()
     return list(user_data_list[0])
 
 
-def add_user_data(player, server):
+def add_user_data(player):
     player.append(datetime.today().strftime('%Y-%m-%d'))
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
-    cur = conn.cursor()
-    cur.execute("""INSERT INTO Users (Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5, LastUpdated) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", player)
+    conn = get_db_connection()
+    conn.cursor().execute("INSERT INTO User (Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5, LastUpdated) VALUES "
+                          "(?, ?, ?, ?, ?, ?, ?, ?, ?)", player)
     conn.commit()
     conn.close()
 
 
-def remove_user_data(discord_id, server):
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
-    cur = conn.cursor()
-    cur.execute("""DELETE FROM Users where disc=?""", [discord_id])
+def remove_user_data(discord_id):
+    conn = get_db_connection()
+    conn.cursor().execute("""DELETE FROM User where disc=?""", [discord_id])
     conn.commit()
     conn.close()
 
 
 def assign_teams(queue_ids, server):
     id_tuple = tuple(queue_ids)
-    conn = sqlite3.connect(f'../../data/inhouse_{server.id}.db')
+    conn = get_db_connection()
     user_data = pd.read_sql_query("SELECT * FROM Users WHERE disc IN {};".format(id_tuple), conn)
     queue = user_data.sort_values('mmr', ascending=False)
     team_uno = team_balancer.sort_balancer(queue['mmr'].tolist())
