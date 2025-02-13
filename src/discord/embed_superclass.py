@@ -8,5 +8,3 @@ class EmbedSuperclass(discord.ui.View):
         self.embed_channel = embed_channel
         self.server = server
         self.message = None
-
-

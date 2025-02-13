@@ -6,34 +6,7 @@ import datetime
 import asyncio
 from zoneinfo import ZoneInfo
 from collections import defaultdict
-from src.discord import team_balancer
-
-
-# The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
-class AdminKickPlayerModal(discord.ui.Modal, title='Kick User in Queue'):
-    def __init__(self):
-        super().__init__()
-        self.user_acc = None
-        self.user_name = ""
-        self.clear_users = False
-
-    player_name = discord.ui.TextInput(label='User\'s global name or username', min_length=3)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        server = interaction.guild
-        self.user_name = str(self.player_name)
-        if self.user_name.lower() == "all" or self.user_name.lower() == "clear":
-            self.clear_users = True
-            await interaction.response.defer()
-        else:
-            check_if_exists = check_user.user_exists(server, self.user_name)
-            if not check_if_exists[0]:
-                self.user_acc = None
-                await interaction.response.defer()
-            else:
-                self.user_acc = check_if_exists[1]
-                await interaction.response.defer()
-        self.stop()
+from src.discord import team_balancer, embed_superclass
 
 
 # The modal for users to votekick when the queue is full. Will be left for a later date
@@ -55,6 +28,29 @@ class VoteKickPlayerModal(discord.ui.Modal, title='Votekick User in Queue'):
         else:
             self.user_acc = check_if_exists[1]
             await interaction.response.defer()
+        self.stop()
+
+
+# The modal for admins to kick users from the queue. Full usernames or global nicknames must be used for this to work
+class AdminKickPlayerModal(VoteKickPlayerModal, title='Kick User in Queue'):
+    def __init__(self):
+        super().__init__()
+        self.clear_users = False
+
+    async def on_submit(self, interaction: discord.Interaction):
+        server = interaction.guild
+        self.user_name = str(self.player_name)
+        if self.user_name.lower() == "all" or self.user_name.lower() == "clear":
+            self.clear_users = True
+            await interaction.response.defer()
+        else:
+            check_if_exists = check_user.user_exists(server, self.user_name)
+            if not check_if_exists[0]:
+                self.user_acc = None
+                await interaction.response.defer()
+            else:
+                self.user_acc = check_if_exists[1]
+                await interaction.response.defer()
         self.stop()
 
 
@@ -89,15 +85,15 @@ class AfkCheckButtons(discord.ui.View):
 
 
 class WaitingRoom(discord.ui.View):
-    def __init__(self, server, queue_channel):
+    def __init__(self, server, embed_channel):
         super().__init__(timeout=None)
         self.waiting_list = []
-        self.queue_channel = queue_channel
+        self.embed_channel = embed_channel
         self.message = None
         self.server = server
 
     async def send_embed(self):
-        self.message = await self.queue_channel.send("Users in the waiting room are below", view=self)
+        self.message = await self.embed_channel.send("Users in the waiting room are below", view=self)
         await self.update_message()
 
     def create_embed(self, queue_list):
@@ -129,22 +125,18 @@ class WaitingRoom(discord.ui.View):
 
 
 # Embed and buttons for the inhouse queue
-class InhouseQueue(discord.ui.View):
-    def __init__(self, server, chat_channel, queue_channel, afk_timer, mmr_floor, mmr_ceiling, queue_name):
-        super().__init__(timeout=None)
+class InhouseQueue(embed_superclass.EmbedSuperclass):
+    def __init__(self, server, chat_channel, embed_channel, afk_timer, mmr_floor, mmr_ceiling, queue_name):
+        super().__init__(chat_channel, embed_channel, server)
         self.queued_players = []
-        self.preload_modal = WaitingRoom(server, queue_channel)
+        self.preload_modal = WaitingRoom(server, embed_channel)
         self.votekick_dict = defaultdict(list)
         self.afk_dict = {}
-        self.chat_channel = chat_channel
-        self.queue_channel = queue_channel
         self.afk_timer = afk_timer
         self.mmr_floor = mmr_floor
         self.mmr_ceiling = mmr_ceiling
         self.queue_name = queue_name
-        self.message = None
         self.status = False
-        self.server = server
         self.admin_role = client_db_manager.load_admin_role(server)
         self.champion_role = client_db_manager.load_champion_role(server)
 
@@ -157,7 +149,7 @@ class InhouseQueue(discord.ui.View):
             await interaction.response.send_message("You've already voted to kick that person!", ephemeral=True)
             return
         else:
-            await self.queue_channel.send("You've already voted to kick that person!")
+            await self.embed_channel.send("You've already voted to kick that person!")
             return
         kick_votes = len(self.votekick_dict[kick_victim.id])
         if kick_votes == 3:
@@ -167,11 +159,11 @@ class InhouseQueue(discord.ui.View):
             del self.votekick_dict[kick_victim.id]
             await self.update_message(self.queued_players, self.server, 'Kick', kick_victim)
             await self.waiting_room_transfer(self.server)
-            await self.queue_channel.send(f'{kick_victim} has been kicked from the queue',
+            await self.embed_channel.send(f'{kick_victim} has been kicked from the queue',
                                delete_after=60)
         elif kick_votes < 3:
             num = 3 - kick_votes
-            await self.queue_channel.send(f'{vote_user.display_name} wants to kick {kick_victim.display_name} from the queue! '
+            await self.embed_channel.send(f'{vote_user.display_name} wants to kick {kick_victim.display_name} from the queue! '
                                f'Votes required to kick: {num}', delete_after=60)
 
     @tasks.loop(minutes=5)
@@ -226,7 +218,7 @@ class InhouseQueue(discord.ui.View):
 
     async def send_embed(self):
         self.afk_check.start()
-        self.message = await self.queue_channel.send(view=self)
+        self.message = await self.embed_channel.send(view=self)
         await self.update_message(self.queued_players, self.server)
 
     def full_queue_embed(self, queue_list):

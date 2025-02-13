@@ -1,16 +1,13 @@
 import discord
 import check_user
 import client_db_manager
+import embed_superclass
 
 
-class AdminEmbed(discord.ui.View):
-    def __init__(self, chat_channel, admin_channel, server):
-        super().__init__(timeout=None)
+class AdminEmbed(embed_superclass.EmbedSuperclass):
+    def __init__(self, chat_channel, embed_channel, server):
+        super().__init__(chat_channel, embed_channel, server)
         self.unverified_list = client_db_manager.get_unverified_users(server)
-        self.chat_channel = chat_channel
-        self.admin_channel = admin_channel
-        self.server = server
-        self.message = None
 
     view_status = True
     current_page = 1
@@ -18,16 +15,16 @@ class AdminEmbed(discord.ui.View):
     sep = 10
 
     async def send_embed(self):
-        self.message = await self.admin_channel.send(view=self)
+        self.message = await self.embed_channel.send(view=self)
         await self.update_message(self.unverified_list)
 
-    def registered_embed(self, data_list, server, interaction):
+    def registered_embed(self, data_list, interaction):
         all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',
                                   color=0x00ff00)
-        icon_url = server.icon.url
+        icon_url = self.server.icon.url
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
-            user_data = client_db_manager.view_user_data(user.id, server)
+            user_data = client_db_manager.view_user_data(user.id)
             user_data = check_user.flip_values(user_data)
             all_embed.add_field(name=user.display_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})'
@@ -154,7 +151,7 @@ class AdminEmbed(discord.ui.View):
         if self.view_status:
             client_db_manager.set_verification(self.unverified_list[0], interaction.guild, False)
             await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
-                                     f' An admin will inform you why you were rejected.')
+                                         f' An admin will inform you why you were rejected.')
             del self.unverified_list[0]
             await self.update_message(self.unverified_list, interaction)
             await interaction.response.defer()
@@ -167,7 +164,7 @@ class AdminEmbed(discord.ui.View):
                        style=discord.ButtonStyle.grey)
     async def change_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        #TODO: Rework this to show info on number of registered users, banned users, etc.
+        # TODO: Rework this to show info on number of registered users, banned users, etc.
 
         # if self.view_status:
         #     self.view_status = False
