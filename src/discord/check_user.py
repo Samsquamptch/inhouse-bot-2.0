@@ -1,18 +1,18 @@
 import math
 import discord
-import client_db_manager
+import client_db_interface as get_data
 
 
 def user_embed(data_list, player_data, server):
-    role_champion = client_db_manager.load_champion_role(server)
-    user_status = client_db_manager.get_user_status(player_data, server)
-    if user_status[1] == 1:
+    role_champion = get_data.load_champion_role(server)
+    user_verified, user_banned = get_data.get_user_status(player_data, server)
+    if user_banned:
         user_status = "User is currently banned 😢"
         user_clr = 0x000000
     elif role_champion in player_data.roles:
-        user_status = "User is a champion!"
+        user_status = "User is a champion! 😎"
         user_clr = 0xFFD700
-    elif user_status[0] == 1:
+    elif user_verified:
         user_status = "User is verified"
         user_clr = 0x00ff00
     else:
@@ -26,10 +26,10 @@ def user_embed(data_list, player_data, server):
         view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
     view_user_embed.add_field(name='Dotabuff',
                               value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
-                                    f'\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
-    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC',
+                                    f'\u0020\u0020\u0020\u0020', inline=True)
+    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u0020\u0020\u0020\u0020',
                               inline=True)
-    view_user_embed.add_field(name='Rank', value=f'{badge} \u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
     role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
     for i in range(3, 8):
@@ -96,7 +96,7 @@ def badge_rank(mmr):
 def user_exists(server, user_name):
     try:
         user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = client_db_manager.check_discord_exists(user_account.id)
+        user_in_database = get_data.check_discord_exists(user_account.id)
     except StopIteration:
         user_account = None
         user_in_database = False

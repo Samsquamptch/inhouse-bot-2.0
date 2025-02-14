@@ -1,6 +1,6 @@
 import discord
 import check_user
-import client_db_manager
+import client_db_interface
 import datetime
 
 
@@ -12,7 +12,7 @@ class ViewUserModal(discord.ui.Modal, title='View User'):
         server = interaction.user.guild
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
-            user_data = client_db_manager.view_user_data(check_if_exists[1].id)
+            user_data = client_db_interface.view_user_data(check_if_exists[1].id)
             await interaction.response.send_message(embed=check_user.user_embed(user_data, check_if_exists[1], server),
                                                     ephemeral=True)
         else:
@@ -31,12 +31,12 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
     async def on_submit(self, interaction: discord.Interaction):
         new_mmr = str(self.set_mmr)
         server = interaction.guild
-        if not client_db_manager.get_verified_status(interaction.user, interaction.guild):
+        if not client_db_interface.get_verified_status(interaction.user, interaction.guild):
             await interaction.response.send_message('You need to register before you can request an update!',
                                                     ephemeral=True,
                                                     delete_after=10)
             return
-        user_data = client_db_manager.view_user_data(interaction.user.id)
+        user_data = client_db_interface.view_user_data(interaction.user.id)
         date_str = user_data[8]
         date_format = '%Y-%m-%d'
         date_obj = datetime.datetime.strptime(date_str, date_format)
@@ -48,8 +48,8 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
             return
         try:
             int_new_mmr = int(new_mmr)
-            client_db_manager.update_user_data(interaction.user.id, "mmr", int_new_mmr)
-            client_db_manager.update_user_data(interaction.user.id, "LastUpdated",
+            client_db_interface.update_user_data(interaction.user.id, "mmr", int_new_mmr)
+            client_db_interface.update_user_data(interaction.user.id, "LastUpdated",
                                              datetime.datetime.today().strftime('%Y-%m-%d'))
             await self.chat_channel.send(
                 f'<@&{self.admin_role.id}> User <@{interaction.user.id}> wants their MMR set to {new_mmr}')
@@ -67,7 +67,7 @@ class UserOptions(discord.ui.View):
         super().__init__(timeout=None)
         self.last_value = None
         self.chat_channel = chat_channel
-        self.admin_role = client_db_manager.load_admin_role(server)
+        self.admin_role = client_db_interface.load_admin_role(server)
 
     @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Search", emoji="🔎", description="Search for a specific user with their name"),
@@ -104,7 +104,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         if new_mmr != "":
             try:
                 int_new_mmr = int(new_mmr)
-                client_db_manager.update_user_data(check_if_exists[1].id, "mmr", int_new_mmr)
+                client_db_interface.update_user_data(check_if_exists[1].id, "mmr", int_new_mmr)
             except ValueError:
                 await interaction.response.send_message('Please only input numbers for mmr',
                                                         ephemeral=True,
@@ -115,7 +115,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
                 steam_id = steam_id.split("players/")
                 steam_id = steam_id[1].split('/')
                 int_steam_id = int(steam_id[0])
-                client_db_manager.update_user_data(check_if_exists[1].id, "steam", int_steam_id)
+                client_db_interface.update_user_data(check_if_exists[1].id, "steam", int_steam_id)
             except ValueError:
                 await interaction.response.send_message('Please enter a full Dotabuff URL when updating a user',
                                                         ephemeral=True,
@@ -124,7 +124,7 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         if verify_role == "":
             pass
         elif verify_role.lower() == "y":
-            client_db_manager.set_verification(check_if_exists[1], server, "False")
+            client_db_interface.set_verification(check_if_exists[1], server, "False")
         else:
             await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
                                                     ephemeral=True,
@@ -133,10 +133,10 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         if ban_time == "":
             pass
         elif ban_time.lower() == "y":
-            if client_db_manager.get_banned_status(check_if_exists[1], server):
-                client_db_manager.set_banned(check_if_exists[1], server, False)
+            if client_db_interface.get_banned_status(check_if_exists[1], server):
+                client_db_interface.set_banned(check_if_exists[1], server, False)
             else:
-                client_db_manager.set_banned(check_if_exists[1], server, True)
+                client_db_interface.set_banned(check_if_exists[1], server, True)
         else:
             await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
                                                     ephemeral=True,
@@ -156,7 +156,7 @@ class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
         check_if_exists = check_user.user_exists(server, user_name)
         if check_if_exists[0]:
             if delete_conf.lower() == "y":
-                client_db_manager.remove_user_data(check_if_exists[1], server)
+                client_db_interface.remove_user_data(check_if_exists[1], server)
                 await interaction.response.send_message(f'User {self.player_name} has been deleted', ephemeral=True,
                                                         delete_after=10)
             else:
@@ -186,15 +186,15 @@ class DiscordSettingsModal(discord.ui.Modal, title='Change Discord Settings'):
             if settings_dict[item] != "":
                 try:
                     settings_dict[item] = int(settings_dict[item])
-                    client_db_manager.update_discord_settings(interaction.guild, item, settings_dict[item])
+                    client_db_interface.update_discord_settings(interaction.guild, item, settings_dict[item])
                 except ValueError:
                     await interaction.response.send_message(f'Please only input numbers for {item}',
                                                             ephemeral=True, delete_after=10)
         if str_queue_name != "":
-            client_db_manager.update_discord_settings(interaction.guild, 'QueueName', str_queue_name.upper())
+            client_db_interface.update_discord_settings(interaction.guild, 'QueueName', str_queue_name.upper())
         # if str_league_id != "":
         #     try:
-        #         client_db_manager.update_dota_settings(interaction.guild, 'LeagueId', str_league_id)
+        #         client_db_interface.update_dota_settings(interaction.guild, 'LeagueId', str_league_id)
         #     except ValueError:
         #         await interaction.response.send_message(f'Please only input numbers for the league ID',
         #                                                 ephemeral=True, delete_after=10)

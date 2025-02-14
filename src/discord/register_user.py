@@ -1,5 +1,5 @@
 import discord
-import client_db_manager
+import client_db_interface
 import check_user
 from collections import defaultdict
 
@@ -38,7 +38,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        client_db_manager.update_user_data(interaction.user.id, "pos1", select_item.values[0])
+        client_db_interface.update_user_data(interaction.user.id, "pos1", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Carry")
         if counter_check:
@@ -60,7 +60,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        client_db_manager.update_user_data(interaction.user.id, "pos2", select_item.values[0])
+        client_db_interface.update_user_data(interaction.user.id, "pos2", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Midlane")
         if counter_check:
@@ -82,7 +82,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        client_db_manager.update_user_data(interaction.user.id, "pos3", select_item.values[0])
+        client_db_interface.update_user_data(interaction.user.id, "pos3", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Offlane")
         if counter_check:
@@ -104,7 +104,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        client_db_manager.update_user_data(interaction.user.id, "pos4", select_item.values[0])
+        client_db_interface.update_user_data(interaction.user.id, "pos4", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Soft Support")
         if counter_check:
@@ -126,7 +126,7 @@ class RolePreferenceSelect(discord.ui.View):
         ]
     )
     async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
-        client_db_manager.update_user_data(interaction.user.id, "pos5", select_item.values[0])
+        client_db_interface.update_user_data(interaction.user.id, "pos5", select_item.values[0])
         message_id = interaction.message.id
         counter_check = self.preference_counter(message_id, "Hard Support")
         if counter_check:
@@ -149,7 +149,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        if client_db_manager.check_discord_exists(interaction.user.id):
+        if client_db_interface.check_discord_exists(interaction.user.id):
             await interaction.response.send_message(
                 'Your discord account is already registered to the database, please contact an admin for assistance',
                 ephemeral=True,
@@ -170,7 +170,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
                             steam = steam[0]
                         try:
                             steam_int = int(steam)
-                            steam_reg = client_db_manager.check_steam_exists(steam_int)
+                            steam_reg = client_db_interface.check_steam_exists(steam_int)
                             if steam_reg:
                                 await interaction.response.send_message(
                                     'Your dotabuff account is already registered to the database, please contact an admin for assistance',
@@ -206,10 +206,10 @@ class RegisterButton(discord.ui.View):
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
     async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_manager.user_registered(interaction.user):
+        if client_db_interface.user_registered(interaction.user):
             await interaction.response.send_message(content="You are already registered", ephemeral=True,
                                                     delete_after=10)
-        elif client_db_manager.auto_register(interaction.user, interaction.guild):
+        elif client_db_interface.auto_register(interaction.user, interaction.guild):
             self.admin.unverified_list.append(interaction.user)
             await interaction.response.send_message(content="Registration complete, please wait to be verified",
                                                     ephemeral=True,
@@ -221,8 +221,8 @@ class RegisterButton(discord.ui.View):
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_manager.user_registered(interaction.user):
-            user_data = client_db_manager.view_user_data(interaction.user.id)
+        if client_db_interface.user_registered(interaction.user):
+            user_data = client_db_interface.view_user_data(interaction.user.id)
             await interaction.response.send_message(
                 embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
                 ephemeral=True)
@@ -233,7 +233,7 @@ class RegisterButton(discord.ui.View):
     @discord.ui.button(label="Update your role preferences", emoji="🖋️",
                        style=discord.ButtonStyle.blurple)
     async def set_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_manager.user_registered(interaction.user):
+        if client_db_interface.user_registered(interaction.user):
             await interaction.response.send_message(content="Please set your role preferences",
                                                     view=RolePreferenceSelect(), ephemeral=True)
         else:
@@ -246,15 +246,14 @@ async def register_user(user, steam_int, int_mmr, server):
     # to how users are used to (which is higher number = more pref and lower number = less pref).
     # Swaps have been implemented where required for user output to avoid confusion
     player = [user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
-    client_db_manager.add_user_data(player)
-    client_db_manager.auto_register(user, server)
+    client_db_interface.add_user_data(player)
+    client_db_interface.auto_register(user, server)
     await register_notification(user, server)
 
 
 async def register_notification(user, server):
     # Adds the inhouse role to the user once their details have been added to the register
-    admin_role = client_db_manager.load_admin_role(server)
-    channel_chat_id = client_db_manager.load_channel_id(server, 'ChatChannel')
-    chat_channel = discord.utils.get(server.channels, id=channel_chat_id)
+    admin_role = client_db_interface.load_admin_role(server)
+    chat_channel = client_db_interface.load_chat_channel(server)
     await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
                             f'registered for the inhouse and requires verification')
