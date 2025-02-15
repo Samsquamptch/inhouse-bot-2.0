@@ -70,6 +70,13 @@ def load_chat_channel(server):
     channel_id = db_access.load_channel_id(server, "ChatChannel")
     return discord.utils.get(server.channels, id=channel_id)
 
+def check_admin(user, server):
+    admin_role = load_admin_role(server)
+    if admin_role not in user.roles:
+        return False
+    else:
+        return True
+
 
 def load_admin_role(server):
     admin_id = db_access.load_id_from_server(server, "AdminRole")

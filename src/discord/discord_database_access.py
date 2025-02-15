@@ -94,6 +94,7 @@ def check_for_value(column, value_check):
     close_db_connection(conn)
     return variable
 
+
 def load_user_status(user_id, server_id):
     conn = get_db_connection()
     user_status = list(
@@ -101,3 +102,4 @@ def load_user_status(user_id, server_id):
             ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
                               [user_id, server_id]))
     close_db_connection(conn)
+    return user_status[0]

@@ -104,15 +104,15 @@ async def run_user_modules(server):
     # Send admin panel to admin channel
     admin_channel = client_db_interface.load_admin_channel(server)
     await admin_channel.purge()
-    verify_view = admin_panel.AdminEmbed(chat_channel, admin_channel, server)
-    await verify_view.send_embed()
+    admin_view = admin_panel.AdminEmbed(chat_channel, admin_channel, server)
+    await admin_view.send_embed()
     await admin_channel.send("More options are available via the drop-down menu below",
                              view=select_menus.AdminOptions())
     print("Admin settings created")
     # Send queue buttons and panel to queue channel
     queue_channel = client_db_interface.load_queue_channel(server)
     await queue_channel.purge()
-    register_view = register_user.RegisterButton(verify_view)
+    register_view = register_user.RegisterButton(admin_view)
     await queue_channel.send("New user? Please register here:", view=register_view)
     await queue_channel.send("Already registered? More options are available via the drop-down menu below",
                              view=select_menus.UserOptions(chat_channel, server))
@@ -121,4 +121,4 @@ async def run_user_modules(server):
     queue_settings[2], queue_settings[3])
     await inhouse_view.send_embed()
     print("User settings created")
-    return ServerViews(server.id, inhouse_view, verify_view)
+    return ServerViews(server.id, inhouse_view, admin_view)
