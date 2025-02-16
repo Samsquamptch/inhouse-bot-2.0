@@ -11,7 +11,11 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
     @commands.is_owner()
     async def setup(self, ctx):
         await ctx.send("Beginning setup of inhouse bot")
-        await initialisation.ConfigButtons().config_start(ctx)
+        config_setup = initialisation.ConfigButtons()
+        await config_setup.config_start(ctx)
+        await config_setup.wait()
+        if config_setup.completed:
+            self.bot.run_user_modules(ctx.guild)
 
     @commands.command(aliases=['vk'])
     async def votekick(self, ctx, user):
@@ -23,7 +27,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
         chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
         if chosen_server is None:
-            await ctx.send(content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
+            await ctx.send(content=f'Commands are not yet working, please ensure setup has been completed',
                            ephemeral=True)
         elif ctx.author not in chosen_server.inhouse.queued_players:
             await ctx.send(content=f'You aren\'t in the queue!', ephemeral=True)
@@ -49,7 +53,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
         chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
         if chosen_server is None:
             await ctx.send(
-                content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
+                content=f'Commands are not yet working, please ensure setup has been completed',
                 ephemeral=True)
         elif not user_check:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
@@ -75,7 +79,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
         chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
         if chosen_server is None:
             await ctx.send(
-                content=f'Commands are not yet working, please ensure setup has been completed and the bot has been restarted',
+                content=f'Commands are not yet working, please ensure setup has been completed',
                 ephemeral=True)
         else:
             chosen_server.admin.unverified_list.append(ctx.author)

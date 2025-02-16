@@ -6,14 +6,6 @@ import select_menus
 import inhouse_queue
 
 
-class ServerViews:
-    def __init__(self, server_id, inhouse_view, admin_view):
-        super().__init__()
-        self.server = server_id
-        self.inhouse = inhouse_view
-        self.admin = admin_view
-
-
 class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
     def __init__(self):
         super().__init__(timeout=None)
@@ -56,6 +48,7 @@ class ConfigButtons(discord.ui.View):
             self.setup_guide = setup.read().split("\n\n")
             self.config_user = None
             self.message = None
+            self.completed = False
 
     async def config_start(self, ctx):
         self.config_user = ctx.author
@@ -96,29 +89,6 @@ class ConfigButtons(discord.ui.View):
         await interaction.response.send_message(
             content="Channels have been registered and defauls settings added. Please amend these via the admin panel",
             ephemeral=True)
+        self.completed = True
         return
 
-
-async def run_user_modules(server):
-    chat_channel = client_db_interface.load_chat_channel(server)
-    # Send admin panel to admin channel
-    admin_channel = client_db_interface.load_admin_channel(server)
-    await admin_channel.purge()
-    admin_view = admin_panel.AdminEmbed(chat_channel, admin_channel, server)
-    await admin_view.send_embed()
-    await admin_channel.send("More options are available via the drop-down menu below",
-                             view=select_menus.AdminOptions())
-    print("Admin settings created")
-    # Send queue buttons and panel to queue channel
-    queue_channel = client_db_interface.load_queue_channel(server)
-    await queue_channel.purge()
-    register_view = register_user.RegisterButton(admin_view)
-    await queue_channel.send("New user? Please register here:", view=register_view)
-    await queue_channel.send("Already registered? More options are available via the drop-down menu below",
-                             view=select_menus.UserOptions(chat_channel, server))
-    queue_settings = client_db_interface.load_server_settings(server)
-    inhouse_view = inhouse_queue.InhouseQueue(server, chat_channel, queue_channel, queue_settings[0], queue_settings[1],
-    queue_settings[2], queue_settings[3])
-    await inhouse_view.send_embed()
-    print("User settings created")
-    return ServerViews(server.id, inhouse_view, admin_view)

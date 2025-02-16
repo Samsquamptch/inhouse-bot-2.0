@@ -47,6 +47,8 @@ def add_default_settings(server):
     conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName)
                             VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "INHOUSE")""",
                           [server.id])
+    conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
+                          [server.id])
     conn.commit()
     db_access.close_db_connection(conn)
 
@@ -69,6 +71,25 @@ def load_global_channel(server):
 def load_chat_channel(server):
     channel_id = db_access.load_channel_id(server, "ChatChannel")
     return discord.utils.get(server.channels, id=channel_id)
+
+
+def update_message_ids(server, messages):
+    conn = db_access.get_db_connection()
+    conn.cursor().execute("""UPDATE MessageIds SET AdminPanel = ?, AdminMenu = ?, UserButtons = ?, UserMenu = ?, 
+                             InhouseQueue = ?, GlobalQueue = ? WHERE ServerId IN (SELECT Id from Server where Server = ?)""",
+                             [messages[0], messages[1], messages[2], messages[3], messages[4], messages[5], server.id])
+    conn.commit()
+    db_access.close_db_connection(conn)
+
+
+def load_message_ids(server):
+    conn = db_access.get_db_connection()
+    message_ids = list(conn.cursor().execute("""SELECT mid.AdminPanel, mid.AdminMenu, mid.UserButtons, mid.UserMenu, 
+                             mid.InhouseQueue, mid.GlobalQueue FROM MessageIds mid JOIN Server srv ON mid.ServerId = 
+                             srv.Id WHERE srv.Server = ?""", [server.id]))
+    db_access.close_db_connection(conn)
+    return message_ids[0]
+
 
 def check_admin(user, server):
     admin_role = load_admin_role(server)
