@@ -1,24 +1,23 @@
 import math
 import discord
-import client_db_manager
+import client_db_interface as get_data
 
 
 def user_embed(data_list, player_data, server):
-    role_champion = client_db_manager.load_champion_role(server)
-    user_status = client_db_manager.get_user_status(player_data, server)
-    if user_status[1] == 1:
+    role_champion = get_data.load_champion_role(server)
+    user_verified, user_banned = get_data.get_user_status(player_data, server)
+    if user_banned:
         user_status = "User is currently banned 😢"
         user_clr = 0x000000
     elif role_champion in player_data.roles:
-        user_status = "User is a champion!"
+        user_status = "User is a champion! 😎"
         user_clr = 0xFFD700
-    elif user_status[0] == 1:
+    elif user_verified:
         user_status = "User is verified"
         user_clr = 0x00ff00
     else:
         user_status = "User is not verified"
         user_clr = 0xFF0000
-    data_list = flip_values(data_list)
     badge = badge_rank(data_list[2])
     view_user_embed = discord.Embed(title=f'{player_data.display_name}', description=f'{user_status}',
                                     color=user_clr)
@@ -26,38 +25,15 @@ def user_embed(data_list, player_data, server):
         view_user_embed.set_thumbnail(url=f'{player_data.avatar}')
     view_user_embed.add_field(name='Dotabuff',
                               value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
-                                    f'\u1CBC\u1CBC\u1CBC\u1CBC', inline=True)
-    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u1CBC\u1CBC\u1CBC\u1CBC',
+                                    f'\u0020\u0020\u0020\u0020', inline=True)
+    view_user_embed.add_field(name='MMR', value=f'{data_list[2]} \u0020\u0020\u0020\u0020',
                               inline=True)
-    view_user_embed.add_field(name='Rank', value=f'{badge} \u1CBC\u1CBC', inline=True)
+    view_user_embed.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
     view_user_embed.add_field(name='Role Preferences', value='', inline=False)
     role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
     for i in range(3, 8):
         view_user_embed.add_field(name=f'{role_list[i - 3]} ', value=f'{data_list[i]}', inline=False)
     return view_user_embed
-
-
-# Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to (which
-# is higher number = more pref and lower number = less pref). This swap shows what users expect to see, instead of what
-# is actually happening behind the scenes (low num = more pref and high num = less pref).
-def flip_values(data_list, set_roles=None):
-    if set_roles:
-        data_numbers = [0, 1, 2, 3, 4]
-    else:
-        data_numbers = [3, 4, 5, 6, 7]
-    for n in data_numbers:
-        match data_list[n]:
-            case 1:
-                data_list[n] = 5
-            case 2:
-                data_list[n] = 4
-            case 3:
-                data_list[n] = 3
-            case 4:
-                data_list[n] = 2
-            case 5:
-                data_list[n] = 1
-    return data_list
 
 
 def badge_rank(mmr):
@@ -96,7 +72,7 @@ def badge_rank(mmr):
 def user_exists(server, user_name):
     try:
         user_account = next((x for x in server.members if user_name.lower() in x.display_name.lower()))
-        user_in_database = client_db_manager.check_discord_exists(user_account.id)
+        user_in_database = get_data.check_discord_exists(user_account.id)
     except StopIteration:
         user_account = None
         user_in_database = False

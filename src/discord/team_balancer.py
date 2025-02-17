@@ -3,11 +3,12 @@ import random
 import networkx as nx
 from networkx.algorithms import bipartite
 
-from src.discord import client_db_manager
+from src.discord import client_db_interface
 
 
+# TODO: This stuff won't work as intended because roles haven't been flipped for the bipartite graph
 def assign_teams(queue_ids):
-    user_data = client_db_manager.get_queue_user_data(queue_ids)
+    user_data = client_db_interface.get_queue_user_data(queue_ids)
     queue = user_data.sort_values('mmr', ascending=False)
     team_uno = sort_balancer(queue['mmr'].tolist())
     team_dos = mean_balancer(queue['mmr'].tolist())

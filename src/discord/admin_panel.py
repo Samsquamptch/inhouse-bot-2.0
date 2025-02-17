@@ -1,13 +1,14 @@
 import discord
 import check_user
-import client_db_manager
+import client_db_interface
 import embed_superclass
 
 
 class AdminEmbed(embed_superclass.EmbedSuperclass):
     def __init__(self, chat_channel, embed_channel, server):
         super().__init__(chat_channel, embed_channel, server)
-        self.unverified_list = client_db_manager.get_unverified_users(server)
+        self.server = server
+        self.unverified_list = client_db_interface.get_unverified_users(self.server)
 
     view_status = True
     current_page = 1
@@ -16,7 +17,7 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
 
     async def send_embed(self):
         self.message = await self.embed_channel.send(view=self)
-        await self.update_message(self.unverified_list)
+        await self.update_message()
 
     def registered_embed(self, data_list, interaction):
         all_embed = discord.Embed(title='Registered users', description=f'Showing all registered users',
@@ -24,8 +25,7 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
         icon_url = self.server.icon.url
         all_embed.set_thumbnail(url=f'{icon_url}')
         for user in data_list:
-            user_data = client_db_manager.view_user_data(user.id)
-            user_data = check_user.flip_values(user_data)
+            user_data = client_db_interface.view_user_data(user.id)
             all_embed.add_field(name=user.display_name,
                                 value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})'
                                       f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
@@ -42,12 +42,13 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
             empty_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         return empty_embed
 
-    async def update_message(self, list_data, interaction=None):
+    async def update_message(self, interaction=None):
         if self.view_status:
             self.update_buttons()
-            if list_data:
-                user = list_data[0]
-                user_data = client_db_manager.view_user_data(user.id)
+            self.unverified_list = client_db_interface.get_unverified_users(self.server)
+            if self.unverified_list:
+                user = self.unverified_list[0]
+                user_data = client_db_interface.view_user_data(user.id)
                 update_embed = check_user.user_embed(user_data, user, self.server)
                 if interaction:
                     update_embed.set_footer(
@@ -123,42 +124,42 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
                        style=discord.ButtonStyle.green)
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
-            client_db_manager.set_verification(self.unverified_list[0], interaction.guild, True)
+            client_db_interface.enable_verification(self.unverified_list[0], interaction.guild)
             await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been verified for the inhouse')
             del self.unverified_list[0]
-            await self.update_message(self.unverified_list, interaction)
+            await self.update_message(interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page -= 1
-            await self.update_message(self.unverified_list, interaction)
+            await self.update_message(interaction)
 
     @discord.ui.button(label="Refresh", emoji="♻",
                        style=discord.ButtonStyle.blurple)
     async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         server = interaction.user.guild
         if self.view_status:
-            await self.update_message(self.unverified_list, interaction)
+            await self.update_message(interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page = 1
-            await self.update_message(self.unverified_list, interaction)
+            await self.update_message(interaction)
 
     @discord.ui.button(label="Reject User", emoji="❌",
                        style=discord.ButtonStyle.red)
     async def reject_user(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.view_status:
-            client_db_manager.set_verification(self.unverified_list[0], interaction.guild, False)
+            client_db_interface.set_verification(self.unverified_list[0], interaction.guild, False)
             await self.chat_channel.send(f'User <@{self.unverified_list[0].id}> has been rejected from the inhouse.'
                                          f' An admin will inform you why you were rejected.')
             del self.unverified_list[0]
-            await self.update_message(self.unverified_list, interaction)
+            await self.update_message(interaction)
             await interaction.response.defer()
         else:
             await interaction.response.defer()
             self.current_page += 1
-            await self.update_message(self.unverified_list, interaction)
+            await self.update_message(interaction)
 
     @discord.ui.button(label="View Registered Users", emoji="📋",
                        style=discord.ButtonStyle.grey)

@@ -1,17 +1,9 @@
 import discord
-import client_db_manager
+import client_db_interface
 import admin_panel
 import register_user
 import select_menus
 import inhouse_queue
-
-
-class ServerViews:
-    def __init__(self, server_id, inhouse_view, admin_view):
-        super().__init__()
-        self.server = server_id
-        self.inhouse = inhouse_view
-        self.admin = admin_view
 
 
 class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
@@ -42,7 +34,7 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
                 await interaction.response.send_message(content="Channel ID " + str(channel) + " not found on server!",
                                                         ephemeral=True)
                 return
-        client_db_manager.register_server(interaction.guild, channel_list)
+        client_db_interface.register_server(interaction.guild, channel_list)
         await interaction.response.send_message(content="Channels set",
                                                 ephemeral=True)
         self.confirmed = True
@@ -56,6 +48,7 @@ class ConfigButtons(discord.ui.View):
             self.setup_guide = setup.read().split("\n\n")
             self.config_user = None
             self.message = None
+            self.completed = False
 
     async def config_start(self, ctx):
         self.config_user = ctx.author
@@ -87,41 +80,15 @@ class ConfigButtons(discord.ui.View):
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user != self.config_user:
             return
-        if client_db_manager.check_server_settings(interaction.guild):
+        if client_db_interface.check_server_settings(interaction.guild):
             await interaction.response.send_message(
                 content="default settings already configured",
                 ephemeral=True)
-        client_db_manager.add_default_settings(interaction.guild)
+        client_db_interface.add_default_settings(interaction.guild)
         await self.button_state(True)
         await interaction.response.send_message(
             content="Channels have been registered and defauls settings added. Please amend these via the admin panel",
             ephemeral=True)
+        self.completed = True
         return
 
-
-async def run_user_modules(server):
-    channel_chat_id = client_db_manager.load_channel_id(server, 'ChatChannel')
-    chat_channel = discord.utils.get(server.channels, id=channel_chat_id)
-    # Send admin panel to admin channel
-    channel_admin_id = client_db_manager.load_channel_id(server, 'AdminChannel')
-    admin_channel = discord.utils.get(server.channels, id=channel_admin_id)
-    await admin_channel.purge()
-    verify_view = admin_panel.AdminEmbed(chat_channel, admin_channel, server)
-    await verify_view.send_embed()
-    await admin_channel.send("More options are available via the drop-down menu below",
-                             view=select_menus.AdminOptions())
-    print("Admin settings created")
-    # Send queue buttons and panel to queue channel
-    channel_queue_id = client_db_manager.load_channel_id(server, 'QueueChannel')
-    queue_channel = discord.utils.get(server.channels, id=channel_queue_id)
-    await queue_channel.purge()
-    register_view = register_user.RegisterButton(verify_view)
-    await queue_channel.send("New user? Please register here:", view=register_view)
-    await queue_channel.send("Already registered? More options are available via the drop-down menu below",
-                             view=select_menus.UserOptions(chat_channel, server))
-    queue_settings = client_db_manager.load_server_settings(server)
-    inhouse_view = inhouse_queue.InhouseQueue(server, chat_channel, queue_channel, queue_settings[0], queue_settings[1],
-    queue_settings[2], queue_settings[3])
-    await inhouse_view.send_embed()
-    print("User settings created")
-    return ServerViews(server.id, inhouse_view, verify_view)
