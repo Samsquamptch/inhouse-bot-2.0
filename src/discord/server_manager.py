@@ -78,7 +78,7 @@ class ServerManager:
         message_id_list = [embeds.admin_panel.message.id, admin_menu_message.id, register_message.id, user_menu_message.id,
                            embeds.inhouse_queue.message.id, 100]
         client_db_interface.update_message_ids(server, message_id_list)
-        await channels.chat_channel.send("Bot is now running, please feel free to join the queue.")
+        # await channels.chat_channel.send("Bot is now running, please feel free to join the queue.")
         return
 
     async def setup_command(self, ctx):
@@ -90,8 +90,22 @@ class ServerManager:
             server_channels = ChannelList(ctx.guild)
             await self.run_user_modules(ctx.guild, server_channels)
 
-    async def register_command(self, user, dotabuff_id, mmr):
-        return
+    async def register_command(self, ctx, user, dotabuff_id, mmr):
+        server = self.check_channel(ctx)
+        if not server:
+            return
+        ctx.response.send_message()
+        disc_reg = client_db_interface.check_for_value("disc", ctx.author.id)
+        steam_reg = client_db_interface.check_for_value("steam", dotabuff_id)
+        if registered_role in ctx.author.roles or disc_reg:
+            await ctx.send("Your discord account is already registered!")
+            return
+        elif steam_reg:
+            await ctx.send("Your steam account is already registered!")
+            return
+        else:
+            await self.bot.register_command(ctx.author, dotabuff_id, mmr)
+            await ctx.send("You have been registered. Please set your roles using !roles")
 
     async def refresh_command(self, ctx):
         if not client_db_interface.check_server_settings(ctx.guild):
@@ -132,4 +146,4 @@ class ServerManager:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
         else:
             user_data = client_db_interface.view_user_data(user_acc.id)
-            await ctx.send(embed=check_user.user_embed(user_data, user_acc, ctx.guild))
+            await ctx.send(embed=check_user.UserEmbed.user_embed(user_data, user_acc, ctx.guild))

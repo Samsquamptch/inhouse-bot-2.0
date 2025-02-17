@@ -208,7 +208,7 @@ def load_server_settings(server):
     conn = db_access.get_db_connection()
     settings = list(conn.cursor().execute("""SELECT Stg.AfkTimer, Stg.SkillFloor, Stg.SkillCeiling, Stg.QueueName FROM 
                                           ServerSettings Stg JOIN Server Srv ON Stg.ServerId = Srv.Id WHERE Srv.Server 
-                                          = ?""", [server]))
+                                          = ?""", [server.id]))
     db_access.close_db_connection(conn)
     return list(settings[0])
 

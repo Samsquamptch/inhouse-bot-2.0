@@ -39,7 +39,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
 
     @commands.command(aliases=['wh', 'whois'])
     async def who(self, ctx, user=None):
-        self.manager.who_command(ctx, user)
+        await self.manager.who_command(ctx, user)
         # if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
         #     return
         # elif user is None:
@@ -63,28 +63,33 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
 
 
     @commands.command()
+    async def register(self, ctx):
+        return
+
+    @commands.command()
     async def register(self, ctx, dotabuff_id: int, mmr: int):
-        if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
-            return
-        registered_role_id = client_db_interface.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
-        registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
-        disc_reg = client_db_interface.check_for_value("disc", ctx.author.id)
-        steam_reg = client_db_interface.check_for_value("steam", dotabuff_id)
-        if registered_role in ctx.author.roles or disc_reg:
-            await ctx.send("Your discord account is already registered!")
-            return
-        elif steam_reg:
-            await ctx.send("Your steam account is already registered!")
-            return
-        chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
-        if chosen_server is None:
-            await ctx.send(
-                content=f'Commands are not yet working, please ensure setup has been completed',
-                ephemeral=True)
-        else:
-            chosen_server.admin.unverified_list.append(ctx.author)
-            await self.bot.register_command(ctx.author, dotabuff_id, mmr)
-            await ctx.send("You have been registered. Please set your roles using !roles")
+        return
+        # if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
+        #     return
+        # registered_role_id = client_db_interface.load_config_data(ctx.guild.id, 'ROLES', 'registered_role')
+        # registered_role = discord.utils.get(ctx.guild.roles, id=registered_role_id)
+        # disc_reg = client_db_interface.check_for_value("disc", ctx.author.id)
+        # steam_reg = client_db_interface.check_for_value("steam", dotabuff_id)
+        # if registered_role in ctx.author.roles or disc_reg:
+        #     await ctx.send("Your discord account is already registered!")
+        #     return
+        # elif steam_reg:
+        #     await ctx.send("Your steam account is already registered!")
+        #     return
+        # chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
+        # if chosen_server is None:
+        #     await ctx.send(
+        #         content=f'Commands are not yet working, please ensure setup has been completed',
+        #         ephemeral=True)
+        # else:
+        #     chosen_server.admin.unverified_list.append(ctx.author)
+        #     await self.bot.register_command(ctx.author, dotabuff_id, mmr)
+        #     await ctx.send("You have been registered. Please set your roles using !roles")
 
     @commands.command()
     async def stop_lobby(self, ctx):
