@@ -241,8 +241,8 @@ def update_user_data(discord_id, column, new_data):
         cur.execute("UPDATE Users SET Pos1 = ?, Pos2 = ?, Pos3 = ?, Pos4 = ?, Pos5 = ? WHERE disc=?", new_data)
     else:
         cur.execute(f"UPDATE User SET {column} = ? WHERE Discord = ?", [new_data, discord_id])
+    conn.commit()
     db_access.close_db_connection(conn)
-    cur.close()
 
 
 def check_discord_exists(user_id):
@@ -267,6 +267,7 @@ def add_user_data(player):
     conn = db_access.get_db_connection()
     conn.cursor().execute("INSERT INTO User (Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5, LastUpdated) VALUES "
                           "(?, ?, ?, ?, ?, ?, ?, ?, ?)", player)
+    conn.commit()
     db_access.close_db_connection(conn)
     conn.close()
 
@@ -281,8 +282,33 @@ def remove_user_data(user, server):
 
 
 def get_queue_user_data(queue_ids):
+    id_list = []
+    for user in queue_ids:
+        id_list.append(user.id)
     conn = db_access.get_db_connection()
-    id_tuple = tuple(queue_ids)
-    user_data = pd.read_sql_query("SELECT * FROM Users WHERE disc IN {};".format(id_tuple), conn)
+    user_data = list(conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)", id_list))
+    queue_data = []
+    for user in user_data:
+        queue_data.append(flip_values(list(user)))
     db_access.close_db_connection(conn)
-    return user_data
+    return queue_data
+
+
+# Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to (which
+# is higher number = more pref and lower number = less pref). This swap shows what users expect to see, instead of what
+# is actually happening behind the scenes (low num = more pref and high num = less pref).
+def flip_values(data_list):
+    data_numbers = [3, 4, 5, 6, 7]
+    for n in data_numbers:
+        match data_list[n]:
+            case 1:
+                data_list[n] = 5
+            case 2:
+                data_list[n] = 4
+            case 3:
+                data_list[n] = 3
+            case 4:
+                data_list[n] = 2
+            case 5:
+                data_list[n] = 1
+    return data_list

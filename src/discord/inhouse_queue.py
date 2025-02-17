@@ -272,10 +272,15 @@ class InhouseQueue(embed_superclass.EmbedSuperclass):
     # Creates the embed used for displaying the inhouse queue
     def create_embed(self, queue_list, action=None, action_user=None):
         if queue_list:
-            champion_check = any(check in queue_list for check in self.champion_role.members)
-            if champion_check:
-                embed_desc = f"A champion is in the queue!"
-                embed_clr = 0xFFD700
+            #TODO: Tidy this up
+            if self.champion_role:
+                champion_check = any(check in queue_list for check in self.champion_role.members)
+                if champion_check:
+                    embed_desc = f"A champion is in the queue!"
+                    embed_clr = 0xFFD70
+                else:
+                    embed_desc = f"Queue is live, come join!"
+                    embed_clr = 0x00ff00
             else:
                 embed_desc = f"Queue is live, come join!"
                 embed_clr = 0x00ff00

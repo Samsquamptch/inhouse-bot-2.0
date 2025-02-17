@@ -3,6 +3,18 @@ import client_db_interface
 import check_user
 from collections import defaultdict
 
+# TODO: Rework this into RolePreferenceSelect to reduce the amount of redundant code (low priority)
+# class PreferenceSelect(discord.ui.Select):
+#     def __init__(self):
+#         options = [
+#             discord.SelectOption(label="Very high", value="5"),
+#             discord.SelectOption(label="High", value="4"),
+#             discord.SelectOption(label="Moderate", value="3"),
+#             discord.SelectOption(label="Low", value="2"),
+#             discord.SelectOption(label="Very low", value="1"),
+#         ]
+#         super().__init__(placeholder="Select an option", max_values=1, min_values=1, options=options)
+
 
 # Select menus for choosing your role preferences
 class RolePreferenceSelect(discord.ui.View):
@@ -30,11 +42,11 @@ class RolePreferenceSelect(discord.ui.View):
     @discord.ui.select(
         custom_id="CarryPref", placeholder="Carry Preference", min_values=1, max_values=1,
         options=[
-            discord.SelectOption(label="Very high", value="1"),
-            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
-            discord.SelectOption(label="Low", value="4"),
-            discord.SelectOption(label="Very low", value="5"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
         ]
     )
     async def select_carry_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
@@ -52,11 +64,11 @@ class RolePreferenceSelect(discord.ui.View):
     @discord.ui.select(
         custom_id="MidPref", placeholder="Midlane Preference", min_values=1, max_values=1,
         options=[
-            discord.SelectOption(label="Very high", value="1"),
-            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
-            discord.SelectOption(label="Low", value="4"),
-            discord.SelectOption(label="Very low", value="5"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
         ]
     )
     async def select_mid_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
@@ -74,11 +86,11 @@ class RolePreferenceSelect(discord.ui.View):
     @discord.ui.select(
         custom_id="OffPref", placeholder="Offlane Preference", min_values=1, max_values=1,
         options=[
-            discord.SelectOption(label="Very high", value="1"),
-            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
-            discord.SelectOption(label="Low", value="4"),
-            discord.SelectOption(label="Very low", value="5"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
         ]
     )
     async def select_off_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
@@ -96,11 +108,11 @@ class RolePreferenceSelect(discord.ui.View):
     @discord.ui.select(
         custom_id="SoftPref", placeholder="Soft Support Preference", min_values=1, max_values=1,
         options=[
-            discord.SelectOption(label="Very high", value="1"),
-            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
-            discord.SelectOption(label="Low", value="4"),
-            discord.SelectOption(label="Very low", value="5"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
         ]
     )
     async def select_soft_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
@@ -118,11 +130,11 @@ class RolePreferenceSelect(discord.ui.View):
     @discord.ui.select(
         custom_id="HardPref", placeholder="Hard Support Preference", min_values=1, max_values=1,
         options=[
-            discord.SelectOption(label="Very high", value="1"),
-            discord.SelectOption(label="High", value="2"),
+            discord.SelectOption(label="Very high", value="5"),
+            discord.SelectOption(label="High", value="4"),
             discord.SelectOption(label="Moderate", value="3"),
-            discord.SelectOption(label="Low", value="4"),
-            discord.SelectOption(label="Very low", value="5"),
+            discord.SelectOption(label="Low", value="2"),
+            discord.SelectOption(label="Very low", value="1"),
         ]
     )
     async def select_hard_preference(self, interaction: discord.Interaction, select_item: discord.ui.Select):
@@ -141,7 +153,6 @@ class RolePreferenceSelect(discord.ui.View):
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     def __init__(self, admin):
         super().__init__(timeout=None)
-        self.admin = admin
 
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
@@ -149,59 +160,51 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        if client_db_interface.check_discord_exists(interaction.user.id):
-            await interaction.response.send_message(
-                'Your discord account is already registered to the database, please contact an admin for assistance',
-                ephemeral=True,
-                delete_after=10)
-        else:
-            try:
-                int_mmr = int(mmr)
-                if int_mmr < 1 or int_mmr > 15000:
-                    await interaction.response.send_message('Please enter a valid MMR',
-                                                            ephemeral=True,
-                                                            delete_after=10)
-                else:
-                    if "dotabuff.com/players/" in steam:
-                        steam = steam.split("players/")
-                        steam = steam[1]
-                        if "/" in steam:
-                            steam = steam.split('/')
-                            steam = steam[0]
-                        try:
-                            steam_int = int(steam)
-                            steam_reg = client_db_interface.check_steam_exists(steam_int)
-                            if steam_reg:
-                                await interaction.response.send_message(
-                                    'Your dotabuff account is already registered to the database, please contact an admin for assistance',
-                                    ephemeral=True,
-                                    delete_after=10)
-                            else:
-                                await register_user(interaction.user, steam_int, int_mmr, interaction.guild)
-                                self.admin.unverified_list.append(interaction.user)
-                                await interaction.response.send_message(
-                                    'You\'ve been registered, please set your roles and wait to be verified',
-                                    view=RolePreferenceSelect(), ephemeral=True)
-                        except ValueError:
-                            await interaction.response.send_message(
-                                'There was an error with the dotabuff url you provided, please try again',
-                                ephemeral=True,
-                                delete_after=10)
-                    else:
-                        await interaction.response.send_message(
-                            'Please enter your full Dotabuff user url when registering',
-                            ephemeral=True,
-                            delete_after=10)
-            except ValueError:
-                await interaction.response.send_message('Please only enter numbers when providing your MMR',
+        try:
+            int_mmr = int(mmr)
+            if int_mmr < 1 or int_mmr > 15000:
+                await interaction.response.send_message('Please enter a valid MMR',
                                                         ephemeral=True,
                                                         delete_after=10)
+            else:
+                if "dotabuff.com/players/" in steam:
+                    steam = steam.split("players/")
+                    steam = steam[1]
+                    if "/" in steam:
+                        steam = steam.split('/')
+                        steam = steam[0]
+                    try:
+                        steam_int = int(steam)
+                        steam_reg = client_db_interface.check_steam_exists(steam_int)
+                        if steam_reg:
+                            await interaction.response.send_message(
+                                'Your dotabuff account is already registered to the database, please contact an admin for assistance',
+                                ephemeral=True,
+                                delete_after=10)
+                        else:
+                            await register_user(interaction.user, steam_int, int_mmr, interaction.guild)
+                            await interaction.response.send_message(
+                                'You\'ve been registered, please set your roles and wait to be verified',
+                                view=RolePreferenceSelect(), ephemeral=True)
+                    except ValueError:
+                        await interaction.response.send_message(
+                            'There was an error with the dotabuff url you provided, please try again',
+                            ephemeral=True,
+                            delete_after=10)
+                else:
+                    await interaction.response.send_message(
+                        'Please enter your full Dotabuff user url when registering',
+                        ephemeral=True,
+                        delete_after=10)
+        except ValueError:
+            await interaction.response.send_message('Please only enter numbers when providing your MMR',
+                                                    ephemeral=True,
+                                                    delete_after=10)
 
 
-class RegisterButton(discord.ui.View):
+class RegisterEmbed(discord.ui.View):
     def __init__(self, admin_panel):
         super().__init__(timeout=None)
-        self.admin = admin_panel
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
@@ -210,13 +213,12 @@ class RegisterButton(discord.ui.View):
             await interaction.response.send_message(content="You are already registered", ephemeral=True,
                                                     delete_after=10)
         elif client_db_interface.auto_register(interaction.user, interaction.guild):
-            self.admin.unverified_list.append(interaction.user)
             await interaction.response.send_message(content="Registration complete, please wait to be verified",
                                                     ephemeral=True,
                                                     delete_after=10)
             await register_notification(interaction.user, interaction.guild)
         else:
-            await interaction.response.send_modal(RegisterUserModal(self.admin))
+            await interaction.response.send_modal(RegisterUserModal())
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)

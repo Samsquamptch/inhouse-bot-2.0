@@ -25,9 +25,10 @@ class InhouseBot(commands.Bot):
     def __init__(self, intents):
         super().__init__(command_prefix='!', intents=intents)
         self.server_list = []
+        self.bot_member = None
 
     async def on_ready(self):
-        self.intents.message_content=True
+        self.intents.message_content = True
         print('Bot now running!')
         for server in bot.guilds:
             if not client_db_interface.check_server_in_db(server):
@@ -42,34 +43,40 @@ class InhouseBot(commands.Bot):
     async def register_command(self, user, dotabuff_id, mmr):
         return
 
-    # Quick and dirty way to delete all previous posts
+    #TODO: Will need improving
+    # Deletes all previous posts
     async def delete_messages(self, server, channel_list):
-        message_ids = client_db_interface.load_message_ids(server)
-        if not message_ids[0]:
+        message_id_list = client_db_interface.load_message_ids(server)
+        if not message_id_list[0]:
             return
-        new_list = []
-        new_list.append(await channel_list.admin_channel.fetch_message(message_ids[0]))
-        new_list.append(await channel_list.admin_channel.fetch_message(message_ids[1]))
-        new_list.append(await channel_list.queue_channel.fetch_message(message_ids[2]))
-        new_list.append(await channel_list.queue_channel.fetch_message(message_ids[3]))
-        new_list.append(await channel_list.queue_channel.fetch_message(message_ids[4]))
-        for item in new_list:
-            await item.delete()
+        i = 0
+        while i < 2:
+            bot_message = await channel_list.admin_channel.fetch_message(message_id_list[i])
+            await bot_message.delete()
+            i += 1
+        while i < 5:
+            bot_message = await channel_list.queue_channel.fetch_message(message_id_list[i])
+            await bot_message.delete()
+            i += 1
+
 
     async def run_user_modules(self, server, channels):
         # Send admin panel to admin channel
         admin_view = admin_panel.AdminEmbed(channels.chat_channel, channels.admin_channel, server)
         await admin_view.send_embed()
-        admin_menu_message = await channels.admin_channel.send("More options are available via the drop-down menu below",
-                                 view=select_menus.AdminOptions())
+        admin_menu_message = await channels.admin_channel.send(
+            "More options are available via the drop-down menu below",
+            view=select_menus.AdminOptions())
         print("Admin settings created")
         # Send queue buttons and panel to queue channel
-        register_view = register_user.RegisterButton(admin_view)
+        register_view = register_user.RegisterEmbed(admin_view)
         register_message = await channels.queue_channel.send("New user? Please register here:", view=register_view)
-        user_menu_message = await channels.queue_channel.send("Already registered? More options are available via the drop-down menu below",
-                                 view=select_menus.UserOptions(channels.chat_channel, server))
+        user_menu_message = await channels.queue_channel.send(
+            "Already registered? More options are available via the drop-down menu below",
+            view=select_menus.UserOptions(channels.chat_channel, server))
         queue_settings = client_db_interface.load_server_settings(server)
-        inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel, queue_settings[0],
+        inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel,
+                                                  queue_settings[0],
                                                   queue_settings[1], queue_settings[2], queue_settings[3])
         await inhouse_view.send_embed()
         print("User settings created")

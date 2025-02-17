@@ -119,7 +119,6 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):
             await ctx.send("Role preferences can only be between 1 (low) and 5 (high)")
             return
-        roles_list = check_user.flip_values(roles_list, True)
         client_db_interface.update_user_data(ctx.author.id, "roles", roles_list)
         await ctx.send("Thank you for updating your roles.")
 

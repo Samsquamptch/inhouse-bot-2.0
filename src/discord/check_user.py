@@ -18,7 +18,6 @@ def user_embed(data_list, player_data, server):
     else:
         user_status = "User is not verified"
         user_clr = 0xFF0000
-    data_list = flip_values(data_list)
     badge = badge_rank(data_list[2])
     view_user_embed = discord.Embed(title=f'{player_data.display_name}', description=f'{user_status}',
                                     color=user_clr)
@@ -35,29 +34,6 @@ def user_embed(data_list, player_data, server):
     for i in range(3, 8):
         view_user_embed.add_field(name=f'{role_list[i - 3]} ', value=f'{data_list[i]}', inline=False)
     return view_user_embed
-
-
-# Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to (which
-# is higher number = more pref and lower number = less pref). This swap shows what users expect to see, instead of what
-# is actually happening behind the scenes (low num = more pref and high num = less pref).
-def flip_values(data_list, set_roles=None):
-    if set_roles:
-        data_numbers = [0, 1, 2, 3, 4]
-    else:
-        data_numbers = [3, 4, 5, 6, 7]
-    for n in data_numbers:
-        match data_list[n]:
-            case 1:
-                data_list[n] = 5
-            case 2:
-                data_list[n] = 4
-            case 3:
-                data_list[n] = 3
-            case 4:
-                data_list[n] = 2
-            case 5:
-                data_list[n] = 1
-    return data_list
 
 
 def badge_rank(mmr):
