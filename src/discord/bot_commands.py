@@ -10,17 +10,11 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
     @commands.command()
     @commands.is_owner()
     async def setup(self, ctx):
-        await ctx.send("Beginning setup of inhouse bot")
-        config_setup = initialisation.ConfigButtons()
-        await config_setup.config_start(ctx)
-        await config_setup.wait()
-        if config_setup.completed:
-            self.manager.run_user_modules(ctx.guild)
+        self.manager.setup_command(ctx)
 
     @commands.command()
-    @commands.is_owner()
     async def refresh(self, ctx):
-        await self.manager.remove_from_server_list(ctx.guild)
+        await self.manager.remove_from_server_list(ctx)
 
     @commands.command(aliases=['vk'])
     async def votekick(self, ctx, user):
@@ -45,26 +39,27 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
 
     @commands.command(aliases=['wh', 'whois'])
     async def who(self, ctx, user=None):
-        if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
-            return
-        elif user is None:
-            user_acc = await ctx.guild.fetch_member(ctx.author.id)
-            user_check = client_db_interface.check_discord_exists(ctx.author.id)
-        elif '<@' == user[0:2]:
-            user_acc = await ctx.guild.fetch_member(user[2:-1])
-            user_check = client_db_interface.check_discord_exists(int(user[2:-1]))
-        else:
-            user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        chosen_server = next((x for x in self.manager.server_list if x.server == ctx.guild.id), None)
-        if chosen_server is None:
-            await ctx.send(
-                content=f'Commands are not yet working, please ensure setup has been completed',
-                ephemeral=True)
-        elif not user_check:
-            await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
-        else:
-            user_data = client_db_interface.view_user_data(user_acc.id)
-            await ctx.send(embed=check_user.user_embed(user_data, user_acc, ctx.guild))
+        self.manager.who_command(ctx, user)
+        # if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
+        #     return
+        # elif user is None:
+        #     user_acc = await ctx.guild.fetch_member(ctx.author.id)
+        #     user_check = client_db_interface.check_discord_exists(ctx.author.id)
+        # elif '<@' == user[0:2]:
+        #     user_acc = await ctx.guild.fetch_member(user[2:-1])
+        #     user_check = client_db_interface.check_discord_exists(int(user[2:-1]))
+        # else:
+        #     user_check, user_acc = check_user.user_exists(ctx.guild, user)
+        # chosen_server = next((x for x in self.manager.server_list if x.server == ctx.guild.id), None)
+        # if chosen_server is None:
+        #     await ctx.send(
+        #         content=f'Commands are not yet working, please ensure setup has been completed',
+        #         ephemeral=True)
+        # elif not user_check:
+        #     await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
+        # else:
+        #     user_data = client_db_interface.view_user_data(user_acc.id)
+        #     await ctx.send(embed=check_user.user_embed(user_data, user_acc, ctx.guild))
 
 
     @commands.command()

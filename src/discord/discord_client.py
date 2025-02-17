@@ -24,5 +24,9 @@ class InhouseBot(commands.Bot):
         await self.add_cog(Commands(self.server_manager))
 
 
-bot = InhouseBot(discord.Intents.all())
-bot.run(client_db_interface.get_discord_token())
+# bot = InhouseBot(discord.Intents.all())
+# bot.run(client_db_interface.get_discord_token())
+
+print(client_db_interface.count_users(1072625693185294407, "Verified"))
+print(client_db_interface.count_users(1072625693185294407, "Banned"))
+print(client_db_interface.load_server_settings(1072625693185294407))

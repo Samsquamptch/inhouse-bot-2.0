@@ -1,4 +1,5 @@
-from src.discord import admin_panel, select_menus, register_user, client_db_interface, inhouse_queue
+from src.discord import admin_panel, select_menus, register_user, client_db_interface, inhouse_queue, check_user, \
+    initialisation
 
 
 class ChannelList:
@@ -10,9 +11,9 @@ class ChannelList:
 
 
 class ServerEmbeds:
-    def __init__(self, server_id, inhouse_view, admin_view, admin_menu, user_menu, register_view):
+    def __init__(self, server, inhouse_view, admin_view, admin_menu, user_menu, register_view):
         super().__init__()
-        self.server = server_id
+        self.server = server.id
         self.inhouse_queue = inhouse_view
         self.admin_panel = admin_view
         self.admin_menu = admin_menu
@@ -61,9 +62,9 @@ class ServerManager:
         inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel, queue_settings[0],
                                                   queue_settings[1], queue_settings[2], queue_settings[3])
         print("Inhouse Channel embeds created")
-        embed_object = ServerEmbeds(server.id, inhouse_view, admin_view, admin_menu, user_menu, register_view)
-        await self.send_embed_messages(server, embed_object, channels)
-        self.server_list.append(embed_object)
+        server_embeds = ServerEmbeds(server, inhouse_view, admin_view, admin_menu, user_menu, register_view)
+        await self.send_embed_messages(server, server_embeds, channels)
+        self.server_list.append(server_embeds)
 
     async def send_embed_messages(self, server, embeds, channels):
         await embeds.admin_panel.send_embed()
@@ -77,13 +78,58 @@ class ServerManager:
         message_id_list = [embeds.admin_panel.message.id, admin_menu_message.id, register_message.id, user_menu_message.id,
                            embeds.inhouse_queue.message.id, 100]
         client_db_interface.update_message_ids(server, message_id_list)
+        await channels.chat_channel.send("Bot is now running, please feel free to join the queue.")
         return
+
+    async def setup_command(self, ctx):
+        await ctx.send("Beginning setup of inhouse bot")
+        config_setup = initialisation.ConfigButtons()
+        await config_setup.config_start(ctx)
+        await config_setup.wait()
+        if config_setup.completed:
+            server_channels = ChannelList(ctx.guild)
+            await self.run_user_modules(ctx.guild, server_channels)
 
     async def register_command(self, user, dotabuff_id, mmr):
         return
 
-    async def remove_from_server_list(self, server):
+    async def refresh_command(self, ctx):
+        if not client_db_interface.check_server_settings(ctx.guild):
+            await ctx.send("Server not set up yet!")
+        if not client_db_interface.check_admin(ctx.author, ctx.guild):
+            await ctx.send("Only admins can use this role")
+        await self.remove_from_server_list(ctx)
+
+    async def remove_from_server_list(self, ctx):
+        server = next(x for x in self.server_list if x.server == ctx.guild.id)
         print("Clearing channels for server " + server.name)
-        chosen_server = next(x for x in self.server_list if x.server == server.id)
-        self.server_list.remove(chosen_server)
+        self.server_list.remove(server)
         await self.add_embeds(server)
+
+    async def check_channel(self, ctx):
+        if not client_db_interface.check_server_settings(ctx.guild):
+            await ctx.send(content=f'Please ensure setup has been completed before using commands', ephemeral=True)
+            return False
+        if not client_db_interface.check_chat_channel(ctx.message, ctx.guild):
+            return False
+        else:
+            chosen_server = next(x for x in self.server_list if x.server == ctx.guild.id)
+            return chosen_server
+
+    async def who_command(self, ctx, user=None):
+        server = self.check_channel(ctx)
+        if not server:
+            return
+        if user is None:
+            user_acc = await ctx.guild.fetch_member(ctx.author.id)
+            user_check = client_db_interface.check_discord_exists(ctx.author.id)
+        elif user[0:2] == '<@':
+            user_acc = await ctx.guild.fetch_member(user[2:-1])
+            user_check = client_db_interface.check_discord_exists(int(user[2:-1]))
+        else:
+            user_check, user_acc = check_user.user_exists(ctx.guild, user)
+        if not user_check:
+            await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
+        else:
+            user_data = client_db_interface.view_user_data(user_acc.id)
+            await ctx.send(embed=check_user.user_embed(user_data, user_acc, ctx.guild))

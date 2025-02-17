@@ -73,6 +73,12 @@ def load_chat_channel(server):
     return discord.utils.get(server.channels, id=channel_id)
 
 
+def check_chat_channel(message_channel, server):
+    chat_channel_id = db_access.load_channel_id(server, "ChatChannel")
+    return message_channel.id == chat_channel_id
+
+
+
 def update_message_ids(server, messages):
     conn = db_access.get_db_connection()
     conn.cursor().execute("""UPDATE MessageIds SET AdminPanel = ?, AdminMenu = ?, UserButtons = ?, UserMenu = ?, 
@@ -202,7 +208,7 @@ def load_server_settings(server):
     conn = db_access.get_db_connection()
     settings = list(conn.cursor().execute("""SELECT Stg.AfkTimer, Stg.SkillFloor, Stg.SkillCeiling, Stg.QueueName FROM 
                                           ServerSettings Stg JOIN Server Srv ON Stg.ServerId = Srv.Id WHERE Srv.Server 
-                                          = ?""", [server.id]))
+                                          = ?""", [server]))
     db_access.close_db_connection(conn)
     return list(settings[0])
 
@@ -312,3 +318,10 @@ def flip_values(data_list):
             case 5:
                 data_list[n] = 1
     return data_list
+
+def count_users(server_id, column):
+    conn = db_access.get_db_connection()
+    user_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                srv.Id WHERE srv.Server = ? AND usv.{column}""", [server_id]).fetchone()
+    conn.close()
+    return user_count[0]
