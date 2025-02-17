@@ -203,7 +203,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 
 
 class RegisterEmbed(discord.ui.View):
-    def __init__(self, admin_panel):
+    def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
@@ -247,7 +247,7 @@ async def register_user(user, steam_int, int_mmr, server):
     # Due to how the role balancer calculations work, number weighting is saved the opposite
     # to how users are used to (which is higher number = more pref and lower number = less pref).
     # Swaps have been implemented where required for user output to avoid confusion
-    player = [user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
+    player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
     client_db_interface.add_user_data(player)
     client_db_interface.auto_register(user, server)
     await register_notification(user, server)

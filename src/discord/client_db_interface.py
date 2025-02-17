@@ -152,7 +152,7 @@ def auto_register(user, server):
         return False
     server_id = db_access.load_server_id(server)
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""INSERT INTO UserServer (UserId, ServerId, Banned) VALUES (?, ?, 0)""",
+    conn.cursor().execute("""INSERT INTO UserServer (UserId, ServerId, Banned, Wins, Losses) VALUES (?, ?, 0, 0, 0)""",
                           [user_id, server_id])
     conn.commit()
     db_access.close_db_connection(conn)

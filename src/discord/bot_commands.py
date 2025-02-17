@@ -1,11 +1,11 @@
 import discord
 from discord.ext import commands
-from src.discord import client_db_interface, check_user, initialisation, register_user
+from src.discord import client_db_interface, check_user, initialisation
 
 
 class Commands(discord.ext.commands.Cog, name='Greetings module'):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, manager):
+        self.manager = manager
 
     @commands.command()
     @commands.is_owner()
@@ -15,7 +15,12 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
         await config_setup.config_start(ctx)
         await config_setup.wait()
         if config_setup.completed:
-            self.bot.run_user_modules(ctx.guild)
+            self.manager.run_user_modules(ctx.guild)
+
+    @commands.command()
+    @commands.is_owner()
+    async def refresh(self, ctx):
+        await self.manager.remove_from_server_list(ctx.guild)
 
     @commands.command(aliases=['vk'])
     async def votekick(self, ctx, user):
@@ -25,7 +30,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
             user_acc = await ctx.guild.fetch_member(user[2:-1])
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
+        chosen_server = next((x for x in self.manager.server_list if x.server == ctx.guild.id), None)
         if chosen_server is None:
             await ctx.send(content=f'Commands are not yet working, please ensure setup has been completed',
                            ephemeral=True)
@@ -50,7 +55,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
             user_check = client_db_interface.check_discord_exists(int(user[2:-1]))
         else:
             user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        chosen_server = next((x for x in self.bot.server_list if x.server == ctx.guild.id), None)
+        chosen_server = next((x for x in self.manager.server_list if x.server == ctx.guild.id), None)
         if chosen_server is None:
             await ctx.send(
                 content=f'Commands are not yet working, please ensure setup has been completed',
