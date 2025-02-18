@@ -163,7 +163,7 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        self.steam_int, self.mmr_int, response_message = confirm_values(steam, mmr)
+        self.steam_int, self.mmr_int, response_message = confirm_register_values(steam, mmr)
         await interaction.response.send_message(content=response_message, ephemeral=True, delete_after=10)
 
 
@@ -218,7 +218,7 @@ class RegisterEmbed(discord.ui.View):
                                                     ephemeral=True)
 
 
-def confirm_values(steam, mmr):
+def confirm_register_values(steam, mmr):
     if "dotabuff.com/players/" in steam:
         steam = steam.split("players/")
         steam = steam[1]

@@ -1,5 +1,11 @@
-from src.discord import admin_panel, select_menus, register_user, client_db_interface, inhouse_queue, check_user, \
-    initialisation
+import admin_panel
+import menu_admin_options
+import register_user
+import client_db_interface
+import inhouse_queue
+import check_user
+import initialisation
+import menu_user_options
 
 
 class ChannelList:
@@ -53,11 +59,11 @@ class ServerManager:
     async def run_user_modules(self, server, channels):
         # Create Admin Channel items
         admin_view = admin_panel.AdminEmbed(channels.chat_channel, channels.admin_channel, server)
-        admin_menu = select_menus.AdminOptions()
+        admin_menu = menu_admin_options.AdminOptions()
         print("Admin Channel embeds created")
         # Create Inhouse Channel items
         register_view = register_user.RegisterEmbed()
-        user_menu = select_menus.UserOptions(channels.chat_channel, server)
+        user_menu = menu_user_options.UserOptions(channels.chat_channel, server)
         queue_settings = client_db_interface.load_server_settings(server)
         inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel, queue_settings[0],
                                                   queue_settings[1], queue_settings[2], queue_settings[3])
@@ -91,21 +97,22 @@ class ServerManager:
             await self.run_user_modules(ctx.guild, server_channels)
 
     async def register_command(self, ctx, user, dotabuff_id, mmr):
-        server = self.check_channel(ctx)
-        if not server:
-            return
-        ctx.response.send_message()
-        disc_reg = client_db_interface.check_for_value("disc", ctx.author.id)
-        steam_reg = client_db_interface.check_for_value("steam", dotabuff_id)
-        if registered_role in ctx.author.roles or disc_reg:
-            await ctx.send("Your discord account is already registered!")
-            return
-        elif steam_reg:
-            await ctx.send("Your steam account is already registered!")
-            return
-        else:
-            await self.bot.register_command(ctx.author, dotabuff_id, mmr)
-            await ctx.send("You have been registered. Please set your roles using !roles")
+        return
+        # server = self.check_channel(ctx)
+        # if not server:
+        #     return
+        # ctx.response.send_message()
+        # disc_reg = client_db_interface.check_for_value("disc", ctx.author.id)
+        # steam_reg = client_db_interface.check_for_value("steam", dotabuff_id)
+        # if registered_role in ctx.author.roles or disc_reg:
+        #     await ctx.send("Your discord account is already registered!")
+        #     return
+        # elif steam_reg:
+        #     await ctx.send("Your steam account is already registered!")
+        #     return
+        # else:
+        #     await self.bot.register_command(ctx.author, dotabuff_id, mmr)
+        #     await ctx.send("You have been registered. Please set your roles using !roles")
 
     async def refresh_command(self, ctx):
         if not client_db_interface.check_server_settings(ctx.guild):

@@ -58,9 +58,6 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
                 self.verify_user.disabled = False
                 self.reject_user.disabled = False
 
-
-
-
     @discord.ui.button(label="Verify User", emoji="✅",
                        style=discord.ButtonStyle.green)
     async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):

@@ -38,6 +38,7 @@ class AdminEmbedView(UserEmbed):
         self.add_field(name='Afk Timer', value=server_settings[0], inline=False)
         self.add_field(name='MMR Floor', value=server_settings[1], inline=False)
         self.add_field(name='MMR Ceiling', value=server_settings[2], inline=False)
+        self.add_field(name='Tryhard Mode', value='Disabled', inline=False)
         self.add_field(name='Global Queue', value='Disabled', inline=False)
         self.add_field(name='Global Queue Visibility', value='Private', inline=False)
         self.color = 0xFFD700
