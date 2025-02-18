@@ -1,5 +1,4 @@
 import discord
-import check_user
 import client_db_interface
 import embed_superclass
 from embed_views import AdminEmbedView
@@ -8,9 +7,9 @@ from embed_views import AdminEmbedView
 class AdminEmbed(embed_superclass.EmbedSuperclass):
     def __init__(self, chat_channel, embed_channel, server):
         super().__init__(chat_channel, embed_channel, server)
-        self.server = server
         self.unverified_list = client_db_interface.get_unverified_users(self.server)
         self.view_status = True
+        self.stats_status = True
 
     async def send_embed(self):
         self.message = await self.embed_channel.send(view=self)
@@ -29,25 +28,37 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
             else:
                 admin_embed.empty_embed()
         else:
-            admin_embed.stats_embed()
+            if self.stats_status:
+                admin_embed.stats_embed(self.server)
+            else:
+                admin_embed.banned_embed(self.server)
         if interaction:
             admin_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         await self.message.edit(embed=admin_embed, view=self)
 
     def update_buttons(self):
-        print(self.view_status)
-        if self.view_status:
-            self.refresh_embed.disabled = False
-            self.change_embed.label = "View Server Details"
-        else:
-            self.refresh_embed.disabled = True
-            self.change_embed.label = "View Unverified Users"
-        if not self.unverified_list:
+        if not self.view_status:
             self.verify_user.disabled = True
             self.reject_user.disabled = True
+            self.change_embed.label = "View Unverified Users"
+            if self.stats_status:
+                self.refresh_embed.label= "View Ban List"
+                self.refresh_embed.emoji= "🔨"
+            else:
+                self.refresh_embed.label = "Server Stats"
+                self.refresh_embed.emoji = "📋"
         else:
-            self.verify_user.disabled = False
-            self.reject_user.disabled = False
+            self.refresh_embed.label = "Refresh"
+            self.refresh_embed.emoji = "♻"
+            self.change_embed.label = "View Server Details"
+            if not self.unverified_list:
+                self.verify_user.disabled = True
+                self.reject_user.disabled = True
+            else:
+                self.verify_user.disabled = False
+                self.reject_user.disabled = False
+
+
 
 
     @discord.ui.button(label="Verify User", emoji="✅",
@@ -61,6 +72,8 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
     @discord.ui.button(label="Refresh", emoji="♻",
                        style=discord.ButtonStyle.blurple)
     async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.view_status:
+            self.stats_status = not self.stats_status
         await self.update_message(interaction)
         await interaction.response.defer()
 
@@ -76,10 +89,6 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
     @discord.ui.button(label="View Registered Users", emoji="📋",
                        style=discord.ButtonStyle.grey)
     async def change_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # TODO: Rework this to show info on number of registered users, banned users, etc.
-        if self.view_status:
-            self.view_status = False
-        else:
-            self.view_status = True
+        self.view_status = not self.view_status
         await self.update_message(interaction)
         await interaction.response.defer()

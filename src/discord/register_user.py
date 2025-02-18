@@ -202,7 +202,7 @@ class RegisterEmbed(discord.ui.View):
             user_data = client_db_interface.view_user_data(interaction.user.id)
             user_embed = UserEmbed()
             user_embed.user_embed(user_data, interaction.user, interaction.guild)
-            await interaction.response.send_message(embed=self.embed, ephemeral=True)
+            await interaction.response.send_message(embed=user_embed, ephemeral=True)
         else:
             await interaction.response.send_message(content="You need to register before you can see your details",
                                                     ephemeral=True)

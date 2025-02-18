@@ -78,12 +78,11 @@ def check_chat_channel(message_channel, server):
     return message_channel.id == chat_channel_id
 
 
-
 def update_message_ids(server, messages):
     conn = db_access.get_db_connection()
     conn.cursor().execute("""UPDATE MessageIds SET AdminPanel = ?, AdminMenu = ?, UserButtons = ?, UserMenu = ?, 
                              InhouseQueue = ?, GlobalQueue = ? WHERE ServerId IN (SELECT Id from Server where Server = ?)""",
-                             [messages[0], messages[1], messages[2], messages[3], messages[4], messages[5], server.id])
+                          [messages[0], messages[1], messages[2], messages[3], messages[4], messages[5], server.id])
     conn.commit()
     db_access.close_db_connection(conn)
 
@@ -292,7 +291,9 @@ def get_queue_user_data(queue_ids):
     for user in queue_ids:
         id_list.append(user.id)
     conn = db_access.get_db_connection()
-    user_data = list(conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)", id_list))
+    user_data = list(
+        conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)",
+                              id_list))
     queue_data = []
     for user in user_data:
         queue_data.append(flip_values(list(user)))
@@ -319,9 +320,20 @@ def flip_values(data_list):
                 data_list[n] = 1
     return data_list
 
-def count_users(server_id, column):
+
+def count_users(server):
     conn = db_access.get_db_connection()
     user_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
-                                srv.Id WHERE srv.Server = ? AND usv.{column}""", [server_id]).fetchone()
+                                    srv.Id WHERE srv.Server = ?""", [server.id]).fetchone()
+    verified_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                    srv.Id WHERE srv.Server = ? AND usv.Verified""", [server.id]).fetchone()
+    banned_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                    srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]).fetchone()
     conn.close()
-    return user_count[0]
+    return user_count[0], verified_count[0], banned_count[0]
+
+def load_banned_users(server):
+    conn = db_access.get_db_connection()
+    ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
+                                        JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]))
+    return ban_list
