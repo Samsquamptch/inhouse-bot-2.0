@@ -1,18 +1,21 @@
 import math
 import discord
 import client_db_interface as get_data
+from src.discord import client_db_interface
+
 
 class UserEmbed(discord.Embed):
     def __init__(self):
-            super().__init__()
+        super().__init__()
 
-    def user_embed(self, data_list, player_data, server):
+    def user_embed(self, user_account, server):
+        data_list = client_db_interface.get_user_stats(user_account.id, server)
         role_champion = get_data.load_champion_role(server)
-        user_verified, user_banned = get_data.get_user_status(player_data, server)
+        user_verified, user_banned = get_data.get_user_status(user_account, server)
         if user_banned:
             user_status = "User is currently banned 😢"
             user_clr = 0x000000
-        elif role_champion in player_data.roles:
+        elif role_champion in user_account.roles:
             user_status = "User is a champion! 😎"
             user_clr = 0xFFD700
         elif user_verified:
@@ -22,17 +25,20 @@ class UserEmbed(discord.Embed):
             user_status = "User is not verified"
             user_clr = 0xFF0000
         badge = badge_rank(data_list[2])
-        self.title=f'{player_data.display_name}'
-        self.description=f'{user_status}'
-        self.color=user_clr
-        if player_data.avatar:
-            self.set_thumbnail(url=f'{player_data.avatar}')
+        self.title = f'{user_account.display_name}'
+        self.description = f'{user_status}'
+        self.color = user_clr
+        if user_account.avatar:
+            self.set_thumbnail(url=f'{user_account.avatar}')
         self.add_field(name='Dotabuff',
-                                  value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
-                                        f'\u0020\u0020\u0020\u0020', inline=True)
+                       value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
+                             f'\u0020\u0020\u0020\u0020', inline=True)
         self.add_field(name='MMR', value=f'{data_list[2]} \u0020\u0020\u0020\u0020',
-                                  inline=True)
+                       inline=True)
         self.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
+        self.add_field(name='Played', value=data_list[8] + data_list[9], inline=True)
+        self.add_field(name='Wins', value=data_list[8], inline=True)
+        self.add_field(name='Losses', value=data_list[9], inline=True)
         self.add_field(name='Role Preferences', value='', inline=False)
         role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
         for i in range(3, 8):

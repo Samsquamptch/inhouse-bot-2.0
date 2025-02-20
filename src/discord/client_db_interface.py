@@ -266,6 +266,15 @@ def view_user_data(discord_id):
     db_access.close_db_connection(conn)
     return list(user_data_list[0])
 
+def get_user_stats(discord_id, server):
+    conn = db_access.get_db_connection()
+    user_data_list = list(
+        conn.cursor().execute("SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
+                              "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
+                              "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [discord_id, server.id]))
+    db_access.close_db_connection(conn)
+    return list(user_data_list[0])
+
 
 def add_user_data(player):
     player.append(datetime.today().strftime('%Y-%m-%d'))

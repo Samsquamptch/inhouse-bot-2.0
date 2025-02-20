@@ -23,8 +23,7 @@ class AdminEmbed(embed_superclass.EmbedSuperclass):
             self.unverified_list = client_db_interface.get_unverified_users(self.server)
             if self.unverified_list:
                 user = self.unverified_list[0]
-                user_data = client_db_interface.view_user_data(user.id)
-                admin_embed.user_embed(user_data, user, self.server)
+                admin_embed.user_embed(user, self.server)
             else:
                 admin_embed.empty_embed()
         else:
