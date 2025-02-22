@@ -122,9 +122,10 @@ class ServerManager:
         await self.remove_from_server_list(ctx)
 
     async def remove_from_server_list(self, ctx):
-        server = next(x for x in self.server_list if x.server == ctx.guild.id)
-        print("Clearing channels for server " + server.name)
-        self.server_list.remove(server)
+        server = next((x for x in self.server_list if x.server == ctx.guild.id), None)
+        if server:
+            print("Clearing channels for server " + server.name)
+            self.server_list.remove(server)
         await self.add_embeds(server)
 
     async def check_channel(self, ctx):

@@ -87,12 +87,11 @@ def check_for_value(column, value_check):
     cur = conn.cursor()
     cur.execute(f"SELECT EXISTS(SELECT 1 FROM User WHERE {column} = ?)", [value_check])
     item = cur.fetchone()[0]
-    if item == 0:
-        variable = False
-    else:
-        variable = True
     close_db_connection(conn)
-    return variable
+    if item == 0:
+        return False
+    else:
+        return True
 
 
 def load_user_status(user_id, server_id):

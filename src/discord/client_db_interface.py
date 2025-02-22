@@ -125,17 +125,6 @@ def get_banned_status(user, server):
     return banned_status[0]
 
 
-def get_verified_status(user, server):
-    conn = db_access.get_db_connection()
-    conn.row_factory = lambda cursor, row: row[0]
-    verified_status = list(
-        conn.cursor().execute("""SELECT UserServer.Verified FROM UserServer JOIN User 
-                ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
-                              [user.id, server.id]))
-    db_access.close_db_connection(conn)
-    return verified_status[0]
-
-
 def get_user_status(user, server):
     status_list = db_access.load_user_status(user.id, server.id)
     verified = status_list[0]
@@ -143,10 +132,11 @@ def get_user_status(user, server):
     return verified, banned
 
 
-def user_registered(user):
+def user_registered(user, server):
     conn = db_access.get_db_connection()
-    user_id = list(conn.cursor().execute("""SELECT UserServer.UserId FROM UserServer INNER JOIN User ON 
-                                            User.Id = UserServer.UserId WHERE User.Discord = ?""", [user.id]))
+    user_id = list(conn.cursor().execute("""SELECT usv.UserId FROM UserServer usv INNER JOIN User usr ON usr.Id = usv.UserId 
+                                            JOIN Server svr ON svr.Id = usv.ServerId WHERE usr.Discord = ? AND svr.Server 
+                                            = ?""", [user.id, server.id]))
     db_access.close_db_connection(conn)
     return user_id
 
@@ -248,7 +238,6 @@ def update_user_data(discord_id, column, new_data):
         cur.execute(f"UPDATE User SET {column} = ? WHERE Discord = ?", [new_data, discord_id])
     conn.commit()
     db_access.close_db_connection(conn)
-
 
 def check_discord_exists(user_id):
     return db_access.check_for_value("Discord", user_id)

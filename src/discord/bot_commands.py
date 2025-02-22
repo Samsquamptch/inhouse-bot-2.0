@@ -10,7 +10,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
     @commands.command()
     @commands.is_owner()
     async def setup(self, ctx):
-        self.manager.setup_command(ctx)
+        await self.manager.setup_command(ctx)
 
     @commands.command()
     async def refresh(self, ctx):
@@ -118,7 +118,7 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
         if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
             return
         roles_list = [pos1, pos2, pos3, pos4, pos5]
-        if not client_db_interface.user_registered(ctx.author):
+        if not client_db_interface.user_registered(ctx.author, ctx.guild):
             await ctx.send("You need to register before you set your roles!")
             return
         elif not (all(x <= 5 for x in roles_list)) or not (all(x >= 1 for x in roles_list)):

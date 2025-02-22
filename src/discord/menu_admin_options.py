@@ -2,8 +2,6 @@ import discord
 import check_user
 import client_db_interface
 
-from src.discord.menu_user_options import ViewUserModal
-
 
 # Modal for editing user details (accessed via admin select menu)
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
@@ -142,7 +140,7 @@ class AdminOptions(discord.ui.View):
 
     @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit User", value="Edit", emoji="🖊️", description="Edit a user's details"),
-        discord.SelectOption(label="Manage USer", value="Manage", emoji="🔎", description="Manage a user's status"),
+        discord.SelectOption(label="Manage User", value="Manage", emoji="🔎", description="Manage a user's status"),
         discord.SelectOption(label="Edit Discord Settings", value="Discord", emoji="🖥️",
                              description="Change Discord Settings"),
         discord.SelectOption(label="Change Tryhard Mode", value="Tryhard", emoji="🤓",
@@ -162,7 +160,7 @@ class AdminOptions(discord.ui.View):
                 await edit_user.wait()
                 self.edit_user(edit_user.user, edit_user.int_new_mmr, edit_user.int_steam_id)
             case "Manage":
-                await interaction.response.send_modal(ViewUserModal())
+                await interaction.response.defer()
             case "Discord":
                 await interaction.response.send_modal(DiscordSettingsModal())
             case "Tryhard":

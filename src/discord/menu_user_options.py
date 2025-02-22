@@ -1,67 +1,54 @@
 import datetime
 import discord
 from src.discord import client_db_interface
-import check_user
 from check_user import UserEmbed
 
 
-class ViewUserModal(discord.ui.Modal, title='View User'):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.user_account = None
-
-    player_name = discord.ui.TextInput(label='User\'s global name or username')
-
-    async def on_submit(self, interaction: discord.Interaction):
-        user_name = str(self.player_name)
-        user_check, user_acc = check_user.user_exists(interaction.guild, user_name)
-        if not user_check:
-            await interaction.response.send_message(content=f'User {user_name} is not registered', ephemeral=True,
-                                                    delete_after=10)
-            return
-        user_embed = UserEmbed()
-        user_embed.user_embed(user_acc, interaction.guild)
-        await interaction.response.send_message(embed=user_embed, ephemeral=True)
-
-
 class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
-    def __init__(self, chat_channel, admin_role):
+    def __init__(self):
         super().__init__()
-        self.chat_channel = chat_channel
-        self.admin_role = admin_role
+        self.new_mmr = None
+        self.updated = None
 
     set_mmr = discord.ui.TextInput(label='Request new MMR for user', max_length=5, required=False)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        new_mmr = str(self.set_mmr)
-        if not client_db_interface.get_verified_status(interaction.user, interaction.guild):
-            await interaction.response.send_message('You need to register before you can request an update!',
-                                                    ephemeral=True,
-                                                    delete_after=10)
-            return
-        user_data = client_db_interface.view_user_data(interaction.user.id)
+    def check_updated_recently(self, user):
+        user_data = client_db_interface.view_user_data(user.id)
         date_str = user_data[8]
         date_format = '%Y-%m-%d'
         date_obj = datetime.datetime.strptime(date_str, date_format)
         current_day = datetime.datetime.today()
         if current_day < date_obj + datetime.timedelta(days=14):
-            await interaction.response.send_message('You can only request an MMR update every two weeks',
-                                                    ephemeral=True,
+            return True
+        else:
+            return False
+
+    def update_user_mmr(self, interaction):
+        try:
+            int_new_mmr = int(self.new_mmr)
+        except ValueError:
+            return False
+        client_db_interface.update_user_data(interaction.user.id, "mmr", int_new_mmr)
+        client_db_interface.update_user_data(interaction.user.id, "LastUpdated",
+                                             datetime.datetime.today().strftime('%Y-%m-%d'))
+        return True
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.new_mmr = str(self.set_mmr)
+        if not client_db_interface.user_registered(interaction.user, interaction.guild):
+            await interaction.response.send_message('You need to register first before updating your MMR!', ephemeral=True,
                                                     delete_after=10)
             return
-        try:
-            int_new_mmr = int(new_mmr)
-            client_db_interface.update_user_data(interaction.user.id, "mmr", int_new_mmr)
-            client_db_interface.update_user_data(interaction.user.id, "LastUpdated",
-                                                 datetime.datetime.today().strftime('%Y-%m-%d'))
-            await self.chat_channel.send(
-                f'<@&{self.admin_role.id}> User <@{interaction.user.id}> wants their MMR set to {new_mmr}')
-            await interaction.response.send_message("Your request has been sent to the notification channel.",
-                                                    ephemeral=True, delete_after=10)
-        except ValueError:
-            await interaction.response.send_message('Please only input numbers for mmr',
-                                                    ephemeral=True,
+        if self.check_updated_recently(interaction.user):
+            await interaction.response.send_message('You can only request an MMR update every two weeks', ephemeral=True,
                                                     delete_after=10)
+            return
+        self.updated = self.update_user_mmr(interaction)
+        if self.updated:
+            send_message = "Your request has been sent to the notification channel."
+        else:
+            send_message = 'Please only input numbers for mmr'
+        await interaction.response.send_message(send_message, ephemeral=True, delete_after=10)
 
 
 # Select menu for users (above inhouse queue)
@@ -85,12 +72,34 @@ class UserOptions(discord.ui.View):
             self.last_value = select.values[0]
         match self.last_value:
             case "Search":
-                await interaction.response.send_modal(ViewUserModal())
+                await interaction.response.send_message(view=SelectUserView(), ephemeral=True)
             case "Find":
-                await interaction.response.defer()
+                await interaction.response.send_message("Feature to be added", ephemeral=True)
             case "Update":
-                await interaction.response.send_modal(NotifyUpdateModal(self.chat_channel, self.admin_role))
+                update_modal = NotifyUpdateModal()
+                await interaction.response.send_modal(update_modal)
+                await update_modal.wait()
+                if update_modal.updated:
+                    await self.chat_channel.send(f'<@&{self.admin_role.id}> User <@{interaction.user.id}> wants their MMR set '
+                                           f'to {update_modal.new_mmr}')
 
 
-def a_func():
-    pass
+class SelectUserView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(SelectUserEmbed())
+
+
+class SelectUserEmbed(discord.ui.UserSelect):
+    def __init__(self):
+        super().__init__(placeholder="Who do you want to view?", max_values=1, min_values=0)
+
+    async def callback(self, interaction: discord.Interaction):
+        user = self.values[0]
+        if not client_db_interface.user_registered(user, interaction.guild):
+            await interaction.response.send_message("User not registered", ephemeral=True)
+            return
+        user_embed = UserEmbed()
+        user_embed.user_embed(user, interaction.guild)
+        await interaction.response.send_message(embed=user_embed, ephemeral=True)
+

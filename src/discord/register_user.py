@@ -172,7 +172,7 @@ class RegisterEmbed(discord.ui.View):
         super().__init__(timeout=None)
 
     async def register_check(self, user, guild):
-        if client_db_interface.user_registered(user):
+        if client_db_interface.user_registered(user, guild):
             message_content = "You are already registered"
         elif client_db_interface.auto_register(user, guild):
             message_content = "Registration complete, please wait to be verified"
@@ -198,7 +198,7 @@ class RegisterEmbed(discord.ui.View):
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_interface.user_registered(interaction.user):
+        if client_db_interface.user_registered(interaction.user, interaction.guild):
             user_embed = UserEmbed()
             user_embed.user_embed(interaction.user, interaction.guild)
             await interaction.response.send_message(embed=user_embed, ephemeral=True)
@@ -209,7 +209,7 @@ class RegisterEmbed(discord.ui.View):
     @discord.ui.button(label="Update your role preferences", emoji="🖋️",
                        style=discord.ButtonStyle.blurple)
     async def set_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_interface.user_registered(interaction.user):
+        if client_db_interface.user_registered(interaction.user, interaction.guild):
             await interaction.response.send_message(content="Please set your role preferences",
                                                     view=RolePreferenceSelect(), ephemeral=True)
         else:
@@ -249,5 +249,7 @@ async def register_notification(user, server):
     # Adds the inhouse role to the user once their details have been added to the register
     admin_role = client_db_interface.load_admin_role(server)
     chat_channel = client_db_interface.load_chat_channel(server)
+    print(admin_role)
+    print(user)
     await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
                             f'registered for the inhouse and requires verification')
