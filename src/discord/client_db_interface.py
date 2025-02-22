@@ -335,3 +335,13 @@ def load_banned_users(server):
     ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
                                         JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]))
     return ban_list
+
+
+def load_users_below_mmr(mmr_cap, server):
+    conn = db_access.get_db_connection()
+    user_list = list(conn.cursor().execute("""SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, 
+                                            usr.Pos5 FROM User usr JOIN UserServer usv ON usv.UserId = usr.Id JOIN Server srv 
+                                            ON srv.ID = usv.ServerId WHERE usr.MMR < ? AND srv.Server = ? ORDER BY MMR Desc 
+                                            LIMIT 10""", [mmr_cap, server.id]))
+    db_access.close_db_connection(conn)
+    return user_list

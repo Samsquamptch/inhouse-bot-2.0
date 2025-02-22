@@ -46,6 +46,37 @@ class UserEmbed(discord.Embed):
         self.set_image(url=None)
 
 
+class StandInEmbed(discord.Embed):
+    def __init__(self):
+        super().__init__()
+
+    def show_stand_ins(self, mmr_cap, server):
+        self.title = "Stand-in List"
+        self.set_thumbnail(url=server.icon.url)
+        stand_in_list = client_db_interface.load_users_below_mmr(mmr_cap, server)
+        match len(stand_in_list):
+            case _ if len(stand_in_list) > 8:
+                self.color = 0x00ff00
+            case _ if len(stand_in_list) > 6:
+                self.color = 0x80ff00
+            case _ if len(stand_in_list) > 4:
+                self.color = 0xffff00
+            case _ if len(stand_in_list) > 2:
+                self.color = 0xff8000
+            case _ if len(stand_in_list) > 0:
+                self.color = 0xFF0000
+            case _:
+                self.description = "There's nobody who meets your requirements on this server 💀"
+                self.color = 0x000000
+                return
+        self.description = "Potential Stand-ins to use"
+        for user_data in stand_in_list:
+            user_account = discord.utils.get(server.members, id=user_data[0])
+            self.add_field(name=user_account.name, value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) '
+                                                         f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
+                           inline=False)
+
+
 def badge_rank(mmr):
     match mmr:
         case _ if mmr >= 5620:

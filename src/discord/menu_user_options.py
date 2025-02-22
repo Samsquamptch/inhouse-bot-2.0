@@ -1,7 +1,7 @@
 import datetime
 import discord
 from src.discord import client_db_interface
-from check_user import UserEmbed
+from check_user import UserEmbed, StandInEmbed
 
 
 class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
@@ -10,7 +10,7 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
         self.new_mmr = None
         self.updated = None
 
-    set_mmr = discord.ui.TextInput(label='Request new MMR for user', max_length=5, required=False)
+    set_mmr = discord.ui.TextInput(label='Request new MMR for user', max_length=5, required=True)
 
     def check_updated_recently(self, user):
         user_data = client_db_interface.view_user_data(user.id)
@@ -18,7 +18,7 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
         date_format = '%Y-%m-%d'
         date_obj = datetime.datetime.strptime(date_str, date_format)
         current_day = datetime.datetime.today()
-        if current_day < date_obj + datetime.timedelta(days=14):
+        if current_day < date_obj + datetime.timedelta(days=7):
             return True
         else:
             return False
@@ -50,6 +50,24 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
             send_message = 'Please only input numbers for mmr'
         await interaction.response.send_message(send_message, ephemeral=True, delete_after=10)
 
+class FindStandInModal(discord.ui.Modal, title="Find a stand-in for your team"):
+    def __init__(self):
+        super().__init__()
+        self.mmr_cap = None
+
+    search_limit = discord.ui.TextInput(label='MMR limit', max_length=5, required=True)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.mmr_cap = str(self.search_limit)
+        try:
+            int_mmr_cap = int(self.mmr_cap)
+        except ValueError:
+            await interaction.response.send_message("Please only input numbers for MMR", ephemeral=True, delete_after=10)
+            return
+        list_embed = StandInEmbed()
+        list_embed.show_stand_ins(int_mmr_cap, interaction.guild)
+        await interaction.response.send_message(embed=list_embed, ephemeral=True)
+
 
 # Select menu for users (above inhouse queue)
 class UserOptions(discord.ui.View):
@@ -74,7 +92,7 @@ class UserOptions(discord.ui.View):
             case "Search":
                 await interaction.response.send_message(view=SelectUserView(), ephemeral=True)
             case "Find":
-                await interaction.response.send_message("Feature to be added", ephemeral=True)
+                await interaction.response.send_modal(FindStandInModal())
             case "Update":
                 update_modal = NotifyUpdateModal()
                 await interaction.response.send_modal(update_modal)
