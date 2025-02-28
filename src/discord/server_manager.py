@@ -59,15 +59,13 @@ class ServerManager:
 
     async def run_user_modules(self, server, channels):
         # Create Admin Channel items
-        admin_view = admin_panel.AdminEmbed(channels.chat_channel, channels.admin_channel, server, AdminEmbedView())
+        admin_view = admin_panel.AdminEmbed(server, AdminEmbedView(), channels.chat_channel, channels.admin_channel)
         admin_menu = menu_admin_options.AdminOptions()
         print("Admin Channel embeds created")
         # Create Inhouse Channel items
         register_view = register_user.RegisterEmbed()
         user_menu = menu_user_options.UserOptions(channels.chat_channel, server)
-        queue_settings = client_db_interface.load_server_settings(server)
-        inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel, queue_settings[0],
-                                                  queue_settings[1], queue_settings[2], queue_settings[3])
+        inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel)
         print("Inhouse Channel embeds created")
         server_embeds = ServerEmbeds(server, inhouse_view, admin_view, admin_menu, user_menu, register_view)
         await self.send_embed_messages(server, server_embeds, channels)

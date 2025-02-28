@@ -4,11 +4,11 @@ from src.discord import client_db_interface
 
 
 class ChannelEmbeds(discord.ui.View):
-    def __init__(self, chat_channel, embed_channel, server):
+    def __init__(self, server, chat_channel, embed_channel):
         super().__init__(timeout=None)
+        self.server = server
         self.chat_channel = chat_channel
         self.embed_channel = embed_channel
-        self.server = server
         self.message = None
 
 

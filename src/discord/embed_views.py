@@ -109,6 +109,14 @@ class QueueEmbedView(discord.ui.View):
     def __init__(self):
         super().__init__()
 
+    def empty_queue(self):
+        pass
+
+    def partial_queue(self):
+        pass
+
+    def full_queue(self):
+        pass
 
 class StandInEmbed(discord.Embed):
     def __init__(self):

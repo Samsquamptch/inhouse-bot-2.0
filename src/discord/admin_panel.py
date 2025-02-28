@@ -5,8 +5,8 @@ import embed_superclass
 
 
 class AdminEmbed(embed_superclass.ChannelEmbeds):
-    def __init__(self, chat_channel, embed_channel, server, admin_ui):
-        super().__init__(chat_channel, embed_channel, server)
+    def __init__(self, server, admin_ui, chat_channel, embed_channel):
+        super().__init__(server, chat_channel, embed_channel)
         self.unverified_list = client_db_interface.get_unverified_users(self.server)
         self.admin_ui = admin_ui
         self.button_state = AdminButtonState.UNVERIFIED
