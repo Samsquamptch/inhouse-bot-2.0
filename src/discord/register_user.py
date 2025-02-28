@@ -160,10 +160,30 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
+    def confirm_register_values(self, steam, mmr):
+        if "dotabuff.com/players/" in steam:
+            steam = steam.split("players/")
+            steam = steam[1]
+        if "/" in steam:
+            steam = steam.split('/')
+            steam = steam[0]
+        try:
+            mmr_int = int(mmr)
+            steam_int = int(steam)
+        except ValueError:
+            return None, None, 'Please enter your full dotabuff url and your mmr in the appropriate fields'
+        if mmr_int < 1 or mmr_int > 15000:
+            return None, None, 'Please enter a valid MMR'
+        steam_reg = client_db_interface.check_steam_exists(steam_int)
+        if steam_reg:
+            return None, None, 'Your dotabuff account is already registered to the database, please contact an admin for assistance',
+        else:
+            return steam_int, mmr_int, 'You\'ve been registered, please set your roles and wait to be verified',
+
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        self.steam_int, self.mmr_int, response_message = confirm_register_values(steam, mmr)
+        self.steam_int, self.mmr_int, response_message = self.confirm_register_values(steam, mmr)
         await interaction.response.send_message(content=response_message, ephemeral=True, delete_after=10)
 
 
@@ -176,11 +196,24 @@ class RegisterEmbed(discord.ui.View):
             message_content = "You are already registered"
         elif client_db_interface.auto_register(user, guild):
             message_content = "Registration complete, please wait to be verified"
-            await register_notification(user, guild)
+            await self.register_notification(user, guild)
         else:
             message_content = None
-            # await
         return message_content
+
+    @staticmethod
+    async def register_user(self, user, steam_int, int_mmr, server):
+        player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
+        client_db_interface.add_user_data(player)
+        client_db_interface.auto_register(user, server)
+        await self.register_notification(user, server)
+
+    @staticmethod
+    async def register_notification(user, server):
+        admin_role = client_db_interface.load_admin_role(server)
+        chat_channel = client_db_interface.load_chat_channel(server)
+        await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
+                                f'registered for the inhouse and requires verification')
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
@@ -193,7 +226,7 @@ class RegisterEmbed(discord.ui.View):
         register_modal = RegisterUserModal()
         await interaction.response.send_modal(register_modal)
         await register_modal.wait()
-        await register_user(interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
+        await self.register_user(self, interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
@@ -216,40 +249,3 @@ class RegisterEmbed(discord.ui.View):
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
 
-
-def confirm_register_values(steam, mmr):
-    if "dotabuff.com/players/" in steam:
-        steam = steam.split("players/")
-        steam = steam[1]
-    if "/" in steam:
-        steam = steam.split('/')
-        steam = steam[0]
-    try:
-        mmr_int = int(mmr)
-        steam_int = int(steam)
-    except ValueError:
-        return None, None, 'Please enter your full dotabuff url and your mmr in the appropriate fields'
-    if mmr_int < 1 or mmr_int > 15000:
-        return None, None, 'Please enter a valid MMR'
-    steam_reg = client_db_interface.check_steam_exists(steam_int)
-    if steam_reg:
-        return None, None, 'Your dotabuff account is already registered to the database, please contact an admin for assistance',
-    else:
-        return steam_int, mmr_int, 'You\'ve been registered, please set your roles and wait to be verified',
-
-
-async def register_user(user, steam_int, int_mmr, server):
-    player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
-    client_db_interface.add_user_data(player)
-    client_db_interface.auto_register(user, server)
-    await register_notification(user, server)
-
-
-async def register_notification(user, server):
-    # Adds the inhouse role to the user once their details have been added to the register
-    admin_role = client_db_interface.load_admin_role(server)
-    chat_channel = client_db_interface.load_chat_channel(server)
-    print(admin_role)
-    print(user)
-    await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
-                            f'registered for the inhouse and requires verification')

@@ -16,7 +16,6 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
         await self.update_message()
 
     async def update_message(self, interaction=None):
-        self.update_buttons()
         self.admin_ui.clear_fields()
         self.admin_ui.set_thumbnail(url=f'{self.server.icon.url}')
         if self.button_state == AdminButtonState.UNVERIFIED:
@@ -32,6 +31,7 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
             self.admin_ui.banned_embed(self.server)
         if interaction:
             self.admin_ui.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
+        self.update_buttons()
         await self.message.edit(embed=self.admin_ui, view=self)
 
     def update_buttons(self):
