@@ -1,15 +1,15 @@
 import discord
+from enum import Enum
 import client_db_interface
 import embed_superclass
 
 
 class AdminEmbed(embed_superclass.ChannelEmbeds):
-    def __init__(self, chat_channel, embed_channel, server, admin_embed):
+    def __init__(self, chat_channel, embed_channel, server, admin_ui):
         super().__init__(chat_channel, embed_channel, server)
         self.unverified_list = client_db_interface.get_unverified_users(self.server)
-        self.view_status = True
-        self.stats_status = True
-        self.admin_embed = admin_embed
+        self.admin_ui = admin_ui
+        self.button_state = AdminButtonState.UNVERIFIED
 
     async def send_embed(self):
         self.message = await self.embed_channel.send(view=self)
@@ -17,36 +17,25 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
 
     async def update_message(self, interaction=None):
         self.update_buttons()
-        self.admin_embed.clear_fields()
-        self.admin_embed.set_thumbnail(url=f'{self.server.icon.url}')
-        if self.view_status:
+        self.admin_ui.clear_fields()
+        self.admin_ui.set_thumbnail(url=f'{self.server.icon.url}')
+        if self.button_state == AdminButtonState.UNVERIFIED:
             self.unverified_list = client_db_interface.get_unverified_users(self.server)
             if self.unverified_list:
                 user = self.unverified_list[0]
-                self.admin_embed.user_embed(user, self.server)
+                self.admin_ui.user_embed(user, self.server)
             else:
-                self.admin_embed.empty_embed()
-        else:
-            if self.stats_status:
-                self.admin_embed.stats_embed(self.server)
-            else:
-                self.admin_embed.banned_embed(self.server)
+                self.admin_ui.empty_embed()
+        elif self.button_state == AdminButtonState.STATS:
+            self.admin_ui.stats_embed(self.server)
+        elif self.button_state == AdminButtonState.BANNED:
+            self.admin_ui.banned_embed(self.server)
         if interaction:
-            self.admin_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
-        await self.message.edit(embed=self.admin_embed, view=self)
+            self.admin_ui.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
+        await self.message.edit(embed=self.admin_ui, view=self)
 
     def update_buttons(self):
-        if not self.view_status:
-            self.verify_user.disabled = True
-            self.reject_user.disabled = True
-            self.change_embed.label = "View Unverified Users"
-            if self.stats_status:
-                self.refresh_embed.label= "View Ban List"
-                self.refresh_embed.emoji= "🔨"
-            else:
-                self.refresh_embed.label = "Server Stats"
-                self.refresh_embed.emoji = "📋"
-        else:
+        if self.button_state == AdminButtonState.UNVERIFIED:
             self.refresh_embed.label = "Refresh"
             self.refresh_embed.emoji = "♻"
             self.change_embed.label = "View Server Details"
@@ -56,6 +45,16 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
             else:
                 self.verify_user.disabled = False
                 self.reject_user.disabled = False
+        else:
+            self.verify_user.disabled = True
+            self.reject_user.disabled = True
+            self.change_embed.label = "View Unverified Users"
+        if self.button_state == AdminButtonState.STATS:
+            self.refresh_embed.label = "View Ban List"
+            self.refresh_embed.emoji = "🔨"
+        elif self.button_state == AdminButtonState.BANNED:
+            self.refresh_embed.label = "Server Stats"
+            self.refresh_embed.emoji = "📋"
 
     @discord.ui.button(label="Verify User", emoji="✅",
                        style=discord.ButtonStyle.green)
@@ -68,8 +67,10 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
     @discord.ui.button(label="Refresh", emoji="♻",
                        style=discord.ButtonStyle.blurple)
     async def refresh_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.view_status:
-            self.stats_status = not self.stats_status
+        if self.button_state == AdminButtonState.STATS:
+            self.button_state = AdminButtonState.BANNED
+        elif self.button_state == AdminButtonState.BANNED:
+            self.button_state = AdminButtonState.STATS
         await self.update_message(interaction)
         await interaction.response.defer()
 
@@ -85,6 +86,17 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
     @discord.ui.button(label="View Registered Users", emoji="📋",
                        style=discord.ButtonStyle.grey)
     async def change_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.view_status = not self.view_status
+        if self.button_state == AdminButtonState.UNVERIFIED:
+            self.button_state = AdminButtonState.STATS
+        else:
+            self.button_state = AdminButtonState.UNVERIFIED
         await self.update_message(interaction)
         await interaction.response.defer()
+
+
+class AdminButtonState(Enum):
+    UNVERIFIED: str = "Unverified"
+    STATS: str = "Stats"
+    BANNED: str = "Banned"
+    ADMIN: str = "Admin"
+
