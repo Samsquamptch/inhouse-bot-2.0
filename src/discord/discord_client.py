@@ -1,17 +1,14 @@
 import discord
 from discord.ext import commands
 import client_db_interface
-import server_manager
+from server_manager import ServerManager
 from src.discord.bot_commands import Commands
 
 
-
-
-
-class InhouseBot(commands.Bot):
+class DiscordBot(commands.Bot):
     def __init__(self, intents):
         super().__init__(command_prefix='!', intents=intents)
-        self.server_manager = server_manager.ServerManager()
+        self.server_manager = ServerManager()
 
     async def on_ready(self):
         print('Bot now running!')
@@ -24,9 +21,5 @@ class InhouseBot(commands.Bot):
         await self.add_cog(Commands(self.server_manager))
 
 
-bot = InhouseBot(discord.Intents.all())
+bot = DiscordBot(discord.Intents.all())
 bot.run(client_db_interface.get_discord_token())
-
-# print(client_db_interface.count_users(1072625693185294407, "Verified"))
-# print(client_db_interface.count_users(1072625693185294407, "Banned"))
-# print(client_db_interface.load_server_settings(1072625693185294407))

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from src.discord import client_db_interface, check_user, initialisation
+from src.discord import client_db_interface, check_user
 
 
 class Commands(discord.ext.commands.Cog, name='Greetings module'):

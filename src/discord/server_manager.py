@@ -6,6 +6,7 @@ import inhouse_queue
 import check_user
 import initialisation
 import menu_user_options
+from src.discord.embed_views import AdminEmbedView, UserEmbed
 
 
 class ChannelList:
@@ -58,7 +59,7 @@ class ServerManager:
 
     async def run_user_modules(self, server, channels):
         # Create Admin Channel items
-        admin_view = admin_panel.AdminEmbed(channels.chat_channel, channels.admin_channel, server)
+        admin_view = admin_panel.AdminEmbed(channels.chat_channel, channels.admin_channel, server, AdminEmbedView())
         admin_menu = menu_admin_options.AdminOptions()
         print("Admin Channel embeds created")
         # Create Inhouse Channel items
@@ -153,4 +154,4 @@ class ServerManager:
         if not user_check:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
         else:
-            await ctx.send(embed=check_user.UserEmbed.user_embed(user_acc, ctx.guild))
+            await ctx.send(embed=UserEmbed.user_embed(user_acc, ctx.guild))

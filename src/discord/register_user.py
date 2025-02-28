@@ -1,6 +1,6 @@
 import discord
 import client_db_interface
-from check_user import UserEmbed
+from embed_views import UserEmbed
 from collections import defaultdict
 
 

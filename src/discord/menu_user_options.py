@@ -1,7 +1,7 @@
 import datetime
 import discord
 from src.discord import client_db_interface
-from check_user import UserEmbed, StandInEmbed
+from embed_views import UserEmbed, StandInEmbed
 
 
 class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
@@ -18,7 +18,7 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
         date_format = '%Y-%m-%d'
         date_obj = datetime.datetime.strptime(date_str, date_format)
         current_day = datetime.datetime.today()
-        if current_day < date_obj + datetime.timedelta(days=7):
+        if current_day <= date_obj + datetime.timedelta(days=0):
             return True
         else:
             return False
@@ -50,10 +50,12 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
             send_message = 'Please only input numbers for mmr'
         await interaction.response.send_message(send_message, ephemeral=True, delete_after=10)
 
+
 class FindStandInModal(discord.ui.Modal, title="Find a stand-in for your team"):
-    def __init__(self):
+    def __init__(self, embed):
         super().__init__()
         self.mmr_cap = None
+        self.list_embed = embed
 
     search_limit = discord.ui.TextInput(label='MMR limit', max_length=5, required=True)
 
@@ -64,9 +66,8 @@ class FindStandInModal(discord.ui.Modal, title="Find a stand-in for your team"):
         except ValueError:
             await interaction.response.send_message("Please only input numbers for MMR", ephemeral=True, delete_after=10)
             return
-        list_embed = StandInEmbed()
-        list_embed.show_stand_ins(int_mmr_cap, interaction.guild)
-        await interaction.response.send_message(embed=list_embed, ephemeral=True)
+        self.list_embed.show_stand_ins(int_mmr_cap, interaction.guild)
+        await interaction.response.send_message(embed=self.list_embed, ephemeral=True)
 
 
 # Select menu for users (above inhouse queue)
@@ -92,14 +93,14 @@ class UserOptions(discord.ui.View):
             case "Search":
                 await interaction.response.send_message(view=SelectUserView(), ephemeral=True)
             case "Find":
-                await interaction.response.send_modal(FindStandInModal())
+                await interaction.response.send_modal(FindStandInModal(StandInEmbed()))
             case "Update":
                 update_modal = NotifyUpdateModal()
                 await interaction.response.send_modal(update_modal)
                 await update_modal.wait()
                 if update_modal.updated:
                     await self.chat_channel.send(f'<@&{self.admin_role.id}> User <@{interaction.user.id}> wants their MMR set '
-                                           f'to {update_modal.new_mmr}')
+                                                 f'to {update_modal.new_mmr}')
 
 
 class SelectUserView(discord.ui.View):

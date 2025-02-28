@@ -1,39 +1,39 @@
 import discord
 import client_db_interface
 import embed_superclass
-from embed_views import AdminEmbedView
 
 
-class AdminEmbed(embed_superclass.EmbedSuperclass):
-    def __init__(self, chat_channel, embed_channel, server):
+class AdminEmbed(embed_superclass.ChannelEmbeds):
+    def __init__(self, chat_channel, embed_channel, server, admin_embed):
         super().__init__(chat_channel, embed_channel, server)
         self.unverified_list = client_db_interface.get_unverified_users(self.server)
         self.view_status = True
         self.stats_status = True
+        self.admin_embed = admin_embed
 
     async def send_embed(self):
         self.message = await self.embed_channel.send(view=self)
         await self.update_message()
 
     async def update_message(self, interaction=None):
-        admin_embed = AdminEmbedView()
         self.update_buttons()
-        admin_embed.set_thumbnail(url=f'{self.server.icon.url}')
+        self.admin_embed.clear_fields()
+        self.admin_embed.set_thumbnail(url=f'{self.server.icon.url}')
         if self.view_status:
             self.unverified_list = client_db_interface.get_unverified_users(self.server)
             if self.unverified_list:
                 user = self.unverified_list[0]
-                admin_embed.user_embed(user, self.server)
+                self.admin_embed.user_embed(user, self.server)
             else:
-                admin_embed.empty_embed()
+                self.admin_embed.empty_embed()
         else:
             if self.stats_status:
-                admin_embed.stats_embed(self.server)
+                self.admin_embed.stats_embed(self.server)
             else:
-                admin_embed.banned_embed(self.server)
+                self.admin_embed.banned_embed(self.server)
         if interaction:
-            admin_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
-        await self.message.edit(embed=admin_embed, view=self)
+            self.admin_embed.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
+        await self.message.edit(embed=self.admin_embed, view=self)
 
     def update_buttons(self):
         if not self.view_status:
