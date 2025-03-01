@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import discord
-from src.discord import client_db_interface, check_user
+from src.discord import client_db_interface, check_user, team_balancer
 
 
 class UserEmbed(discord.Embed):
@@ -11,7 +13,7 @@ class UserEmbed(discord.Embed):
 
     def user_embed(self, user_account):
         self.clear_fields()
-        data_list = client_db_interface.get_user_stats(user_account.id, self.server)
+        data_list = client_db_interface.get_user_stats(user_account, self.server)
         role_champion = client_db_interface.load_champion_role(self.server)
         user_verified, user_banned = client_db_interface.get_user_status(user_account, self.server)
         if user_banned:
@@ -69,9 +71,9 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
         self.set_image(
             url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
 
-    def stats_embed(self, server):
-        user_count, verified_count, banned_count = client_db_interface.count_users(server)
-        server_settings = client_db_interface.load_server_settings(server)
+    def stats_embed(self):
+        user_count, verified_count, banned_count = client_db_interface.count_users(self.server)
+        server_settings = client_db_interface.load_server_settings(self.server)
         self.set_thumbnail(url=self.server.icon.url)
         self.title = "Server Details"
         self.description = f'Server Information'
@@ -110,32 +112,102 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
 
 class QueueEmbedView(discord.Embed, EmptyEmbed):
     def __init__(self, server):
-        UserEmbed.__init__(self, server)
-        EmptyEmbed.__init__(self)
+        super().__init__()
         self.server = server
+        self.set_thumbnail(url=self.server.icon.url)
+        self.role_champion = client_db_interface.load_champion_role(server)
+
+    def set_title(self, queue_name):
+        self.title = f"{queue_name} QUEUE"
 
     def empty_embed(self):
         self.clear_fields()
-        self.set_thumbnail(url=self.server.icon.url)
         self.color = 0xFF0000
         self.description = "The queue is currently empty. You can change this!"
         self.add_field(name=f'No one is in the queue', value='', inline=False)
-        # queue_embed.set_thumbnail(url=f'{icon_url}')
+        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        self.set_footer(text=f'Queue updated at: {update_time}')
 
-    def partial_queue(self):
-        pass
+    def partial_queue(self, queue_list):
+        self.clear_fields()
+        if any(x for x in queue_list if x.is_champion is True):
+            self.description = f"A champion is in the queue!"
+            self.color = 0xFFD70
+        else:
+            self.description = f"Queue is live, come join!"
+            self.color = 0x00ff00
+        queue_length = len(queue_list)
+        if queue_length == 1:
+            self.add_field(name=f'1 player in queue', value='', inline=False)
+        else:
+            self.add_field(name=f'{queue_length} players in queue', value='', inline=False)
+        mmr_total = 0
+        for user in queue_list:
+            mmr_total = mmr_total + user.mmr
+            role_preference = check_user.check_role_priority(user)
+            self.add_field(name=user.name,
+                           value=f'MMR: {user.mmr} | [Dotabuff](https://www.dotabuff.com/players/{user.steam}) | Preference: {role_preference}',
+                           inline=False)
+        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        average_mmr = int(mmr_total / queue_length)
+        self.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
 
-    def full_queue(self):
-        pass
+    def full_queue(self, queue_list):
+        self.clear_fields()
+        queue_ids = [user.id for user in queue_list]
+        queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
+        queue_teams = team_balancer.assign_teams(queue_ids)
+        self.description = f'Queue is full, please join the lobby!'
+        self.color = 0x00ff00
+        self.add_field(name='Roles', value='', inline=True)
+        self.add_field(name='Radiant', value='', inline=True)
+        self.add_field(name='Dire', value='', inline=True)
+        radiant_team = queue_teams[0]
+        dire_team = queue_teams[1]
+        x = 0
+        mmr_total_radiant = 0
+        mmr_total_dire = 0
+        while x < 5:
+            user_acc_radiant = discord.utils.get(self.server.members, id=radiant_team[x])
+            user_acc_dire = discord.utils.get(self.server.members, id=dire_team[x])
+            user_radiant = client_db_interface.view_user_data(radiant_team[x])
+            user_dire = client_db_interface.view_user_data(dire_team[x])
+            mmr_total_radiant = mmr_total_radiant + user_radiant[2]
+            mmr_total_dire = mmr_total_dire + user_dire[2]
+            self.add_field(name=f'{queue_roles[x]}',
+                                  value='\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
+                                  inline=True)
+            self.add_field(name=user_acc_radiant.display_name,
+                                  value=f'MMR: {user_radiant[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
+                                        f'[Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]})',
+                                  inline=True)
+            self.add_field(name=user_acc_dire.display_name,
+                                  value=f'MMR: {user_dire[2]} \n'
+                                        f'[Dotabuff](https://www.dotabuff.com/players/{user_dire[1]})',
+                                  inline=True)
+            x += 1
+        mmr_avg_radiant = mmr_total_radiant / 5
+        mmr_avg_dire = mmr_total_dire / 5
+        self.add_field(name=f'Average MMR', value='', inline=True)
+        self.add_field(name=f'{mmr_avg_radiant}', value='', inline=True)
+        self.add_field(name=f'{mmr_avg_dire}', value='', inline=True)
+        update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
+        self.add_field(name='Players',
+                              value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
+                                    f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
+                                    f'<@{dire_team[4]}>')
+        self.set_footer(text=f'Teams created at: {update_time}')
+
 
 class StandInEmbed(discord.Embed):
-    def __init__(self):
+    def __init__(self, server):
         super().__init__()
+        self.server = server
 
-    def show_stand_ins(self, mmr_cap, server):
+    def show_stand_ins(self, mmr_cap):
         self.title = "Stand-in List"
-        self.set_thumbnail(url=server.icon.url)
-        stand_in_list = client_db_interface.load_users_below_mmr(mmr_cap, server)
+        self.set_thumbnail(url=self.server.icon.url)
+        stand_in_list = client_db_interface.load_users_below_mmr(mmr_cap, self.server)
         match len(stand_in_list):
             case _ if len(stand_in_list) > 8:
                 self.color = 0x00ff00
@@ -153,7 +225,7 @@ class StandInEmbed(discord.Embed):
                 return
         self.description = "Potential Stand-ins to use"
         for user_data in stand_in_list:
-            user_account = discord.utils.get(server.members, id=user_data[0])
+            user_account = discord.utils.get(self.server.members, id=user_data[0])
             self.add_field(name=user_account.name, value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) '
                                                          f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                            inline=False)

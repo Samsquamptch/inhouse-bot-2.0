@@ -93,7 +93,7 @@ class UserOptions(discord.ui.View):
             case "Search":
                 await interaction.response.send_message(view=SelectUserView(), ephemeral=True)
             case "Find":
-                await interaction.response.send_modal(FindStandInModal(StandInEmbed()))
+                await interaction.response.send_modal(FindStandInModal(StandInEmbed(interaction.guild)))
             case "Update":
                 update_modal = NotifyUpdateModal()
                 await interaction.response.send_modal(update_modal)
@@ -118,7 +118,7 @@ class SelectUserEmbed(discord.ui.UserSelect):
         if not client_db_interface.user_registered(user, interaction.guild):
             await interaction.response.send_message("User not registered", ephemeral=True)
             return
-        user_embed = UserEmbed()
+        user_embed = UserEmbed(interaction.guild)
         user_embed.user_embed(user, interaction.guild)
         await interaction.response.send_message(embed=user_embed, ephemeral=True)
 

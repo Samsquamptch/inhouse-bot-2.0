@@ -255,12 +255,13 @@ def view_user_data(discord_id):
     db_access.close_db_connection(conn)
     return list(user_data_list[0])
 
-def get_user_stats(discord_id, server):
+
+def get_user_stats(user, server):
     conn = db_access.get_db_connection()
     user_data_list = list(
         conn.cursor().execute("SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
                               "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
-                              "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [discord_id, server.id]))
+                              "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [user.id, server.id]))
     db_access.close_db_connection(conn)
     return list(user_data_list[0])
 
@@ -330,6 +331,7 @@ def count_users(server):
     conn.close()
     return user_count[0], verified_count[0], banned_count[0]
 
+
 def load_banned_users(server):
     conn = db_access.get_db_connection()
     ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
@@ -345,3 +347,11 @@ def load_users_below_mmr(mmr_cap, server):
                                             LIMIT 10""", [mmr_cap, server.id]))
     db_access.close_db_connection(conn)
     return user_list
+
+
+def user_within_mmr_range(user, mmr_bot, mmr_top):
+    conn = db_access.get_db_connection()
+    is_below = list(conn.cursor().execute("""SELECT Discord FROM User WHERE Discord = ? AND MMR BETWEEN ? AND ?""",
+                                          [user.id, mmr_bot, mmr_top]))
+    db_access.close_db_connection(conn)
+    return is_below

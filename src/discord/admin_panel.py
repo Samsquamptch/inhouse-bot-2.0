@@ -20,13 +20,13 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
             self.unverified_list = client_db_interface.get_unverified_users(self.server)
             if self.unverified_list:
                 user = self.unverified_list[0]
-                self.admin_ui.user_embed(user, self.server)
+                self.admin_ui.user_embed(user)
             else:
                 self.admin_ui.empty_embed()
         elif self.button_state == AdminButtonState.STATS:
-            self.admin_ui.stats_embed(self.server)
+            self.admin_ui.stats_embed()
         elif self.button_state == AdminButtonState.BANNED:
-            self.admin_ui.banned_embed(self.server)
+            self.admin_ui.banned_embed()
         if interaction:
             self.admin_ui.set_footer(text=f'last accessed by {interaction.user.display_name} at {interaction.created_at}')
         self.update_buttons()

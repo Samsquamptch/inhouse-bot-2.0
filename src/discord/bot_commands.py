@@ -147,14 +147,14 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
         else:
             await ctx.send(f"Something went wrong. Please try again.")
 
-    @votekick.error
-    async def arg_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(
-                f"Please input the user you wish to kick"
-                f"```\n!vk Jam!```\n")
-        else:
-            await ctx.send(f"Something went wrong. Please try again.")
+    # @votekick.error
+    # async def arg_error(self, ctx, error):
+    #     if isinstance(error, commands.MissingRequiredArgument):
+    #         await ctx.send(
+    #             f"Please input the user you wish to kick"
+    #             f"```\n!vk Jam!```\n")
+    #     else:
+    #         await ctx.send(f"Something went wrong. Please try again.")
 
     @who.error
     async def arg_error(self, ctx, error):

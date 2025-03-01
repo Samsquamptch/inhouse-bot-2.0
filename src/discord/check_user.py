@@ -45,15 +45,15 @@ def user_exists(server, user_name):
 
 
 def check_role_priority(user):
-    core_roles = [user[3], user[4], user[5]]
-    supp_roles = [user[6], user[7]]
+    core_roles = [user.pos1, user.pos2, user.pos3]
+    supp_roles = [user.pos4, user.pos5]
     if 5 in core_roles and 5 not in supp_roles:
         role_pref = "Core"
     elif 5 in supp_roles and 5 not in core_roles:
         role_pref = "Support"
     else:
-        core_avg = (user[3] + user[4] + user[5]) / 3
-        supp_avg = (user[6] + user[7]) / 2
+        core_avg = sum(core_roles) / 3
+        supp_avg = sum(supp_roles) / 2
         role_balance = core_avg - supp_avg
         match role_balance:
             case _ if role_balance < 0:
