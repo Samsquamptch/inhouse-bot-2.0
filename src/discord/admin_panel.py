@@ -16,8 +16,6 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
         await self.update_message()
 
     async def update_message(self, interaction=None):
-        self.admin_ui.clear_fields()
-        self.admin_ui.set_thumbnail(url=f'{self.server.icon.url}')
         if self.button_state == AdminButtonState.UNVERIFIED:
             self.unverified_list = client_db_interface.get_unverified_users(self.server)
             if self.unverified_list:

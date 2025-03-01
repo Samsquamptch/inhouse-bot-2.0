@@ -1,16 +1,19 @@
+from abc import ABC, abstractmethod
+
 import discord
 from src.discord import client_db_interface, check_user
 
 
 class UserEmbed(discord.Embed):
-    def __init__(self):
+    def __init__(self, server):
         super().__init__()
+        self.server = server
 
-    def user_embed(self, user_account, server):
+    def user_embed(self, user_account):
         self.clear_fields()
-        data_list = client_db_interface.get_user_stats(user_account.id, server)
-        role_champion = client_db_interface.load_champion_role(server)
-        user_verified, user_banned = client_db_interface.get_user_status(user_account, server)
+        data_list = client_db_interface.get_user_stats(user_account.id, self.server)
+        role_champion = client_db_interface.load_champion_role(self.server)
+        user_verified, user_banned = client_db_interface.get_user_status(user_account, self.server)
         if user_banned:
             user_status = "User is currently banned 😢"
             user_clr = 0x000000
@@ -45,23 +48,21 @@ class UserEmbed(discord.Embed):
         self.set_image(url=None)
 
 
-class AdminEmbedView(UserEmbed):
-    def __init__(self):
-        super().__init__()
+class EmptyEmbed(ABC):
 
-    def registered_embed(self, data_list):
-        self.title = 'Registered users'
-        self.description = f'Showing all registered users'
-        self.color = 0x00ff00
-        for user in data_list:
-            user_data = client_db_interface.view_user_data(user.id)
-            self.add_field(name=user.display_name,
-                           value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]})'
-                                 f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
-                           inline=False)
-        self.set_image(url=None)
+    @abstractmethod
+    def empty_embed(self):
+        pass
+
+
+class AdminEmbedView(UserEmbed, EmptyEmbed):
+    def __init__(self, server):
+        UserEmbed.__init__(self, server)
+        EmptyEmbed.__init__(self)
+        self.server = server
 
     def empty_embed(self):
+        self.set_thumbnail(url=self.server.icon.url)
         self.title = "No unverified users"
         self.description = f'There\'s nobody to verify!'
         self.color = 0xFF0000
@@ -71,6 +72,7 @@ class AdminEmbedView(UserEmbed):
     def stats_embed(self, server):
         user_count, verified_count, banned_count = client_db_interface.count_users(server)
         server_settings = client_db_interface.load_server_settings(server)
+        self.set_thumbnail(url=self.server.icon.url)
         self.title = "Server Details"
         self.description = f'Server Information'
         self.add_field(name='Number of Registered Users', value=user_count, inline=False)
@@ -85,16 +87,17 @@ class AdminEmbedView(UserEmbed):
         self.color = 0xFFD700
         self.set_image(url=None)
 
-    def banned_embed(self, server):
+    def banned_embed(self):
         self.clear_fields()
-        ban_list = client_db_interface.load_banned_users(server)
+        self.set_thumbnail(url=self.server.icon.url)
+        ban_list = client_db_interface.load_banned_users(self.server)
         self.title = "Ban List"
         self.description = "Showing currently banned users"
         if not ban_list:
             self.description = "There are no banned users. That's great news!"
         i = 0
         for banned in ban_list:
-            banned_user = discord.utils.get(server.members, id=banned[0])
+            banned_user = discord.utils.get(self.server.members, id=banned[0])
             self.add_field(name=banned_user.display_name, value=f'Username: {banned_user.name} | '
                                                                 f'[Dotabuff Link](https://www.dotabuff.com/players/{banned[1]})',
                            inline=False)
@@ -105,12 +108,19 @@ class AdminEmbedView(UserEmbed):
         self.set_image(url=None)
 
 
-class QueueEmbedView(discord.ui.View):
-    def __init__(self):
-        super().__init__()
+class QueueEmbedView(discord.Embed, EmptyEmbed):
+    def __init__(self, server):
+        UserEmbed.__init__(self, server)
+        EmptyEmbed.__init__(self)
+        self.server = server
 
-    def empty_queue(self):
-        pass
+    def empty_embed(self):
+        self.clear_fields()
+        self.set_thumbnail(url=self.server.icon.url)
+        self.color = 0xFF0000
+        self.description = "The queue is currently empty. You can change this!"
+        self.add_field(name=f'No one is in the queue', value='', inline=False)
+        # queue_embed.set_thumbnail(url=f'{icon_url}')
 
     def partial_queue(self):
         pass

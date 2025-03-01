@@ -16,26 +16,26 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
     async def refresh(self, ctx):
         await self.manager.remove_from_server_list(ctx)
 
-    @commands.command(aliases=['vk'])
-    async def votekick(self, ctx, user):
-        if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
-            return
-        elif '<@' == user[0:2]:
-            user_acc = await ctx.guild.fetch_member(user[2:-1])
-        else:
-            user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        chosen_server = next((x for x in self.manager.server_list if x.server == ctx.guild.id), None)
-        if chosen_server is None:
-            await ctx.send(content=f'Commands are not yet working, please ensure setup has been completed',
-                           ephemeral=True)
-        elif ctx.author not in chosen_server.inhouse.queued_players:
-            await ctx.send(content=f'You aren\'t in the queue!', ephemeral=True)
-        elif len(chosen_server.inhouse.queued_players) < 10:
-            await ctx.send(content=f'Votekick can only be used when the queue is full', ephemeral=True)
-        elif user_acc not in chosen_server.inhouse.queued_players:
-            await ctx.send(content=f'{user} isn\'t in the queue', ephemeral=True)
-        else:
-            await chosen_server.inhouse.vote_kick(ctx.guild, user_acc, ctx.author, channel=ctx.channel)
+    # @commands.command(aliases=['vk'])
+    # async def votekick(self, ctx, user):
+    #     if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):
+    #         return
+    #     elif '<@' == user[0:2]:
+    #         user_acc = await ctx.guild.fetch_member(user[2:-1])
+    #     else:
+    #         user_check, user_acc = check_user.user_exists(ctx.guild, user)
+    #     chosen_server = next((x for x in self.manager.server_list if x.server == ctx.guild.id), None)
+    #     if chosen_server is None:
+    #         await ctx.send(content=f'Commands are not yet working, please ensure setup has been completed',
+    #                        ephemeral=True)
+    #     elif ctx.author not in chosen_server.inhouse.queued_players:
+    #         await ctx.send(content=f'You aren\'t in the queue!', ephemeral=True)
+    #     elif len(chosen_server.inhouse.queued_players) < 10:
+    #         await ctx.send(content=f'Votekick can only be used when the queue is full', ephemeral=True)
+    #     elif user_acc not in chosen_server.inhouse.queued_players:
+    #         await ctx.send(content=f'{user} isn\'t in the queue', ephemeral=True)
+    #     else:
+    #         await chosen_server.inhouse.vote_kick(ctx.guild, user_acc, ctx.author, channel=ctx.channel)
 
     @commands.command(aliases=['wh', 'whois'])
     async def who(self, ctx, user=None):
