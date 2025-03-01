@@ -154,9 +154,9 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
 
     def full_queue(self, queue_list):
         self.clear_fields()
-        queue_ids = [user.id for user in queue_list]
+        # queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = team_balancer.assign_teams(queue_ids)
+        queue_teams = team_balancer.assign_teams(queue_list[:10])
         self.description = f'Queue is full, please join the lobby!'
         self.color = 0x00ff00
         self.add_field(name='Roles', value='', inline=True)
