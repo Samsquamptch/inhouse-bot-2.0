@@ -66,7 +66,7 @@ class FindStandInModal(discord.ui.Modal, title="Find a stand-in for your team"):
         except ValueError:
             await interaction.response.send_message("Please only input numbers for MMR", ephemeral=True, delete_after=10)
             return
-        self.list_embed.show_stand_ins(int_mmr_cap, interaction.guild)
+        self.list_embed.show_stand_ins(int_mmr_cap)
         await interaction.response.send_message(embed=self.list_embed, ephemeral=True)
 
 
@@ -119,6 +119,6 @@ class SelectUserEmbed(discord.ui.UserSelect):
             await interaction.response.send_message("User not registered", ephemeral=True)
             return
         user_embed = UserEmbed(interaction.guild)
-        user_embed.user_embed(user, interaction.guild)
+        user_embed.user_embed(user)
         await interaction.response.send_message(embed=user_embed, ephemeral=True)
 

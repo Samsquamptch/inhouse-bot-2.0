@@ -187,8 +187,8 @@ def update_dota_settings(server, column, new_value):
 
 def update_discord_settings(server, column, new_value):
     conn = db_access.get_db_connection()
-    conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) AS test 
-                            WHERE test.id = ServerSettings.ServerId""", [new_value, server.id])
+    conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) AS update_votekick_select 
+                            WHERE update_votekick_select.id = ServerSettings.ServerId""", [new_value, server.id])
     db_access.close_db_connection(conn)
     return
 
