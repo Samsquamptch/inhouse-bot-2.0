@@ -73,11 +73,16 @@ def load_chat_channel(server):
     return discord.utils.get(server.channels, id=channel_id)
 
 
+def check_chat_channel(message_channel, server):
+    chat_channel_id = db_access.load_channel_id(server, "ChatChannel")
+    return message_channel.id == chat_channel_id
+
+
 def update_message_ids(server, messages):
     conn = db_access.get_db_connection()
     conn.cursor().execute("""UPDATE MessageIds SET AdminPanel = ?, AdminMenu = ?, UserButtons = ?, UserMenu = ?, 
                              InhouseQueue = ?, GlobalQueue = ? WHERE ServerId IN (SELECT Id from Server where Server = ?)""",
-                             [messages[0], messages[1], messages[2], messages[3], messages[4], messages[5], server.id])
+                          [messages[0], messages[1], messages[2], messages[3], messages[4], messages[5], server.id])
     conn.commit()
     db_access.close_db_connection(conn)
 
@@ -120,17 +125,6 @@ def get_banned_status(user, server):
     return banned_status[0]
 
 
-def get_verified_status(user, server):
-    conn = db_access.get_db_connection()
-    conn.row_factory = lambda cursor, row: row[0]
-    verified_status = list(
-        conn.cursor().execute("""SELECT UserServer.Verified FROM UserServer JOIN User 
-                ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
-                              [user.id, server.id]))
-    db_access.close_db_connection(conn)
-    return verified_status[0]
-
-
 def get_user_status(user, server):
     status_list = db_access.load_user_status(user.id, server.id)
     verified = status_list[0]
@@ -138,10 +132,11 @@ def get_user_status(user, server):
     return verified, banned
 
 
-def user_registered(user):
+def user_registered(user, server):
     conn = db_access.get_db_connection()
-    user_id = list(conn.cursor().execute("""SELECT UserServer.UserId FROM UserServer INNER JOIN User ON 
-                                            User.Id = UserServer.UserId WHERE User.Discord = ?""", [user.id]))
+    user_id = list(conn.cursor().execute("""SELECT usv.UserId FROM UserServer usv INNER JOIN User usr ON usr.Id = usv.UserId 
+                                            JOIN Server svr ON svr.Id = usv.ServerId WHERE usr.Discord = ? AND svr.Server 
+                                            = ?""", [user.id, server.id]))
     db_access.close_db_connection(conn)
     return user_id
 
@@ -152,7 +147,7 @@ def auto_register(user, server):
         return False
     server_id = db_access.load_server_id(server)
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""INSERT INTO UserServer (UserId, ServerId, Banned) VALUES (?, ?, 0)""",
+    conn.cursor().execute("""INSERT INTO UserServer (UserId, ServerId, Banned, Wins, Losses) VALUES (?, ?, 0, 0, 0)""",
                           [user_id, server_id])
     conn.commit()
     db_access.close_db_connection(conn)
@@ -244,7 +239,6 @@ def update_user_data(discord_id, column, new_data):
     conn.commit()
     db_access.close_db_connection(conn)
 
-
 def check_discord_exists(user_id):
     return db_access.check_for_value("Discord", user_id)
 
@@ -258,6 +252,16 @@ def view_user_data(discord_id):
     user_data_list = list(
         conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5, LastUpdated FROM "
                               "User WHERE Discord=?", [discord_id]))
+    db_access.close_db_connection(conn)
+    return list(user_data_list[0])
+
+
+def get_user_stats(user, server):
+    conn = db_access.get_db_connection()
+    user_data_list = list(
+        conn.cursor().execute("SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
+                              "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
+                              "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [user.id, server.id]))
     db_access.close_db_connection(conn)
     return list(user_data_list[0])
 
@@ -286,7 +290,9 @@ def get_queue_user_data(queue_ids):
     for user in queue_ids:
         id_list.append(user.id)
     conn = db_access.get_db_connection()
-    user_data = list(conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)", id_list))
+    user_data = list(
+        conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)",
+                              id_list))
     queue_data = []
     for user in user_data:
         queue_data.append(flip_values(list(user)))
@@ -312,3 +318,40 @@ def flip_values(data_list):
             case 5:
                 data_list[n] = 1
     return data_list
+
+
+def count_users(server):
+    conn = db_access.get_db_connection()
+    user_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                    srv.Id WHERE srv.Server = ?""", [server.id]).fetchone()
+    verified_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                    srv.Id WHERE srv.Server = ? AND usv.Verified""", [server.id]).fetchone()
+    banned_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                    srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]).fetchone()
+    conn.close()
+    return user_count[0], verified_count[0], banned_count[0]
+
+
+def load_banned_users(server):
+    conn = db_access.get_db_connection()
+    ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
+                                        JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]))
+    return ban_list
+
+
+def load_users_below_mmr(mmr_cap, server):
+    conn = db_access.get_db_connection()
+    user_list = list(conn.cursor().execute("""SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, 
+                                            usr.Pos5 FROM User usr JOIN UserServer usv ON usv.UserId = usr.Id JOIN Server srv 
+                                            ON srv.ID = usv.ServerId WHERE usr.MMR < ? AND srv.Server = ? ORDER BY MMR Desc 
+                                            LIMIT 10""", [mmr_cap, server.id]))
+    db_access.close_db_connection(conn)
+    return user_list
+
+
+def user_within_mmr_range(user, mmr_bot, mmr_top):
+    conn = db_access.get_db_connection()
+    is_below = list(conn.cursor().execute("""SELECT Discord FROM User WHERE Discord = ? AND MMR BETWEEN ? AND ?""",
+                                          [user.id, mmr_bot, mmr_top]))
+    db_access.close_db_connection(conn)
+    return is_below

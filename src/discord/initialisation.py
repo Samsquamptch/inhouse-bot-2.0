@@ -2,7 +2,7 @@ import discord
 import client_db_interface
 import admin_panel
 import register_user
-import select_menus
+import menu_admin_options
 import inhouse_queue
 
 

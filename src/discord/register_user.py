@@ -1,7 +1,8 @@
 import discord
 import client_db_interface
-import check_user
+from embed_views import UserEmbed
 from collections import defaultdict
+
 
 # TODO: Rework this into RolePreferenceSelect to reduce the amount of redundant code (low priority)
 # class PreferenceSelect(discord.ui.Select):
@@ -151,83 +152,89 @@ class RolePreferenceSelect(discord.ui.View):
 
 
 class RegisterUserModal(discord.ui.Modal, title='Player Register'):
-    def __init__(self, admin):
+    def __init__(self):
         super().__init__(timeout=None)
+        self.steam_int = None
+        self.mmr_int = None
 
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
+    def confirm_register_values(self, steam, mmr):
+        if "dotabuff.com/players/" in steam:
+            steam = steam.split("players/")
+            steam = steam[1]
+        if "/" in steam:
+            steam = steam.split('/')
+            steam = steam[0]
+        try:
+            mmr_int = int(mmr)
+            steam_int = int(steam)
+        except ValueError:
+            return None, None, 'Please enter your full dotabuff url and your mmr in the appropriate fields'
+        if mmr_int < 1 or mmr_int > 15000:
+            return None, None, 'Please enter a valid MMR'
+        steam_reg = client_db_interface.check_steam_exists(steam_int)
+        if steam_reg:
+            return None, None, 'Your dotabuff account is already registered to the database, please contact an admin for assistance',
+        else:
+            return steam_int, mmr_int, 'You\'ve been registered, please set your roles and wait to be verified',
+
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        try:
-            int_mmr = int(mmr)
-            if int_mmr < 1 or int_mmr > 15000:
-                await interaction.response.send_message('Please enter a valid MMR',
-                                                        ephemeral=True,
-                                                        delete_after=10)
-            else:
-                if "dotabuff.com/players/" in steam:
-                    steam = steam.split("players/")
-                    steam = steam[1]
-                    if "/" in steam:
-                        steam = steam.split('/')
-                        steam = steam[0]
-                    try:
-                        steam_int = int(steam)
-                        steam_reg = client_db_interface.check_steam_exists(steam_int)
-                        if steam_reg:
-                            await interaction.response.send_message(
-                                'Your dotabuff account is already registered to the database, please contact an admin for assistance',
-                                ephemeral=True,
-                                delete_after=10)
-                        else:
-                            await register_user(interaction.user, steam_int, int_mmr, interaction.guild)
-                            await interaction.response.send_message(
-                                'You\'ve been registered, please set your roles and wait to be verified',
-                                view=RolePreferenceSelect(), ephemeral=True)
-                    except ValueError:
-                        await interaction.response.send_message(
-                            'There was an error with the dotabuff url you provided, please try again',
-                            ephemeral=True,
-                            delete_after=10)
-                else:
-                    await interaction.response.send_message(
-                        'Please enter your full Dotabuff user url when registering',
-                        ephemeral=True,
-                        delete_after=10)
-        except ValueError:
-            await interaction.response.send_message('Please only enter numbers when providing your MMR',
-                                                    ephemeral=True,
-                                                    delete_after=10)
+        self.steam_int, self.mmr_int, response_message = self.confirm_register_values(steam, mmr)
+        await interaction.response.send_message(content=response_message, ephemeral=True, delete_after=10)
 
 
 class RegisterEmbed(discord.ui.View):
-    def __init__(self, admin_panel):
+    def __init__(self):
         super().__init__(timeout=None)
+
+    async def register_check(self, user, guild):
+        if client_db_interface.user_registered(user, guild):
+            message_content = "You are already registered"
+        elif client_db_interface.auto_register(user, guild):
+            message_content = "Registration complete, please wait to be verified"
+            await self.register_notification(user, guild)
+        else:
+            message_content = None
+        return message_content
+
+    @staticmethod
+    async def register_user(self, user, steam_int, int_mmr, server):
+        player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
+        client_db_interface.add_user_data(player)
+        client_db_interface.auto_register(user, server)
+        await self.register_notification(user, server)
+
+    @staticmethod
+    async def register_notification(user, server):
+        admin_role = client_db_interface.load_admin_role(server)
+        chat_channel = client_db_interface.load_chat_channel(server)
+        await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
+                                f'registered for the inhouse and requires verification')
 
     @discord.ui.button(label="Click to register for inhouse", emoji="📝",
                        style=discord.ButtonStyle.green)
-    async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_interface.user_registered(interaction.user):
-            await interaction.response.send_message(content="You are already registered", ephemeral=True,
+    async def register_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        message_content = await self.register_check(interaction.user, interaction.guild)
+        if message_content:
+            await interaction.response.send_message(content=message_content, ephemeral=True,
                                                     delete_after=10)
-        elif client_db_interface.auto_register(interaction.user, interaction.guild):
-            await interaction.response.send_message(content="Registration complete, please wait to be verified",
-                                                    ephemeral=True,
-                                                    delete_after=10)
-            await register_notification(interaction.user, interaction.guild)
-        else:
-            await interaction.response.send_modal(RegisterUserModal())
+            return
+        register_modal = RegisterUserModal()
+        await interaction.response.send_modal(register_modal)
+        await register_modal.wait()
+        await self.register_user(self, interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
     async def view_self(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_interface.user_registered(interaction.user):
-            user_data = client_db_interface.view_user_data(interaction.user.id)
-            await interaction.response.send_message(
-                embed=check_user.user_embed(user_data, interaction.user, interaction.guild),
-                ephemeral=True)
+        if client_db_interface.user_registered(interaction.user, interaction.guild):
+            user_embed = UserEmbed(interaction.guild)
+            user_embed.user_embed(interaction.user)
+            await interaction.response.send_message(embed=user_embed, ephemeral=True)
         else:
             await interaction.response.send_message(content="You need to register before you can see your details",
                                                     ephemeral=True)
@@ -235,27 +242,10 @@ class RegisterEmbed(discord.ui.View):
     @discord.ui.button(label="Update your role preferences", emoji="🖋️",
                        style=discord.ButtonStyle.blurple)
     async def set_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if client_db_interface.user_registered(interaction.user):
+        if client_db_interface.user_registered(interaction.user, interaction.guild):
             await interaction.response.send_message(content="Please set your role preferences",
                                                     view=RolePreferenceSelect(), ephemeral=True)
         else:
             await interaction.response.send_message(content="Please register before setting roles",
                                                     ephemeral=True)
 
-
-async def register_user(user, steam_int, int_mmr, server):
-    # Due to how the role balancer calculations work, number weighting is saved the opposite
-    # to how users are used to (which is higher number = more pref and lower number = less pref).
-    # Swaps have been implemented where required for user output to avoid confusion
-    player = [user.id, steam_int, int_mmr, 1, 1, 1, 1, 1]
-    client_db_interface.add_user_data(player)
-    client_db_interface.auto_register(user, server)
-    await register_notification(user, server)
-
-
-async def register_notification(user, server):
-    # Adds the inhouse role to the user once their details have been added to the register
-    admin_role = client_db_interface.load_admin_role(server)
-    chat_channel = client_db_interface.load_chat_channel(server)
-    await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
-                            f'registered for the inhouse and requires verification')
