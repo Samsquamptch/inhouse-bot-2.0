@@ -144,19 +144,16 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         mmr_total = 0
         for user in queue_list:
             mmr_total = mmr_total + user.mmr
-            role_preference = check_user.check_role_priority(user)
             self.add_field(name=user.name,
-                           value=f'MMR: {user.mmr} | [Dotabuff](https://www.dotabuff.com/players/{user.steam}) | Preference: {role_preference}',
+                           value=f'MMR: {user.mmr} | [Dotabuff](https://www.dotabuff.com/players/{user.steam}) | Preference: {user.role_preference}',
                            inline=False)
         update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         average_mmr = int(mmr_total / queue_length)
         self.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
 
-    def full_queue(self, queue_list):
+    def full_queue(self, queue_list, queue_teams):
         self.clear_fields()
-        # queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = team_balancer.assign_teams(queue_list[:10])
         self.description = f'Queue is full, please join the lobby!'
         self.color = 0x00ff00
         self.add_field(name='Roles', value='', inline=True)
@@ -195,8 +192,15 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.add_field(name='Players',
                               value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
                                     f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
-                                    f'<@{dire_team[4]}>')
+                                    f'<@{dire_team[4]}>', inline=False)
         self.set_footer(text=f'Teams created at: {update_time}')
+        if len(queue_list) == 10:
+            return
+        self.add_field(name='Waiting list', value='', inline=False)
+        for waiting_gamer in queue_list[10:]:
+            self.add_field(name=waiting_gamer.name,
+                           value=f'MMR: {waiting_gamer.mmr} | [Dotabuff](https://www.dotabuff.com/players/{waiting_gamer.steam}) '
+                                 f'| Preference: {waiting_gamer.role_preference}', inline=False)
 
 
 class StandInEmbed(discord.Embed):
