@@ -77,7 +77,7 @@ class ServerManager:
 
     async def send_embed_messages(self, server, embeds, channels):
         await embeds.admin_panel.send_embed()
-        admin_menu_message = await channels.admin_channel.send("More options are available via the below menu",
+        admin_menu_message = await channels.admin_channel.send("Please use the below menus to edit settings or manage users",
                                                                view=embeds.admin_menu)
         register_message = await channels.queue_channel.send("New user? Please register here:", view=embeds.register_buttons)
         user_menu_message = await channels.queue_channel.send("Already registered? More options are available via the below menu",

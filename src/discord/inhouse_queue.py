@@ -174,10 +174,10 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
 
     def check_user_can_join(self, interaction):
         user_status = client_db_interface.get_user_status(interaction.user, interaction.guild)
-        if user_status == "banned":
-            return "You are currently banned from joining the queue"
         if user_status != "verified":
             return "Only verified users may join the queue"
+        if user_status == "banned":
+            return "You are currently banned from joining the queue"
         gamer = next((x for x in self.queued_players if x.id == interaction.user.id), None)
         if gamer:
             return "You are already queued"

@@ -134,10 +134,23 @@ def get_banned_status(user, server):
     return banned_status[0]
 
 
+def get_verified_status(user, server):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    banned_status = list(
+        conn.cursor().execute("""SELECT UserServer.Verified FROM UserServer JOIN User 
+            ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
+                              [user.id, server.id]))
+    db_access.close_db_connection(conn)
+    return banned_status[0]
+
+
 def get_user_status(user, server):
     status_list = db_access.load_user_status(user.id, server.id)
-    verified = status_list[0]
-    banned = status_list[1]
+    if not status_list[0]:
+        return ""
+    verified = status_list[0][0]
+    banned = status_list[0][1]
     if banned:
         return "banned"
     if verified:

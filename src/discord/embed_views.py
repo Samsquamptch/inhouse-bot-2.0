@@ -32,7 +32,7 @@ class UserEmbed(discord.Embed):
         else:
             user_status = "User is verified"
             user_clr = 0x00ff00
-        badge = check_user.badge_rank(data_list[2])
+        badge = check_user.badge_rank(user_mmr)
         self.title = f'{user_account.display_name}'
         self.description = f'{user_status}'
         self.color = user_clr

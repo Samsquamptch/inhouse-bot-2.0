@@ -116,4 +116,3 @@ class AdminButtonState(Enum):
     STATS: str = "Stats"
     BANNED: str = "Banned"
     ADMIN: str = "Admin"
-
