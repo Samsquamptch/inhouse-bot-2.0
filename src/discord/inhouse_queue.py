@@ -2,7 +2,7 @@ from enum import Enum
 import discord.ui
 from discord.ext import tasks
 import client_db_interface
-from _datetime import datetime
+from _datetime import datetime, timedelta
 import asyncio
 
 from src.discord import team_balancer, check_user
@@ -87,11 +87,11 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
     @tasks.loop(minutes=5)
     async def afk_check(self):
         channel_messages = self.chat_channel.history(
-            after=(datetime.now() - datetime.timedelta(minutes=self.afk_timer)))
+            after=(datetime.now() - timedelta(minutes=self.afk_timer)))
         for gamer in reversed(self.queued_players):
             if self.team_list and self.queued_players.index(gamer) < 10:
                 break
-            if gamer.last_action > datetime.now(tz=None) - datetime.timedelta(minutes=self.afk_timer):
+            if gamer.last_action > datetime.now(tz=None) - timedelta(minutes=self.afk_timer):
                 continue
             user_messages = [message async for message in channel_messages if message.author.id == gamer.id]
             if not user_messages:
@@ -130,8 +130,8 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
     def last_action_field(self, update_user=None):
         if self.action_state == InhouseActionState.NONE:
             pass
-        elif self.action_state == InhouseActionState.AUTOLOBBY:
-            self.queue_embed.add_field(name='', value=f'Queue was cleared by Autolobby')
+        elif self.action_state == InhouseActionState.AUTOLOBBY or InhouseActionState.OTHER_QUEUE:
+            self.queue_embed.add_field(name='', value=self.action_state.value)
         else:
             self.queue_embed.add_field(name='', value=update_user.name + self.action_state.value)
 
@@ -301,6 +301,7 @@ class InhouseActionState(Enum):
     KICK: str = " was kicked from the queue"
     CLEAR: str = " cleared the queue"
     AUTOLOBBY: str = "Queue was cleared by Autolobby"
+    OTHER_QUEUE: str = "Users from other full queue were removed"
 
 
 class InhouseQueueState(Enum):

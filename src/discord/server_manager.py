@@ -29,8 +29,9 @@ class ServerEmbeds:
 
 
 class ServerManager:
-    def __init__(self):
+    def __init__(self, queue_manager):
         self.server_list = []
+        self.queue_manager = queue_manager
 
     async def add_embeds(self, server):
         server_channels = ChannelList(server)
@@ -70,6 +71,7 @@ class ServerManager:
         server_embeds = ServerEmbeds(server, inhouse_view, admin_view, admin_menu, user_menu, register_view)
         await self.send_embed_messages(server, server_embeds, channels)
         self.server_list.append(server_embeds)
+        self.queue_manager.add_to_list(inhouse_view)
 
     async def send_embed_messages(self, server, embeds, channels):
         await embeds.admin_panel.send_embed()
@@ -94,6 +96,9 @@ class ServerManager:
         if config_setup.completed:
             server_channels = ChannelList(ctx.guild)
             await self.run_user_modules(ctx.guild, server_channels)
+
+    def start_check_loop(self):
+        self.queue_manager.check_full_queues.start()
 
     async def register_command(self, ctx, user, dotabuff_id, mmr):
         return
