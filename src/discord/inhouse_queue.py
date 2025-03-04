@@ -61,18 +61,41 @@ class AfkCheckButtons(discord.ui.View):
 
 
 class QueueList:
-    def __init__(self, player_list):
-        self.queued_players = player_list
-        self.team_list = []
-        self.vote_kick_list = []
+    def __init__(self):
+        self.queued_players = []
+
+    def get_inhouse_queue(self):
+        return self.queued_players
+
+    def get_full_queue_players(self):
+        return self.queued_players[:10]
+
+    def user_in_queue(self, user_id):
+        gamer = next((x for x in self.queued_players if x.id == user_id), None)
+        return gamer
+
+    def get_queue_length(self):
+        return len(self.queued_players)
+
+    def get_queue_index(self, gamer):
+        return self.queued_players.index(gamer)
+
+    def add_to_inhouse_queue(self, gamer):
+        self.queued_players.append(gamer)
+
+    def remove_from_inhouse_queue(self, gamer):
+        self.queued_players.remove(gamer)
+
+    def clear_inhouse_queue(self):
+        del self.queued_players[:10]
 
 
 # Embed and buttons for the inhouse queue
 class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
-    def __init__(self, server, chat_channel, embed_channel, queue_embed):
+    def __init__(self, server, chat_channel, embed_channel, queue_embed, queue_list):
         ChannelEmbeds.__init__(self, server, chat_channel, embed_channel)
         QueueSettings.__init__(self, server)
-        self.queued_players = []
+        self.queue_container = queue_list
         self.action_status = False
         self.admin_role = client_db_interface.load_admin_role(server)
         self.champion_role = client_db_interface.load_champion_role(server)
@@ -97,8 +120,8 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         current_time = datetime.now(tz=None)
         channel_messages = self.chat_channel.history(
             after=(current_time - timedelta(minutes=self.afk_timer)))
-        for gamer in reversed(self.queued_players):
-            if self.team_list and self.queued_players.index(gamer) < 10:
+        for gamer in reversed(self.queue_container.get_inhouse_queue()):
+            if self.team_list and self.queue_container.get_queue_index(gamer) < 10:
                 break
             if gamer.last_action > current_time - timedelta(minutes=self.afk_timer):
                 continue
@@ -114,17 +137,17 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         await afk_check_ping.send_buttons(self.chat_channel)
         await afk_check_ping.wait()
         if afk_check_ping.kick_user:
-            self.queued_players.remove(gamer)
+            self.queue_container.remove_from_inhouse_queue(gamer)
             self.action_state = InhouseActionState.KICK
             await self.update_message(user)
             await self.chat_channel.send(f"<@{user.id}> has been kicked from the queue for being afk")
         else:
             gamer.last_action = datetime.now(tz=None)
 
-    async def bot_clear_queue(self):
-        if len(self.queued_players) < 10:
+    def bot_clear_queue(self):
+        if self.queue_container.get_queue_length() < 10:
             return False
-        del self.queued_players[:10]
+        self.queue_container.clear_inhouse_queue()
         self.team_list.clear()
         self.vote_kick_list.clear()
         if self.action_state != InhouseActionState.AUTOLOBBY:
@@ -145,33 +168,36 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
             self.queue_embed.add_field(name='', value=update_user.name + self.action_state.value)
 
     def set_queue_state(self):
-        if len(self.queued_players) >= 10:
+        queue_length = self.queue_container.get_queue_length()
+        if queue_length >= 10:
             self.queue_state = InhouseQueueState.FULL
-        elif len(self.queued_players) > 0:
+        elif queue_length > 0:
             self.queue_state = InhouseQueueState.ACTIVE
         else:
             self.queue_state = InhouseQueueState.EMPTY
 
     async def notify_gamers(self):
         send_message = 'Queue has popped, can the following users please head to the lobby: \n'
-        for player in self.queued_players[:10]:
-            send_message += f'<@{player.id}> '
+        # full_players = self.queue_container.get_full_queue_players()
+        # for player in full_players:
+        #     send_message += f'<@{player.id}> '
         await self.chat_channel.send(send_message, delete_after=600)
 
     async def update_message(self, update_user=None):
         self.set_queue_state()
+        queue_list = self.queue_container.get_inhouse_queue()
         if self.queue_state == InhouseQueueState.FULL:
             if not self.team_list:
                 self.queue_full_time = datetime.now(tz=None)
-                team_ids = (x.id for x in self.queued_players[:10])
-                self.team_list = team_balancer.assign_teams(team_ids)
+                team_ids = (x.id for x in self.queue_container.get_full_queue_players())
+                self.team_list = list(team_balancer.assign_teams(team_ids))
                 await self.notify_gamers()
-            self.queue_embed.full_queue(self.queued_players, self.team_list)
+            self.queue_embed.full_queue(queue_list, self.team_list)
             # client_db_interface.update_autolobby(self.server.id, [1, 1])
         elif self.queue_state == InhouseQueueState.ACTIVE:
             self.team_list.clear()
             self.vote_kick_list.clear()
-            self.queue_embed.partial_queue(self.queued_players)
+            self.queue_embed.partial_queue(queue_list)
         elif self.queue_state == InhouseQueueState.EMPTY:
             self.queue_embed.empty_embed()
         self.last_action_field(update_user)
@@ -185,7 +211,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
             return "Only verified users may join the queue"
         if user_status == "banned":
             return "You are currently banned from joining the queue"
-        gamer = next((x for x in self.queued_players if x.id == interaction.user.id), None)
+        gamer = self.queue_container.user_in_queue(interaction.user.id)
         if gamer:
             return "You are already queued"
         if not client_db_interface.user_within_mmr_range(interaction.user, self.mmr_floor, self.mmr_ceiling):
@@ -195,7 +221,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
     def check_user_can_leave(self, gamer):
         if not gamer:
             return "You aren't in the queue"
-        if len(self.queued_players) >= 10 > self.queued_players.index(gamer):
+        if self.queue_container.get_queue_length() >= 10 > self.queue_container.get_queue_index(gamer):
             return "You cannot leave when you need to play a game!"
         return None
 
@@ -219,7 +245,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
             self.select_votekick.disabled = False
             self.select_votekick.placeholder = "Select a User to Votekick"
             self.select_votekick.options.clear()
-            for gamer in self.queued_players[:10]:
+            for gamer in self.queue_container.get_full_queue_players():
                 self.select_votekick.add_option(label=gamer.name, value=gamer.id, description=f"Votekick {gamer.name}")
         else:
             self.select_votekick.disabled = True
@@ -238,7 +264,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         while self.action_status:
             await asyncio.sleep(0.5)
         self.action_status = True
-        self.queued_players.append(Gamer(interaction.user, interaction.guild, is_champion))
+        self.queue_container.add_to_inhouse_queue(Gamer(interaction.user, interaction.guild, is_champion))
         self.action_state = InhouseActionState.JOIN
         await self.update_message(interaction.user)
         self.action_status = False
@@ -246,7 +272,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
 
     @discord.ui.button(label="Leave Queue", emoji="❌", style=discord.ButtonStyle.red)
     async def leave_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
-        gamer = next((x for x in self.queued_players if x.id == interaction.user.id), None)
+        gamer = self.queue_container.user_in_queue(interaction.user.id)
         denied_message = self.check_user_can_leave(gamer)
         if denied_message:
             await interaction.response.send_message(content=denied_message, ephemeral=True, delete_after=5)
@@ -254,7 +280,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         while self.action_status:
             await asyncio.sleep(0.5)
         self.action_status = True
-        self.queued_players.remove(gamer)
+        self.queue_container.remove_from_inhouse_queue(gamer)
         self.action_state = InhouseActionState.LEAVE
         await self.update_message(interaction.user)
         self.action_status = False
@@ -277,15 +303,16 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
             await interaction.response.defer()
             return
         victim_id = select.values[0]
-        gamer = next((x for x in self.queued_players if x.id == int(victim_id)), None)
+        gamer = self.queue_container.user_in_queue(int(victim_id))
         if self.admin_role in interaction.user.roles:
-            self.queued_players.remove(gamer)
+            self.queue_container.remove_from_inhouse_queue(gamer)
             self.action_state = InhouseActionState.KICK
+            self.team_list.clear()
             await self.update_message(gamer)
             await interaction.response.send_message("User has been kicked", ephemeral=True)
             return
-        voter = next((x for x in self.queued_players if x.id == interaction.user.id), None)
-        if voter not in self.queued_players[:10]:
+        voter = self.queue_container.user_in_queue(interaction.user.id)
+        if voter not in self.queue_container.get_full_queue_players():
             await interaction.response.send_message("You have to be in the queue to vote kick!", ephemeral=True)
             return
         kick_victim = next((x for x in self.vote_kick_list if x.victim == gamer), None)
@@ -295,7 +322,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
             pass
         elif len(kick_victim.vote_list) >= 2:
             self.vote_kick_list.remove(kick_victim)
-            self.queued_players.remove(gamer)
+            self.queue_container.remove_from_inhouse_queue(gamer)
             self.action_state = InhouseActionState.KICK
             await self.update_message(gamer)
         else:

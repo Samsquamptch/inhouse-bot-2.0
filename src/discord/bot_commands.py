@@ -16,6 +16,11 @@ class Commands(discord.ext.commands.Cog, name='Greetings module'):
     async def refresh(self, ctx):
         await self.manager.remove_from_server_list(ctx)
 
+    @commands.command()
+    @commands.is_owner()
+    async def test(self, ctx):
+        await self.manager.test_command(ctx)
+
     # @commands.command(aliases=['vk'])
     # async def votekick(self, ctx, user):
     #     if ctx.channel != client_db_interface.load_chat_channel(ctx.guild):

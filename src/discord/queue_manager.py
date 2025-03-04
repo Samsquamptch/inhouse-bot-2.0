@@ -32,11 +32,12 @@ class QueueManager:
                 continue
             if embed.queue_full_time > self.full_queue.queue_full_time:
                 continue
-            for player in self.full_queue.queued_players[:10]:
-                gamer = next((x for x in embed.queued_players if x.id == player.id), None)
+            full_queue_list = self.full_queue.queue_container.get_full_queue_players()
+            for player in full_queue_list:
+                gamer = embed.queue_container.user_in_queue(player)
                 if not gamer:
                     continue
-                embed.queued_players.remove(gamer)
+                embed.queue_container.remove_from_inhouse_queue(gamer)
                 embed.action_state = InhouseActionState.OTHER_QUEUE
             await embed.update_message()
 

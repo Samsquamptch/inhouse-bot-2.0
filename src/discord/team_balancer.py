@@ -1,30 +1,28 @@
 import random
 
+import pandas as pd
 import networkx as nx
 from networkx.algorithms import bipartite
 
-from src.discord import client_db_interface, check_user
+from src.discord import client_db_interface
 
 
-# TODO: This stuff won't work as intended because roles haven't been flipped for the bipartite graph
 def assign_teams(queue_ids):
-    user_data = client_db_interface.get_queue_user_data(queue_ids)
-    i = 0
-    while i < 10:
-        user_data[i] = check_user.flip_values(user_data[i])
-    queue = user_data.sort_values('mmr', ascending=False)
-    team_uno = sort_balancer(queue['mmr'].tolist())
-    team_dos = mean_balancer(queue['mmr'].tolist())
-    team_tres = draft_balancer(queue['mmr'].tolist())
+    user_list = client_db_interface.get_queue_user_data(list(queue_ids))
+    user_data = pd.DataFrame(user_list, columns=['Discord', 'Steam', 'MMR', 'Pos1', 'Pos2', 'Pos3', 'Pos4', 'Pos5'])
+    queue = user_data.sort_values('MMR', ascending=False)
+    team_uno = sort_balancer(queue['MMR'].tolist())
+    team_dos = mean_balancer(queue['MMR'].tolist())
+    team_tres = draft_balancer(queue['MMR'].tolist())
     queue["team_uno"] = team_uno
     queue["team_dos"] = team_dos
     queue["team_tres"] = team_tres
-    delta1 = abs(queue.loc[queue['team_uno'] == "Team 1", 'mmr'].mean() - queue.loc[
-        queue['team_uno'] == "Team 2", 'mmr'].mean())
-    delta2 = abs(queue.loc[queue['team_dos'] == "Team 1", 'mmr'].mean() - queue.loc[
-        queue['team_dos'] == "Team 2", 'mmr'].mean())
-    delta3 = abs(queue.loc[queue['team_tres'] == "Team 1", 'mmr'].mean() - queue.loc[
-        queue['team_tres'] == "Team 2", 'mmr'].mean())
+    delta1 = abs(queue.loc[queue['team_uno'] == "Team 1", 'MMR'].mean() - queue.loc[
+        queue['team_uno'] == "Team 2", 'MMR'].mean())
+    delta2 = abs(queue.loc[queue['team_dos'] == "Team 1", 'MMR'].mean() - queue.loc[
+        queue['team_dos'] == "Team 2", 'MMR'].mean())
+    delta3 = abs(queue.loc[queue['team_tres'] == "Team 1", 'MMR'].mean() - queue.loc[
+        queue['team_tres'] == "Team 2", 'MMR'].mean())
     delta_list = [delta1, delta2, delta3]
     allowed_range = 100
     delta_choices = []
@@ -50,22 +48,22 @@ def assign_teams(queue_ids):
     team1 = queue.loc[queue['team'] == "Team 1"]
     team2 = queue.loc[queue['team'] == "Team 2"]
     pos1 = role_allocation(team1)
-    team1["pos"] = [11, 12, 13, 14, 15]
-    team1.at[pos1[5001], 'pos'] = 1
-    team1.at[pos1[5002], 'pos'] = 2
-    team1.at[pos1[5003], 'pos'] = 3
-    team1.at[pos1[5004], 'pos'] = 4
-    team1.at[pos1[5005], 'pos'] = 5
-    team1 = team1.sort_values('pos')
+    team1["Pos"] = [11, 12, 13, 14, 15]
+    team1.at[pos1[5001], 'Pos'] = 1
+    team1.at[pos1[5002], 'Pos'] = 2
+    team1.at[pos1[5003], 'Pos'] = 3
+    team1.at[pos1[5004], 'Pos'] = 4
+    team1.at[pos1[5005], 'Pos'] = 5
+    team1 = team1.sort_values('Pos')
     pos2 = role_allocation(team2)
-    team2["pos"] = [11, 12, 13, 14, 15]
-    team2.at[pos2[5001], 'pos'] = 1
-    team2.at[pos2[5002], 'pos'] = 2
-    team2.at[pos2[5003], 'pos'] = 3
-    team2.at[pos2[5004], 'pos'] = 4
-    team2.at[pos2[5005], 'pos'] = 5
-    team2 = team2.sort_values('pos')
-    return team1['disc'].tolist(), team2['disc'].tolist()
+    team2["Pos"] = [11, 12, 13, 14, 15]
+    team2.at[pos2[5001], 'Pos'] = 1
+    team2.at[pos2[5002], 'Pos'] = 2
+    team2.at[pos2[5003], 'Pos'] = 3
+    team2.at[pos2[5004], 'Pos'] = 4
+    team2.at[pos2[5005], 'Pos'] = 5
+    team2 = team2.sort_values('Pos')
+    return team1['Discord'].tolist(), team2['Discord'].tolist()
 
 
 def role_allocation(team):

@@ -25,9 +25,3 @@ class DiscordBot(commands.Bot):
 
 bot = DiscordBot(discord.Intents.all())
 bot.run(client_db_interface.get_discord_token())
-
-# test_list = [215529156031545344, 140043932355657728, 185095564738822144, 768194591550734366, 138823836106883072,
-#              71870295379546112, 533586680280776704, 205439416548851713, 150232107740954624, 196021699618144256]
-# test_item = client_db_interface.get_queue_user_data(test_list)
-# for item in test_item:
-#     print(item)

@@ -1,8 +1,10 @@
+import discord.utils
+
 import admin_panel
 import menu_admin_options
 import register_user
 import client_db_interface
-import inhouse_queue
+from inhouse_queue import Gamer, InhouseQueueEmbed, QueueList
 import check_user
 import initialisation
 import menu_user_options
@@ -68,7 +70,7 @@ class ServerManager:
         # Create Inhouse Channel items
         register_view = register_user.RegisterEmbed(admin_list)
         user_menu = menu_user_options.UserOptions(channels.chat_channel, server, admin_list)
-        inhouse_view = inhouse_queue.InhouseQueueEmbed(server, channels.chat_channel, channels.queue_channel, QueueEmbedView(server))
+        inhouse_view = InhouseQueueEmbed(server, channels.chat_channel, channels.queue_channel, QueueEmbedView(server), QueueList())
         print("Inhouse Channel embeds created")
         server_embeds = ServerEmbeds(server, inhouse_view, admin_view, admin_menu, user_menu, register_view)
         await self.send_embed_messages(server, server_embeds, channels)
@@ -128,7 +130,7 @@ class ServerManager:
         await self.remove_from_server_list(ctx)
 
     async def remove_from_server_list(self, ctx):
-        server = next((x for x in self.server_list if x.server == ctx.guild.id), None)
+        server = self.get_server(ctx.guild.id)
         if server:
             print("Clearing channels for server " + server.name)
             self.server_list.remove(server)
@@ -141,8 +143,7 @@ class ServerManager:
         if not client_db_interface.check_chat_channel(ctx.message, ctx.guild):
             return False
         else:
-            chosen_server = next(x for x in self.server_list if x.server == ctx.guild.id)
-            return chosen_server
+            return self.get_server(ctx.guild.id)
 
     async def who_command(self, ctx, user=None):
         server = self.check_channel(ctx)
@@ -160,3 +161,16 @@ class ServerManager:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
         else:
             await ctx.send(embed=UserEmbed(ctx.guild).user_embed(user_acc))
+
+    async def test_command(self, ctx):
+        server = self.get_server(ctx.guild.id)
+        user_list = [143749379419930624, 140043932355657728, 185095564738822144, 768194591550734366, 138823836106883072,
+                     71870295379546112, 533586680280776704, 205439416548851713, 150232107740954624, 196021699618144256]
+        for user_id in user_list:
+            user = discord.utils.get(ctx.guild.members, id=user_id)
+            gamer = Gamer(user, ctx.guild, False)
+            server.inhouse_queue.queue_container.add_to_inhouse_queue(gamer)
+        await server.inhouse_queue.update_message()
+
+    def get_server(self, server_id):
+        return next(x for x in self.server_list if x.server == server_id)
