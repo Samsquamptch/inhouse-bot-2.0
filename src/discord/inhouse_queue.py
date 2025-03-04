@@ -72,6 +72,7 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
         self.queue_embed = queue_embed
         self.action_state = InhouseActionState.NONE
         self.queue_state = InhouseQueueState.EMPTY
+        self.queue_full_time = datetime.now(tz=None)
         self.team_list = []
         self.vote_kick_list = []
 
@@ -86,16 +87,17 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
 
     @tasks.loop(minutes=5)
     async def afk_check(self):
+        current_time = datetime.now(tz=None)
         channel_messages = self.chat_channel.history(
-            after=(datetime.now() - timedelta(minutes=self.afk_timer)))
+            after=(current_time - timedelta(minutes=self.afk_timer)))
         for gamer in reversed(self.queued_players):
             if self.team_list and self.queued_players.index(gamer) < 10:
                 break
-            if gamer.last_action > datetime.now(tz=None) - timedelta(minutes=self.afk_timer):
+            if gamer.last_action > current_time - timedelta(minutes=self.afk_timer):
                 continue
             user_messages = [message async for message in channel_messages if message.author.id == gamer.id]
             if not user_messages:
-                gamer.last_action = datetime.now(tz=None)
+                gamer.last_action = current_time
                 asyncio.create_task(self.afk_ping(gamer))
 
     async def afk_ping(self, gamer):
@@ -153,6 +155,7 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
         self.set_queue_state()
         if self.queue_state == InhouseQueueState.FULL:
             if not self.team_list:
+                self.queue_full_time = datetime.now(tz=None)
                 team_ids = (x.id for x in self.queued_players[:10])
                 self.team_list = team_balancer.assign_teams(team_ids)
                 await self.notify_gamers()
