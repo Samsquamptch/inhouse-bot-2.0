@@ -129,7 +129,11 @@ def get_user_status(user, server):
     status_list = db_access.load_user_status(user.id, server.id)
     verified = status_list[0]
     banned = status_list[1]
-    return verified, banned
+    if banned:
+        return "banned"
+    if verified:
+        return "verified"
+    return ""
 
 
 def user_registered(user, server):

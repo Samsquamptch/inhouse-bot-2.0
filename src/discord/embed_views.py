@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import discord
-from src.discord import client_db_interface, check_user, team_balancer
+from src.discord import client_db_interface, check_user
 
 
 class UserEmbed(discord.Embed):
@@ -15,19 +15,19 @@ class UserEmbed(discord.Embed):
         self.clear_fields()
         data_list = client_db_interface.get_user_stats(user_account, self.server)
         role_champion = client_db_interface.load_champion_role(self.server)
-        user_verified, user_banned = client_db_interface.get_user_status(user_account, self.server)
-        if user_banned:
+        user_status = client_db_interface.get_user_status(user_account, self.server)
+        if user_status == "banned":
             user_status = "User is currently banned 😢"
             user_clr = 0x000000
+        elif user_status != "verified":
+            user_status = "User is not verified"
+            user_clr = 0xFF0000
         elif role_champion in user_account.roles:
             user_status = "User is a champion! 😎"
             user_clr = 0xFFD700
-        elif user_verified:
+        else:
             user_status = "User is verified"
             user_clr = 0x00ff00
-        else:
-            user_status = "User is not verified"
-            user_clr = 0xFF0000
         badge = check_user.badge_rank(data_list[2])
         self.title = f'{user_account.display_name}'
         self.description = f'{user_status}'

@@ -46,7 +46,7 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
         else:
             self.verify_user.disabled = True
             self.reject_user.disabled = True
-            self.change_embed.label = "View Unverified Users"
+            self.change_embed.label = "Manage Users"
         if self.button_state == AdminButtonState.STATS:
             self.refresh_embed.label = "View Ban List"
             self.refresh_embed.emoji = "🔨"

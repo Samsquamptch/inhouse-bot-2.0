@@ -7,7 +7,7 @@ from src.discord.bot_commands import Commands
 
 class DiscordBot(commands.Bot):
     def __init__(self, intents):
-        super().__init__(command_prefix='!', intents=intents)
+        super().__init__(command_prefix='/', intents=intents)
         self.server_manager = ServerManager()
 
     async def on_ready(self):
