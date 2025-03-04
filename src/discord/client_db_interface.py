@@ -265,6 +265,7 @@ def update_user_data(discord_id, column, new_data):
     conn.commit()
     db_access.close_db_connection(conn)
 
+
 def check_discord_exists(user_id):
     return db_access.check_for_value("Discord", user_id)
 
@@ -285,9 +286,10 @@ def view_user_data(discord_id):
 def get_user_stats(user, server):
     conn = db_access.get_db_connection()
     user_data_list = list(
-        conn.cursor().execute("SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
-                              "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
-                              "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [user.id, server.id]))
+        conn.cursor().execute(
+            "SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
+            "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
+            "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [user.id, server.id]))
     db_access.close_db_connection(conn)
     return list(user_data_list[0])
 
@@ -312,13 +314,11 @@ def remove_user_data(user, server):
 
 
 def get_queue_user_data(queue_ids):
-    id_list = []
-    for user in queue_ids:
-        id_list.append(user.id)
     conn = db_access.get_db_connection()
     user_data = list(
-        conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)",
-                              id_list))
+        conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?,?,?,?,?,?,?,?,?,?)",
+                              [queue_ids[0], queue_ids[1], queue_ids[2], queue_ids[3], queue_ids[4], queue_ids[5], queue_ids[6],
+                               queue_ids[7], queue_ids[8], queue_ids[9]]))
     queue_data = []
     for user in user_data:
         queue_data.append(flip_values(list(user)))
@@ -361,7 +361,8 @@ def count_users(server):
 def load_banned_users(server):
     conn = db_access.get_db_connection()
     ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
-                                        JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]))
+                                        JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""",
+                                          [server.id]))
     return ban_list
 
 

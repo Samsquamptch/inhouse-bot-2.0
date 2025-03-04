@@ -60,8 +60,15 @@ class AfkCheckButtons(discord.ui.View):
         self.stop()
 
 
+class QueueList:
+    def __init__(self, player_list):
+        self.queued_players = player_list
+        self.team_list = []
+        self.vote_kick_list = []
+
+
 # Embed and buttons for the inhouse queue
-class InhouseQueue(ChannelEmbeds, QueueSettings):
+class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
     def __init__(self, server, chat_channel, embed_channel, queue_embed):
         ChannelEmbeds.__init__(self, server, chat_channel, embed_channel)
         QueueSettings.__init__(self, server)
