@@ -72,11 +72,12 @@ class FindStandInModal(discord.ui.Modal, title="Find a stand-in for your team"):
 
 # Select menu for users (above inhouse queue)
 class UserOptions(discord.ui.View):
-    def __init__(self, chat_channel, server):
+    def __init__(self, chat_channel, server, approval_list):
         super().__init__(timeout=None)
         self.last_value = None
         self.chat_channel = chat_channel
         self.admin_role = client_db_interface.load_admin_role(server)
+        self.approval_list = approval_list
 
     @discord.ui.select(placeholder="Select an action here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Search Users", value="Search", emoji="🔎",
@@ -99,6 +100,7 @@ class UserOptions(discord.ui.View):
                 await interaction.response.send_modal(update_modal)
                 await update_modal.wait()
                 if update_modal.updated:
+                    self.approval_list.add_user_to_list(interaction.user, int(update_modal.new_mmr), False)
                     await self.chat_channel.send(f'<@&{self.admin_role.id}> User <@{interaction.user.id}> wants their MMR set '
                                                  f'to {update_modal.new_mmr}')
 

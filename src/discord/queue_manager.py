@@ -9,10 +9,10 @@ class QueueManager:
         self.full_embed_list = []
         self.full_queue = None
 
-    def add_to_list(self, embed):
+    def add_to_queue_list(self, embed):
         self.embed_list.append(embed)
 
-    def remove_from_list(self, embed):
+    def remove_from_queue_list(self, embed):
         self.embed_list.remove(embed)
 
     @tasks.loop(seconds=30)
@@ -22,7 +22,7 @@ class QueueManager:
                 self.full_queue = embed
                 await self.kick_user()
                 self.full_embed_list.append(embed)
-            elif embed in self.full_embed_list:
+            elif not embed.team_list and embed in self.full_embed_list:
                 self.full_embed_list.remove(embed)
 
     async def kick_user(self):

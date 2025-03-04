@@ -114,6 +114,15 @@ def load_champion_role(server):
     return discord.utils.get(server.roles, id=champion_id)
 
 
+def check_if_champion(user, server):
+    if not hasattr(user, 'roles'):
+        return False
+    champion_role = load_champion_role(server)
+    if champion_role in user.roles:
+        return True
+    return False
+
+
 def get_banned_status(user, server):
     conn = db_access.get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
@@ -161,8 +170,8 @@ def auto_register(user, server):
 def get_unverified_users(server):
     unverified_ids = db_access.load_unverified_ids(server)
     unverified_list = []
-    for user_id in unverified_ids:
-        unverified_list.append(discord.utils.get(server.members, id=user_id))
+    for user in unverified_ids:
+        unverified_list.append(user)
     return unverified_list
 
 

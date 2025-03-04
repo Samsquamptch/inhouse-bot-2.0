@@ -6,6 +6,7 @@ import inhouse_queue
 import check_user
 import initialisation
 import menu_user_options
+from src.discord.embed_superclass import AdminPanelUserList
 from src.discord.embed_views import AdminEmbedView, UserEmbed, QueueEmbedView
 
 
@@ -60,18 +61,19 @@ class ServerManager:
 
     async def run_user_modules(self, server, channels):
         # Create Admin Channel items
-        admin_view = admin_panel.AdminEmbed(server, AdminEmbedView(server), channels.chat_channel, channels.admin_channel)
+        admin_list = AdminPanelUserList(server)
+        admin_view = admin_panel.AdminEmbed(server, AdminEmbedView(server), channels.chat_channel, channels.admin_channel, admin_list)
         admin_menu = menu_admin_options.AdminOptions()
         print("Admin Channel embeds created")
         # Create Inhouse Channel items
-        register_view = register_user.RegisterEmbed()
-        user_menu = menu_user_options.UserOptions(channels.chat_channel, server)
+        register_view = register_user.RegisterEmbed(admin_list)
+        user_menu = menu_user_options.UserOptions(channels.chat_channel, server, admin_list)
         inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel, QueueEmbedView(server))
         print("Inhouse Channel embeds created")
         server_embeds = ServerEmbeds(server, inhouse_view, admin_view, admin_menu, user_menu, register_view)
         await self.send_embed_messages(server, server_embeds, channels)
         self.server_list.append(server_embeds)
-        self.queue_manager.add_to_list(inhouse_view)
+        self.queue_manager.add_to_queue_list(inhouse_view)
 
     async def send_embed_messages(self, server, embeds, channels):
         await embeds.admin_panel.send_embed()

@@ -71,10 +71,9 @@ def set_verification(user, server, verified):
 
 def load_unverified_ids(server):
     conn = get_db_connection()
-    conn.row_factory = lambda cursor, row: row[0]
     unverified_ids = (
         list(conn.cursor().execute(
-            "SELECT User.Discord FROM UserServer INNER JOIN Server ON Server.Id = UserServer.ServerId "
+            "SELECT User.Discord, User.MMR FROM UserServer INNER JOIN Server ON Server.Id = UserServer.ServerId "
             "JOIN User ON User.Id = UserServer.UserId WHERE Server.Server = ? AND UserServer.Verified "
             "IS NULL", [server.id]).fetchall())
     )

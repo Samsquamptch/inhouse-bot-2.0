@@ -14,15 +14,19 @@ class UserEmbed(discord.Embed):
     def user_embed(self, user_account):
         self.clear_fields()
         data_list = client_db_interface.get_user_stats(user_account, self.server)
-        role_champion = client_db_interface.load_champion_role(self.server)
+        is_champion = client_db_interface.check_if_champion(user_account, self.server)
         user_status = client_db_interface.get_user_status(user_account, self.server)
+        try:
+            user_mmr = user_account.mmr
+        except AttributeError:
+            user_mmr = data_list[2]
         if user_status == "banned":
             user_status = "User is currently banned 😢"
             user_clr = 0x000000
         elif user_status != "verified":
             user_status = "User is not verified"
             user_clr = 0xFF0000
-        elif role_champion in user_account.roles:
+        elif is_champion:
             user_status = "User is a champion! 😎"
             user_clr = 0xFFD700
         else:
@@ -37,7 +41,7 @@ class UserEmbed(discord.Embed):
         self.add_field(name='Dotabuff',
                        value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
                              f'\u0020\u0020\u0020\u0020', inline=True)
-        self.add_field(name='MMR', value=f'{data_list[2]} \u0020\u0020\u0020\u0020',
+        self.add_field(name='MMR', value=f'{user_mmr} \u0020\u0020\u0020\u0020',
                        inline=True)
         self.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
         self.add_field(name='Played', value=data_list[8] + data_list[9], inline=True)
@@ -64,6 +68,7 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
         self.server = server
 
     def empty_embed(self):
+        self.clear_fields()
         self.set_thumbnail(url=self.server.icon.url)
         self.title = "No unverified users"
         self.description = f'There\'s nobody to verify!'
