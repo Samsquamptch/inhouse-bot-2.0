@@ -1,5 +1,6 @@
 import discord
 import client_db_interface
+from src.discord.embed_superclass import QueueSettings
 from src.discord.embed_views import UserEmbed
 
 
@@ -58,30 +59,75 @@ class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
         await interaction.response.send_message(content='User details have been updated', ephemeral=True, delete_after=10)
 
 
-class DiscordSettingsModal(discord.ui.Modal, title='Change Discord Settings'):
-    mmr_floor = discord.ui.TextInput(label='Set Minimum MMR', required=False)
-    mmr_limit = discord.ui.TextInput(label='Set Maximum MMR', required=False)
-    queue_name = discord.ui.TextInput(label='Set inhouse queue name', required=False)
-    afk_timer = discord.ui.TextInput(label='Set afk time', required=False)
+class DiscordSettingsModal(discord.ui.Modal, QueueSettings, title='Change Discord Settings'):
+    def __init__(self, server):
+        discord.ui.Modal.__init__(self, timeout=None)
+        QueueSettings.__init__(self, server)
+        self.mmr_floor_int = None
+        self.mmr_ceiling_int = None
+        self.queue_name_string = None
+        self.afk_timer_int = None
+        self.edit_settings = False
+
+    new_mmr_floor = discord.ui.TextInput(label='Set Minimum MMR', required=False)
+    new_mmr_limit = discord.ui.TextInput(label='Set Maximum MMR', required=False)
+    new_queue_name = discord.ui.TextInput(label='Set inhouse queue name', required=False)
+    new_afk_timer = discord.ui.TextInput(label='Set afk time', required=False)
+
+    def validate_mmr_inputs(self, floor, ceiling):
+        if not floor and not ceiling:
+            return
+        if floor:
+            floor_int = self.check_int_value(floor)
+        else:
+            floor_int = self.mmr_floor
+        if ceiling:
+            ceiling_int = self.check_int_value(ceiling)
+        else:
+            ceiling_int = self.mmr_ceiling
+        if not floor_int or not ceiling_int:
+            return "Please ensure you only enter numerical values for MMR fields (e.g. 5500 instead of 5.5K)"
+        if floor_int >= ceiling_int or floor_int < 0:
+            return "Please ensure that the mmr floor is equal to or greater than 0 and lower than the mmr limit"
+        if floor:
+            self.mmr_floor_int = floor_int
+        if ceiling:
+            self.mmr_ceiling_int = ceiling_int
+
+    def check_int_value(self, string_value):
+        try:
+            int_value = int(string_value)
+            return int_value
+        except ValueError:
+            return None
+
+    def validate_afk(self, afk):
+        if afk == "":
+            return
+        afk_int = self.check_int_value(afk)
+        if not afk_int:
+            return "Please ensure you only enter numerical values for the afk field (e.g. 15 instead of fifteen)"
+        self.afk_timer_int = afk_int
+
+    def set_queue_name(self, queue_name):
+        if queue_name == "":
+            return
+        self.queue_name_string = queue_name
 
     async def on_submit(self, interaction: discord.Interaction):
-        str_mmr_floor = str(self.mmr_floor)
-        str_mmr_limit = str(self.mmr_limit)
-        str_queue_name = str(self.queue_name)
-        str_afk_timer = str(self.afk_timer)
-        settings_dict = {'SkillFloor': str_mmr_floor, 'SkillCeiling': str_mmr_limit, 'AfkTimer': str_afk_timer}
-        for item in settings_dict:
-            if settings_dict[item] != "":
-                try:
-                    settings_dict[item] = int(settings_dict[item])
-                    client_db_interface.update_discord_settings(interaction.guild, item, settings_dict[item])
-                except ValueError:
-                    await interaction.response.send_message(f'Please only input numbers for {item}',
-                                                            ephemeral=True, delete_after=10)
-        if str_queue_name != "":
-            client_db_interface.update_discord_settings(interaction.guild, 'QueueName', str_queue_name.upper())
-        await interaction.response.send_message(f'Server config file has been updated.',
-                                                ephemeral=True, delete_after=10)
+        str_mmr_floor = str(self.new_mmr_floor)
+        str_mmr_limit = str(self.new_mmr_limit)
+        str_queue_name = str(self.new_queue_name)
+        str_afk_timer = str(self.new_afk_timer)
+        denied_message = self.validate_mmr_inputs(str_mmr_floor, str_mmr_limit)
+        if denied_message:
+            return await interaction.response.send_message(denied_message, ephemeral=True, delete_after=10)
+        denied_message = self.validate_afk(str_afk_timer)
+        if denied_message:
+            return await interaction.response.send_message(denied_message, ephemeral=True, delete_after=10)
+        self.set_queue_name(str_queue_name)
+        self.edit_settings = True
+        await interaction.response.send_message("Server settings have been updated", ephemeral=True, delete_after=10)
 
 
 class DotaSettingsModal(discord.ui.Modal, title='Change Discord Settings'):
@@ -103,8 +149,9 @@ class DotaSettingsModal(discord.ui.Modal, title='Change Discord Settings'):
 
 # Select menu for administrators
 class AdminOptions(discord.ui.View):
-    def __init__(self):
+    def __init__(self, server):
         super().__init__(timeout=None)
+        self.server = server
         self.last_value = None
         self.add_item(AdminSelectUserEmbed())
 
@@ -117,8 +164,6 @@ class AdminOptions(discord.ui.View):
     #         client_db_interface.update_user_data(user.id, "Steam", steam_id)
     #     return
 
-    def search_user_name(self):
-        return
 
     def search_user_dotabuff(self):
         return
@@ -126,17 +171,26 @@ class AdminOptions(discord.ui.View):
     def edit_discord_settings(self):
         return
 
-    def edit_dota_settings(self):
-        return
+    def edit_dota_settings(self, mmr_floor, mmr_ceiling, queue_name, akf_timer):
+        if mmr_floor:
+            client_db_interface.update_discord_settings(self.server, "SkillFloor", mmr_floor)
+        if mmr_ceiling:
+            client_db_interface.update_discord_settings(self.server, "SkillCeiling", mmr_ceiling)
+        if queue_name:
+            client_db_interface.update_discord_settings(self.server, "QueueName", queue_name)
+        if akf_timer:
+            client_db_interface.update_discord_settings(self.server, "AfkTimer", akf_timer)
 
     @discord.ui.select(placeholder="Change server settings here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit Discord Settings", value="Discord", emoji="🖥️",
                              description="Change Discord Settings"),
+        discord.SelectOption(label="Edit Dota Settings", value="Dota", emoji="🖱️", description="Change Dota Settings"),
         discord.SelectOption(label="Change Tryhard Mode", value="Tryhard", emoji="🤓",
                              description="Enable or Disable Tryhard Mode"),
-        discord.SelectOption(label="Edit Dota Settings", value="Dota", emoji="🖱️", description="Change Dota Settings"),
         discord.SelectOption(label="Edit Global Queue Settings", value="Global", emoji="🌍",
                              description="Change Global Queue Settings"),
+        discord.SelectOption(label="Dotabuff Search", value="Search", emoji="🔎",
+                             description="Search User by Dotabuff url")
     ]
                        )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -144,7 +198,12 @@ class AdminOptions(discord.ui.View):
             self.last_value = select.values[0]
         match self.last_value:
             case "Discord":
-                await interaction.response.send_modal(DiscordSettingsModal())
+                discord_settings = DiscordSettingsModal(self.server)
+                await interaction.response.send_modal(discord_settings)
+                await discord_settings.wait()
+                if discord_settings.edit_settings:
+                    self.edit_dota_settings(discord_settings.mmr_floor_int, discord_settings.mmr_ceiling_int,
+                                            discord_settings.queue_name_string, discord_settings.afk_timer_int)
             case "Tryhard":
                 await interaction.response.defer()
             case "Dota":
@@ -152,30 +211,6 @@ class AdminOptions(discord.ui.View):
             case "Global":
                 await interaction.response.defer()
 
-
-# def confirm_edit_values(new_mmr=None, steam_id=None):
-#     if new_mmr:
-#         try:
-#             int_new_mmr = int(new_mmr)
-#         except ValueError:
-#             response_message = 'Please only input numbers for mmr'
-#             return None, None, None, response_message
-#     else:
-#         int_new_mmr = None
-#     if steam_id:
-#         try:
-#             steam_id = steam_id.split("players/")
-#             steam_id = steam_id[1].split('/')
-#             int_steam_id = int(steam_id[0])
-#         except ValueError:
-#             response_message = 'Please enter a full Dotabuff URL when updating a user'
-#             return None, None, None, response_message
-#         if client_db_interface.check_steam_exists(int_steam_id):
-#             response_message = 'Dotabuff already exists in database!'
-#             return None, None, None, response_message
-#     else:
-#         int_steam_id = None
-#     return user_account, int_new_mmr, int_steam_id, f'Details for user {user_account.name} have been updated'
 
 class DeleteUserModal(discord.ui.Modal, title='Confirm Deletion'):
     def __init__(self):

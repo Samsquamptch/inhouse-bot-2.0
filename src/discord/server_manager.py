@@ -63,7 +63,7 @@ class ServerManager:
         # Create Admin Channel items
         admin_list = AdminPanelUserList(server)
         admin_view = admin_panel.AdminEmbed(server, AdminEmbedView(server), channels.chat_channel, channels.admin_channel, admin_list)
-        admin_menu = menu_admin_options.AdminOptions()
+        admin_menu = menu_admin_options.AdminOptions(server)
         print("Admin Channel embeds created")
         # Create Inhouse Channel items
         register_view = register_user.RegisterEmbed(admin_list)
