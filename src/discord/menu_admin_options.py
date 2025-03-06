@@ -21,7 +21,55 @@ class DeleteUserModal(discord.ui.Modal, title='Confirm Deletion'):
         return
 
 
-# Modal for editing user details (accessed via admin select menu)
+class SearchDotabuffModal(discord.ui.Modal, title='Search User by Dotabuff URL'):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.steam_id = None
+        self.user_account = None
+
+    search_url = discord.ui.TextInput(label='Please enter the Dotabuff URL here', required=True)
+
+    def validate_steam(self, steam):
+        if steam == "":
+            return
+        if "dotabuff.com/players/" in steam:
+            steam = steam.split("players/")
+            steam = steam[1]
+        if "/" in steam:
+            steam = steam.split('/')
+            steam = steam[0]
+        try:
+            steam_int = int(steam)
+        except ValueError:
+            return "Please enter your full Dotabuff url in the above field"
+        steam_reg = client_db_interface.check_steam_exists(steam_int)
+        if not steam_reg:
+            return "No user with this Dotabuff account found in the database"
+        self.steam_id = steam_int
+
+    def user_exists(self, server):
+        discord_id = client_db_interface.load_user_from_steam(self.steam_id)
+        print(discord_id)
+        user = discord.utils.get(server.members, id=discord_id)
+        if not user:
+            return f"User with ID: {discord_id} not found on this server"
+        self.user_account = user
+
+    async def on_submit(self, interaction: discord.Interaction):
+        dotabuff_url = str(self.search_url)
+        error_message = self.validate_steam(dotabuff_url)
+        if error_message:
+            await interaction.response.send_message(content=error_message, ephemeral=True, delete_after=10)
+            return
+        error_message = self.user_exists(interaction.guild)
+        if error_message:
+            await interaction.response.send_message(content=error_message, ephemeral=True, delete_after=10)
+            return
+        user_embed = UserEmbed(interaction.guild)
+        user_embed.user_embed(self.user_account)
+        await interaction.response.send_message(content="User Details found", embed=user_embed, ephemeral=True)
+
+
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     def __init__(self):
         super().__init__(timeout=None)
@@ -183,9 +231,6 @@ class AdminOptions(discord.ui.View):
             client_db_interface.update_discord_settings(self.server, "Tryhard", True)
             return "enabled"
 
-    def search_user_dotabuff(self):
-        return
-
     def edit_dota_settings(self):
         return
 
@@ -226,11 +271,11 @@ class AdminOptions(discord.ui.View):
                 await interaction.response.defer()
             case "Tryhard":
                 result = self.change_tryhard_setting()
-                await interaction.response.send_message("Tryhard mode " + result)
+                await interaction.response.send_message("Tryhard mode " + result, ephemeral=True, delete_after=10)
             case "Global":
                 await interaction.response.defer()
             case "Search":
-                await interaction.response.defer()
+                await interaction.response.send_modal(SearchDotabuffModal())
 
 
 class ManageUserEmbed(discord.ui.View):

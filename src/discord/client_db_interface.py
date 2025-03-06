@@ -213,6 +213,7 @@ def update_dota_settings(server, column, new_value):
 
 def load_tryhard_settings(server):
     conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
     tryhard = list(conn.cursor().execute("""SELECT Stg.Tryhard FROM ServerSettings Stg JOIN Server Srv ON Stg.ServerId 
                                             = Srv.Id WHERE Srv.Server = ?""", [server.id]))
     db_access.close_db_connection(conn)
@@ -223,6 +224,7 @@ def update_discord_settings(server, column, new_value):
     conn = db_access.get_db_connection()
     conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) 
                             AS Upds WHERE Upds.id = ServerSettings.ServerId""", [new_value, server.id])
+    conn.commit()
     db_access.close_db_connection(conn)
     return
 
@@ -374,14 +376,24 @@ def load_banned_users(server):
     ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
                                         JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""",
                                           [server.id]))
+    db_access.close_db_connection(conn)
     return ban_list
+
+
+def load_user_from_steam(steam):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    discord_id = list(conn.cursor().execute("SELECT Discord FROM User WHERE Steam = ?", [steam]))
+    db_access.close_db_connection(conn)
+    return discord_id[0]
 
 
 def get_user_mmr(user):
     conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
     user_mmr = list(conn.cursor().execute(f"""SELECT MMR FROM User WHERE Discord = ?""", [user.id]))
     db_access.close_db_connection(conn)
-    return user_mmr[0][0]
+    return user_mmr[0]
 
 
 def load_users_below_mmr(mmr_cap, server):
