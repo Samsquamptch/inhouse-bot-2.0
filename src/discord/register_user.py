@@ -161,22 +161,6 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
-    def confirm_register_values(self, steam, mmr):
-        if "dotabuff.com/players/" in steam:
-            steam = steam.split("players/")
-            steam = steam[1]
-        if "/" in steam:
-            steam = steam.split('/')
-            steam = steam[0]
-        try:
-            mmr_int = int(mmr)
-            steam_int = int(steam)
-        except ValueError:
-            return 'Please enter your full dotabuff url and your mmr in the appropriate fields'
-        if mmr_int < 1 or mmr_int > 15000:
-            return None, None,
-
-
     def validate_steam(self, steam):
         if "dotabuff.com/players/" in steam:
             steam = steam.split("players/")
@@ -227,22 +211,21 @@ class RegisterEmbed(discord.ui.View):
         if client_db_interface.user_registered(user, guild):
             message_content = "You are already registered"
         elif client_db_interface.auto_register(user, guild):
+            user_mmr = client_db_interface.get_user_mmr(user)
             message_content = "Registration complete, please wait to be verified"
-            await self.register_notification(user, guild)
+            await self.register_notification(user, guild, user_mmr)
         else:
             message_content = None
         return message_content
 
-    @staticmethod
     async def register_user(self, user, steam_int, int_mmr, server):
         player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
         client_db_interface.add_user_data(player)
         client_db_interface.auto_register(user, server)
-        self.approval_list.add_user_to_list(user, int_mmr, True)
-        await self.register_notification(user, server)
+        await self.register_notification(user, server, int_mmr)
 
-    @staticmethod
-    async def register_notification(user, server):
+    async def register_notification(self, user, server, int_mmr):
+        self.approval_list.add_user_to_list(user, int_mmr, True)
         admin_role = client_db_interface.load_admin_role(server)
         chat_channel = client_db_interface.load_chat_channel(server)
         await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '

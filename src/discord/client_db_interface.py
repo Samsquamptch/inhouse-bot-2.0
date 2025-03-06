@@ -137,12 +137,12 @@ def get_banned_status(user, server):
 def get_verified_status(user, server):
     conn = db_access.get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
-    banned_status = list(
+    verified_status = list(
         conn.cursor().execute("""SELECT UserServer.Verified FROM UserServer JOIN User 
             ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
                               [user.id, server.id]))
     db_access.close_db_connection(conn)
-    return banned_status[0]
+    return verified_status[0]
 
 
 def get_user_status(user, server):
@@ -267,11 +267,13 @@ def update_user_data(discord_id, column, new_data):
 
 
 def check_discord_exists(user_id):
-    return db_access.check_for_value("Discord", user_id)
+    discord_list = db_access.check_for_value("Discord", user_id)
+    return discord_list
 
 
 def check_steam_exists(steam_id):
-    return db_access.check_for_value("Steam", steam_id)
+    discord_list = db_access.check_for_value("Steam", steam_id)
+    return discord_list
 
 
 def view_user_data(discord_id):
@@ -309,6 +311,7 @@ def remove_user_data(user, server):
     user_id = db_access.get_user_id(user)
     server_id = db_access.load_server_id(server)
     conn.cursor().execute("""DELETE FROM UserServer where UserId = ? AND ServerId = ?""", [user_id, server_id])
+    conn.commit()
     db_access.close_db_connection(conn)
     conn.close()
 
@@ -364,6 +367,13 @@ def load_banned_users(server):
                                         JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""",
                                           [server.id]))
     return ban_list
+
+
+def get_user_mmr(user):
+    conn = db_access.get_db_connection()
+    user_mmr = list(conn.cursor().execute(f"""SELECT MMR FROM User WHERE Discord = ?""", [user.id]))
+    db_access.close_db_connection(conn)
+    return user_mmr[0][0]
 
 
 def load_users_below_mmr(mmr_cap, server):

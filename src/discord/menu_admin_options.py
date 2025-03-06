@@ -1,72 +1,61 @@
 import discord
-import check_user
 import client_db_interface
 from src.discord.embed_views import UserEmbed
 
 
 # Modal for editing user details (accessed via admin select menu)
-# class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
-#     def __init__(self):
-#         super().__init__(timeout=None)
-#         self.user = None
-#         self.int_new_mmr = None
-#         self.int_steam_id = None
-#
-#     player_name = discord.ui.TextInput(label='User\'s global name or Discord username')
-#     set_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=5, required=False)
-#     new_dotabuff = discord.ui.TextInput(label='Edit Dotabuff User URL?', required=False)
-#
-#     async def on_submit(self, interaction: discord.Interaction):
-#         user_name = str(self.player_name)
-#         new_mmr = str(self.set_mmr)
-#         steam_id = str(self.new_dotabuff)
-#         self.user, self.int_new_mmr, self.int_steam_id, response_message = confirm_edit_values(interaction, user_name,
-#                                                                                                      new_mmr, steam_id)
-#         await interaction.response.send_message(response_message, ephemeral=True, delete_after=10)
+class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.mmr_int = None
+        self.steam_int = None
+        self.edit_user = False
 
+    player_mmr = discord.ui.TextInput(label='Set new MMR for user?', max_length=5, required=False)
+    dotabuff_url = discord.ui.TextInput(label='Edit Dotabuff User URL?', required=False)
 
-# class RemoveUserModal(discord.ui.Modal, title='Delete User from Database'):
-#     player_name = discord.ui.TextInput(label='User\'s name')
-#     confirm_deletion = discord.ui.TextInput(label='Confirm deletion?', max_length=1, placeholder='y/n')
-#
-#     async def on_submit(self, interaction: discord.Interaction):
-#         user_name = str(self.player_name)
-#         delete_conf = str(self.confirm_deletion)
-#         server = interaction.user.guild
-#         check_if_exists = check_user.user_exists(server, user_name)
-#         if check_if_exists[0]:
-#             if delete_conf.lower() == "y":
-#                 client_db_interface.remove_user_data(check_if_exists[1], server)
-#                 response_message = f'User {self.player_name} has been deleted'
-#             else:
-#                 response_message = 'Please enter "y" to confirm removal of player'
-#         else:
-#             response_message = f'User {user_name} is not registered'
-#         await interaction.response.send_message(content=response_message, ephemeral=True,
-#                                                     delete_after=10)
+    def validate_steam(self, steam):
+        if steam == "":
+            return
+        if "dotabuff.com/players/" in steam:
+            steam = steam.split("players/")
+            steam = steam[1]
+        if "/" in steam:
+            steam = steam.split('/')
+            steam = steam[0]
+        try:
+            steam_int = int(steam)
+        except ValueError:
+            return "Please enter your full Dotabuff url in the Dotabuff field"
+        steam_reg = client_db_interface.check_steam_exists(steam_int)
+        if steam_reg:
+            return f'This dotabuff account is already registered on the database to user with ID: {steam_reg}'
+        self.steam_int = steam_int
 
-# TODO: Use this later for the delete/verify/ban (manage) user option
-# verify_role = str(self.remove_verify)
-#         if verify_role == "":
-#             pass
-#         elif verify_role.lower() == "y":
-#             client_db_interface.set_verification(check_if_exists[1], server, "False")
-#         else:
-#             await interaction.response.send_message('Please enter "y" to confirm removal of verified role',
-#                                                     ephemeral=True,
-#                                                     delete_after=10)
-#         ban_time = str(self.ban_user)
-#         if ban_time == "":
-#             pass
-#         elif ban_time.lower() == "y":
-#             if client_db_interface.get_banned_status(check_if_exists[1], server):
-#                 client_db_interface.set_banned(check_if_exists[1], server, False)
-#             else:
-#                 client_db_interface.set_banned(check_if_exists[1], server, True)
-#         else:
-#             await interaction.response.send_message('Please enter "y" to confirm add or removal of ban',
-#                                                     ephemeral=True,
-#                                                     delete_after=10)
+    def validate_mmr(self, mmr):
+        if mmr == "":
+            return
+        try:
+            mmr_int = int(mmr)
+        except ValueError:
+            return "Please enter your MMR in the MMR field"
+        if mmr_int < 1 or mmr_int > 15000:
+            return 'Please enter a valid MMR'
+        self.mmr_int = mmr_int
+
+    async def on_submit(self, interaction: discord.Interaction):
+        steam = str(self.dotabuff_url)
+        mmr = str(self.player_mmr)
+        error_message = self.validate_steam(steam)
+        if error_message:
+            await interaction.response.send_message(content=error_message, ephemeral=True, delete_after=10)
+            return
+        error_message = self.validate_mmr(mmr)
+        if error_message:
+            await interaction.response.send_message(content=error_message, ephemeral=True, delete_after=10)
+            return
+        self.edit_user = True
+        await interaction.response.send_message(content='User details have been updated', ephemeral=True, delete_after=10)
 
 
 class DiscordSettingsModal(discord.ui.Modal, title='Change Discord Settings'):
@@ -164,11 +153,7 @@ class AdminOptions(discord.ui.View):
                 await interaction.response.defer()
 
 
-# def confirm_edit_values(interaction, user_name, new_mmr=None, steam_id=None):
-#     user_exists, user_account = check_user.user_exists(interaction.guild, user_name)
-#     if not user_exists:
-#         response_message = f'User {user_name} does not exist in database'
-#         return None, None, None, response_message
+# def confirm_edit_values(new_mmr=None, steam_id=None):
 #     if new_mmr:
 #         try:
 #             int_new_mmr = int(new_mmr)
@@ -192,6 +177,23 @@ class AdminOptions(discord.ui.View):
 #         int_steam_id = None
 #     return user_account, int_new_mmr, int_steam_id, f'Details for user {user_account.name} have been updated'
 
+class DeleteUserModal(discord.ui.Modal, title='Confirm Deletion'):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.delete_user = False
+
+    confirm_delete = discord.ui.TextInput(label='Enter \'yes\' to delete the user', required=True)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        delete_check = str(self.confirm_delete)
+        if delete_check.lower() == "yes":
+            self.delete_user = True
+            await interaction.response.send_message(content="User has been deleted", ephemeral=True)
+            return
+        await interaction.response.defer()
+        return
+
+
 class ManageUserEmbed(discord.ui.View):
     def __init__(self, user, server, user_ui):
         super().__init__(timeout=None)
@@ -205,29 +207,64 @@ class ManageUserEmbed(discord.ui.View):
         else:
             self.set_ban.label = "Ban User"
         if client_db_interface.get_verified_status(self.user, self.server):
-            self.set_verification.label = "Verify User"
-        else:
             self.set_verification.label = "Remove Verification"
+        else:
+            self.set_verification.label = "Verify User"
+
+    def change_user_verification(self):
+        user_status = client_db_interface.get_verified_status(self.user, self.server)
+        if user_status:
+            client_db_interface.disable_verification(self.user, self.server)
+        else:
+            client_db_interface.enable_verification(self.user, self.server)
+        self.user_ui.user_embed(self.user)
+
+    def change_user_ban_status(self):
+        user_status = client_db_interface.get_banned_status(self.user, self.server)
+        if user_status:
+            client_db_interface.unban_user(self.user, self.server)
+        else:
+            client_db_interface.ban_user(self.user, self.server)
+        self.user_ui.user_embed(self.user)
+
+    def update_user_details(self, mmr, steam):
+        if mmr:
+            client_db_interface.update_user_data(self.user.id, "MMR", mmr)
+        if steam:
+            client_db_interface.update_user_data(self.user.id, "Steam", steam)
 
     @discord.ui.button(label="Edit User Details", emoji="🖊️", style=discord.ButtonStyle.blurple)
-    async def edit_user (self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
+    async def edit_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        message_id = interaction.message.id
+        edit_modal = EditUserModal()
+        await interaction.response.send_modal(edit_modal)
+        await edit_modal.wait()
+        if edit_modal.edit_user:
+            self.update_user_details(edit_modal.mmr_int, edit_modal.steam_int)
+            await interaction.followup.edit_message(message_id, embed=self.user_ui, view=self)
         self.set_button_state()
+
 
     @discord.ui.button(label="Set Verification", emoji="✅", style=discord.ButtonStyle.green)
     async def set_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
+        self.change_user_verification()
         self.set_button_state()
+        await interaction.response.edit_message(embed=self.user_ui, view=self)
 
     @discord.ui.button(label="Ban User", emoji="❌", style=discord.ButtonStyle.red)
     async def set_ban(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
+        self.change_user_ban_status()
         self.set_button_state()
+        await interaction.response.edit_message(embed=self.user_ui, view=self)
 
     @discord.ui.button(label="Delete User", emoji="🗑️", style=discord.ButtonStyle.gray)
     async def delete_user(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        self.set_button_state()
+        delete_modal = DeleteUserModal()
+        await interaction.response.send_modal(delete_modal)
+        await delete_modal.wait()
+        if delete_modal.confirm_delete:
+            client_db_interface.remove_user_data(self.user, self.server)
+            await interaction.delete_original_response()
 
 
 class AdminSelectUserEmbed(discord.ui.UserSelect):
@@ -240,5 +277,6 @@ class AdminSelectUserEmbed(discord.ui.UserSelect):
             await interaction.response.send_message("User not registered", ephemeral=True)
             return
         user_view = ManageUserEmbed(user, interaction.guild, UserEmbed(interaction.guild))
+        user_view.set_button_state()
         user_view.user_ui.user_embed(user)
         await interaction.response.send_message(view=user_view, embed=user_view.user_ui, ephemeral=True)

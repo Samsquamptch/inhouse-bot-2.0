@@ -81,16 +81,28 @@ def load_unverified_ids(server):
     return unverified_ids
 
 
+# def check_for_value(column, value_check):
+#     conn = get_db_connection()
+#     cur = conn.cursor()
+#     cur.execute(f"SELECT EXISTS(SELECT 1 FROM User WHERE {column} = ?)", [value_check])
+#     item = cur.fetchone()[0]
+#     close_db_connection(conn)
+#     if item == 0:
+#         return False
+#     else:
+#         return True
+
+
 def check_for_value(column, value_check):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(f"SELECT EXISTS(SELECT 1 FROM User WHERE {column} = ?)", [value_check])
+    cur.execute(f"SELECT Discord FROM User WHERE {column} = ?", [value_check])
     item = cur.fetchone()[0]
     close_db_connection(conn)
-    if item == 0:
-        return False
+    if item:
+        return item
     else:
-        return True
+        return None
 
 
 def load_user_status(user_id, server_id):

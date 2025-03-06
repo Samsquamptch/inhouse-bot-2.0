@@ -28,7 +28,7 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
             int_new_mmr = int(self.new_mmr)
         except ValueError:
             return False
-        client_db_interface.update_user_data(interaction.user.id, "mmr", int_new_mmr)
+        client_db_interface.update_user_data(interaction.user.id, "MMR", int_new_mmr)
         client_db_interface.update_user_data(interaction.user.id, "LastUpdated",
                                              datetime.datetime.today().strftime('%Y-%m-%d'))
         return True
