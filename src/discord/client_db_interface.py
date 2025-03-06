@@ -44,8 +44,8 @@ def register_server(server, setup_list):
 
 def add_default_settings(server):
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName)
-                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "INHOUSE")""",
+    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName, Tryhard)
+                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "INHOUSE", False)""",
                           [server.id])
     conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
                           [server.id])
@@ -209,6 +209,14 @@ def update_dota_settings(server, column, new_value):
 
     db_access.close_db_connection(conn)
     return
+
+
+def load_tryhard_settings(server):
+    conn = db_access.get_db_connection()
+    tryhard = list(conn.cursor().execute("""SELECT Stg.Tryhard FROM ServerSettings Stg JOIN Server Srv ON Stg.ServerId 
+                                            = Srv.Id WHERE Srv.Server = ?""", [server.id]))
+    db_access.close_db_connection(conn)
+    return tryhard[0]
 
 
 def update_discord_settings(server, column, new_value):

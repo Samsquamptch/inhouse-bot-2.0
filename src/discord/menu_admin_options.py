@@ -4,6 +4,23 @@ from src.discord.embed_superclass import QueueSettings
 from src.discord.embed_views import UserEmbed
 
 
+class DeleteUserModal(discord.ui.Modal, title='Confirm Deletion'):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.delete_user = False
+
+    confirm_delete = discord.ui.TextInput(label='Enter \'yes\' to delete the user', required=True)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        delete_check = str(self.confirm_delete)
+        if delete_check.lower() == "yes":
+            self.delete_user = True
+            await interaction.response.send_message(content="User has been deleted", ephemeral=True)
+            return
+        await interaction.response.defer()
+        return
+
+
 # Modal for editing user details (accessed via admin select menu)
 class EditUserModal(discord.ui.Modal, title='Edit Registered User'):
     def __init__(self):
@@ -107,6 +124,8 @@ class DiscordSettingsModal(discord.ui.Modal, QueueSettings, title='Change Discor
         afk_int = self.check_int_value(afk)
         if not afk_int:
             return "Please ensure you only enter numerical values for the afk field (e.g. 15 instead of fifteen)"
+        if afk_int < 0:
+            return "Please ensure that the afk check timer is greater than or equal to 0"
         self.afk_timer_int = afk_int
 
     def set_queue_name(self, queue_name):
@@ -155,23 +174,22 @@ class AdminOptions(discord.ui.View):
         self.last_value = None
         self.add_item(AdminSelectUserEmbed())
 
-    # def edit_user(self, user, mmr, steam_id):
-    #     if not user:
-    #         return
-    #     if mmr:
-    #         client_db_interface.update_user_data(user.id, "MMR", mmr)
-    #     if steam_id:
-    #         client_db_interface.update_user_data(user.id, "Steam", steam_id)
-    #     return
-
+    def change_tryhard_setting(self):
+        tryhard_mode = client_db_interface.load_tryhard_settings(self.server)
+        if tryhard_mode:
+            client_db_interface.update_discord_settings(self.server, "Tryhard", False)
+            return "disabled"
+        else:
+            client_db_interface.update_discord_settings(self.server, "Tryhard", True)
+            return "enabled"
 
     def search_user_dotabuff(self):
         return
 
-    def edit_discord_settings(self):
+    def edit_dota_settings(self):
         return
 
-    def edit_dota_settings(self, mmr_floor, mmr_ceiling, queue_name, akf_timer):
+    def edit_discord_settings(self, mmr_floor, mmr_ceiling, queue_name, akf_timer):
         if mmr_floor:
             client_db_interface.update_discord_settings(self.server, "SkillFloor", mmr_floor)
         if mmr_ceiling:
@@ -202,31 +220,17 @@ class AdminOptions(discord.ui.View):
                 await interaction.response.send_modal(discord_settings)
                 await discord_settings.wait()
                 if discord_settings.edit_settings:
-                    self.edit_dota_settings(discord_settings.mmr_floor_int, discord_settings.mmr_ceiling_int,
+                    self.edit_discord_settings(discord_settings.mmr_floor_int, discord_settings.mmr_ceiling_int,
                                             discord_settings.queue_name_string, discord_settings.afk_timer_int)
-            case "Tryhard":
-                await interaction.response.defer()
             case "Dota":
                 await interaction.response.defer()
+            case "Tryhard":
+                result = self.change_tryhard_setting()
+                await interaction.response.send_message("Tryhard mode " + result)
             case "Global":
                 await interaction.response.defer()
-
-
-class DeleteUserModal(discord.ui.Modal, title='Confirm Deletion'):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.delete_user = False
-
-    confirm_delete = discord.ui.TextInput(label='Enter \'yes\' to delete the user', required=True)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        delete_check = str(self.confirm_delete)
-        if delete_check.lower() == "yes":
-            self.delete_user = True
-            await interaction.response.send_message(content="User has been deleted", ephemeral=True)
-            return
-        await interaction.response.defer()
-        return
+            case "Search":
+                await interaction.response.defer()
 
 
 class ManageUserEmbed(discord.ui.View):
