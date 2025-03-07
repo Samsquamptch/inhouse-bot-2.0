@@ -78,7 +78,7 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
 
     def stats_embed(self):
         user_count, verified_count, banned_count = client_db_interface.count_users(self.server)
-        server_settings = client_db_interface.load_server_settings(self.server)
+        server_settings = client_db_interface.load_discord_settings(self.server)
         self.set_thumbnail(url=self.server.icon.url)
         self.title = "Server Details"
         self.description = f'Server Information'

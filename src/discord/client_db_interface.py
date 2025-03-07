@@ -206,9 +206,20 @@ def unban_user(user, server):
 
 def update_dota_settings(server, column, new_value):
     conn = db_access.get_db_connection()
-
+    conn.cursor().execute(f"""UPDATE DotaSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) 
+                                AS Upds WHERE Upds.id = DotaSettings.ServerId""", [new_value, server.id])
+    conn.commit()
     db_access.close_db_connection(conn)
     return
+
+
+def load_dota_settings(server):
+    conn = db_access.get_db_connection()
+    settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM 
+                                              DotaSettings Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server 
+                                              = ?""", [server.id]))
+    db_access.close_db_connection(conn)
+    return list(settings[0])
 
 
 def load_tryhard_settings(server):
@@ -229,7 +240,7 @@ def update_discord_settings(server, column, new_value):
     return
 
 
-def load_server_settings(server):
+def load_discord_settings(server):
     conn = db_access.get_db_connection()
     settings = list(conn.cursor().execute("""SELECT Stg.AfkTimer, Stg.SkillFloor, Stg.SkillCeiling, Stg.QueueName FROM 
                                           ServerSettings Stg JOIN Server Srv ON Stg.ServerId = Srv.Id WHERE Srv.Server 
