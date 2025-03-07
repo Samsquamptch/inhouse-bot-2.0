@@ -188,8 +188,9 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
 
 
 class RegisterEmbed(discord.ui.View):
-    def __init__(self):
+    def __init__(self, approval_list):
         super().__init__(timeout=None)
+        self.approval_list = approval_list
 
     async def register_check(self, user, guild):
         if client_db_interface.user_registered(user, guild):
@@ -206,6 +207,7 @@ class RegisterEmbed(discord.ui.View):
         player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
         client_db_interface.add_user_data(player)
         client_db_interface.auto_register(user, server)
+        self.approval_list.add_user_to_list(user, int_mmr, True)
         await self.register_notification(user, server)
 
     @staticmethod

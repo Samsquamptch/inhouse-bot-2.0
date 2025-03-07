@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import discord
-from src.discord import client_db_interface, check_user, team_balancer
+from src.discord import client_db_interface, check_user
 
 
 class UserEmbed(discord.Embed):
@@ -14,20 +14,24 @@ class UserEmbed(discord.Embed):
     def user_embed(self, user_account):
         self.clear_fields()
         data_list = client_db_interface.get_user_stats(user_account, self.server)
-        role_champion = client_db_interface.load_champion_role(self.server)
-        user_verified, user_banned = client_db_interface.get_user_status(user_account, self.server)
-        if user_banned:
+        is_champion = client_db_interface.check_if_champion(user_account, self.server)
+        user_status = client_db_interface.get_user_status(user_account, self.server)
+        try:
+            user_mmr = user_account.mmr
+        except AttributeError:
+            user_mmr = data_list[2]
+        if user_status == "banned":
             user_status = "User is currently banned 😢"
             user_clr = 0x000000
-        elif role_champion in user_account.roles:
-            user_status = "User is a champion! 😎"
-            user_clr = 0xFFD700
-        elif user_verified:
-            user_status = "User is verified"
-            user_clr = 0x00ff00
-        else:
+        elif user_status != "verified":
             user_status = "User is not verified"
             user_clr = 0xFF0000
+        elif is_champion:
+            user_status = "User is a champion! 😎"
+            user_clr = 0xFFD700
+        else:
+            user_status = "User is verified"
+            user_clr = 0x00ff00
         badge = check_user.badge_rank(data_list[2])
         self.title = f'{user_account.display_name}'
         self.description = f'{user_status}'
@@ -37,7 +41,7 @@ class UserEmbed(discord.Embed):
         self.add_field(name='Dotabuff',
                        value=f'[{data_list[1]}](https://www.dotabuff.com/players/{data_list[1]})'
                              f'\u0020\u0020\u0020\u0020', inline=True)
-        self.add_field(name='MMR', value=f'{data_list[2]} \u0020\u0020\u0020\u0020',
+        self.add_field(name='MMR', value=f'{user_mmr} \u0020\u0020\u0020\u0020',
                        inline=True)
         self.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
         self.add_field(name='Played', value=data_list[8] + data_list[9], inline=True)
@@ -64,6 +68,7 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
         self.server = server
 
     def empty_embed(self):
+        self.clear_fields()
         self.set_thumbnail(url=self.server.icon.url)
         self.title = "No unverified users"
         self.description = f'There\'s nobody to verify!'
@@ -144,19 +149,16 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         mmr_total = 0
         for user in queue_list:
             mmr_total = mmr_total + user.mmr
-            role_preference = check_user.check_role_priority(user)
             self.add_field(name=user.name,
-                           value=f'MMR: {user.mmr} | [Dotabuff](https://www.dotabuff.com/players/{user.steam}) | Preference: {role_preference}',
+                           value=f'MMR: {user.mmr} | [Dotabuff](https://www.dotabuff.com/players/{user.steam}) | Preference: {user.role_preference}',
                            inline=False)
         update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         average_mmr = int(mmr_total / queue_length)
         self.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
 
-    def full_queue(self, queue_list):
+    def full_queue(self, queue_list, queue_teams):
         self.clear_fields()
-        # queue_ids = [user.id for user in queue_list]
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
-        queue_teams = team_balancer.assign_teams(queue_list[:10])
         self.description = f'Queue is full, please join the lobby!'
         self.color = 0x00ff00
         self.add_field(name='Roles', value='', inline=True)
@@ -195,8 +197,15 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.add_field(name='Players',
                               value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
                                     f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
-                                    f'<@{dire_team[4]}>')
+                                    f'<@{dire_team[4]}>', inline=False)
         self.set_footer(text=f'Teams created at: {update_time}')
+        if len(queue_list) == 10:
+            return
+        self.add_field(name='Waiting list', value='', inline=False)
+        for waiting_gamer in queue_list[10:]:
+            self.add_field(name=waiting_gamer.name,
+                           value=f'MMR: {waiting_gamer.mmr} | [Dotabuff](https://www.dotabuff.com/players/{waiting_gamer.steam}) '
+                                 f'| Preference: {waiting_gamer.role_preference}', inline=False)
 
 
 class StandInEmbed(discord.Embed):

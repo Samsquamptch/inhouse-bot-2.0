@@ -114,6 +114,15 @@ def load_champion_role(server):
     return discord.utils.get(server.roles, id=champion_id)
 
 
+def check_if_champion(user, server):
+    if not hasattr(user, 'roles'):
+        return False
+    champion_role = load_champion_role(server)
+    if champion_role in user.roles:
+        return True
+    return False
+
+
 def get_banned_status(user, server):
     conn = db_access.get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
@@ -129,7 +138,11 @@ def get_user_status(user, server):
     status_list = db_access.load_user_status(user.id, server.id)
     verified = status_list[0]
     banned = status_list[1]
-    return verified, banned
+    if banned:
+        return "banned"
+    if verified:
+        return "verified"
+    return ""
 
 
 def user_registered(user, server):
@@ -157,8 +170,8 @@ def auto_register(user, server):
 def get_unverified_users(server):
     unverified_ids = db_access.load_unverified_ids(server)
     unverified_list = []
-    for user_id in unverified_ids:
-        unverified_list.append(discord.utils.get(server.members, id=user_id))
+    for user in unverified_ids:
+        unverified_list.append(user)
     return unverified_list
 
 
@@ -187,8 +200,8 @@ def update_dota_settings(server, column, new_value):
 
 def update_discord_settings(server, column, new_value):
     conn = db_access.get_db_connection()
-    conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) AS test 
-                            WHERE test.id = ServerSettings.ServerId""", [new_value, server.id])
+    conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) AS update_votekick_select 
+                            WHERE update_votekick_select.id = ServerSettings.ServerId""", [new_value, server.id])
     db_access.close_db_connection(conn)
     return
 

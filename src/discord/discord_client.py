@@ -3,12 +3,13 @@ from discord.ext import commands
 import client_db_interface
 from server_manager import ServerManager
 from src.discord.bot_commands import Commands
+from src.discord.queue_manager import QueueManager
 
 
 class DiscordBot(commands.Bot):
     def __init__(self, intents):
-        super().__init__(command_prefix='!', intents=intents)
-        self.server_manager = ServerManager()
+        super().__init__(command_prefix='/', intents=intents)
+        self.server_manager = ServerManager(QueueManager())
 
     async def on_ready(self):
         print('Bot now running!')
@@ -19,6 +20,7 @@ class DiscordBot(commands.Bot):
                 await self.server_manager.add_embeds(server)
         print('Channels loaded')
         await self.add_cog(Commands(self.server_manager))
+        self.server_manager.start_check_loop()
 
 
 bot = DiscordBot(discord.Intents.all())

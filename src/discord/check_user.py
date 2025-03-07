@@ -45,8 +45,8 @@ def user_exists(server, user_name):
 
 
 def check_role_priority(user):
-    core_roles = [user.pos1, user.pos2, user.pos3]
-    supp_roles = [user.pos4, user.pos5]
+    core_roles = [user[0], user[1], user[2]]
+    supp_roles = [user[3], user[4]]
     if 5 in core_roles and 5 not in supp_roles:
         role_pref = "Core"
     elif 5 in supp_roles and 5 not in core_roles:
@@ -63,3 +63,20 @@ def check_role_priority(user):
             case _:
                 role_pref = "Balanced"
     return role_pref
+
+
+def flip_values(data_list):
+    data_numbers = [3, 4, 5, 6, 7]
+    for n in data_numbers:
+        match data_list[n]:
+            case 1:
+                data_list[n] = 5
+            case 2:
+                data_list[n] = 4
+            case 3:
+                data_list[n] = 3
+            case 4:
+                data_list[n] = 2
+            case 5:
+                data_list[n] = 1
+    return data_list

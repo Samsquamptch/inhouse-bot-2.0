@@ -3,12 +3,15 @@ import random
 import networkx as nx
 from networkx.algorithms import bipartite
 
-from src.discord import client_db_interface
+from src.discord import client_db_interface, check_user
 
 
 # TODO: This stuff won't work as intended because roles haven't been flipped for the bipartite graph
 def assign_teams(queue_ids):
     user_data = client_db_interface.get_queue_user_data(queue_ids)
+    i = 0
+    while i < 10:
+        user_data[i] = check_user.flip_values(user_data[i])
     queue = user_data.sort_values('mmr', ascending=False)
     team_uno = sort_balancer(queue['mmr'].tolist())
     team_dos = mean_balancer(queue['mmr'].tolist())
@@ -62,11 +65,6 @@ def assign_teams(queue_ids):
     team2.at[pos2[5004], 'pos'] = 4
     team2.at[pos2[5005], 'pos'] = 5
     team2 = team2.sort_values('pos')
-    # queue = pd.concat([team1, team2])
-    # queue.to_csv("../../data/match.csv", index=False)
-    # with open('../../data/activate.txt', 'r+') as f:
-    #     f.truncate(0)
-    #     f.write('yes')
     return team1['disc'].tolist(), team2['disc'].tolist()
 
 
