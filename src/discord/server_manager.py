@@ -63,12 +63,12 @@ class ServerManager:
         # Create Admin Channel items
         admin_list = AdminPanelUserList(server)
         admin_view = admin_panel.AdminEmbed(server, AdminEmbedView(server), channels.chat_channel, channels.admin_channel, admin_list)
-        admin_menu = menu_admin_options.AdminOptions()
+        admin_menu = menu_admin_options.AdminOptions(server)
         print("Admin Channel embeds created")
         # Create Inhouse Channel items
         register_view = register_user.RegisterEmbed(admin_list)
         user_menu = menu_user_options.UserOptions(channels.chat_channel, server, admin_list)
-        inhouse_view = inhouse_queue.InhouseQueue(server, channels.chat_channel, channels.queue_channel, QueueEmbedView(server))
+        inhouse_view = inhouse_queue.InhouseQueueEmbed(server, channels.chat_channel, channels.queue_channel, QueueEmbedView(server))
         print("Inhouse Channel embeds created")
         server_embeds = ServerEmbeds(server, inhouse_view, admin_view, admin_menu, user_menu, register_view)
         await self.send_embed_messages(server, server_embeds, channels)
@@ -77,7 +77,7 @@ class ServerManager:
 
     async def send_embed_messages(self, server, embeds, channels):
         await embeds.admin_panel.send_embed()
-        admin_menu_message = await channels.admin_channel.send("More options are available via the below menu",
+        admin_menu_message = await channels.admin_channel.send("Please use the below menus to edit settings or manage users",
                                                                view=embeds.admin_menu)
         register_message = await channels.queue_channel.send("New user? Please register here:", view=embeds.register_buttons)
         user_menu_message = await channels.queue_channel.send("Already registered? More options are available via the below menu",

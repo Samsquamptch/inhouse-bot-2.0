@@ -44,8 +44,8 @@ def register_server(server, setup_list):
 
 def add_default_settings(server):
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName)
-                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "INHOUSE")""",
+    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName, Tryhard)
+                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "INHOUSE", False)""",
                           [server.id])
     conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
                           [server.id])
@@ -134,10 +134,23 @@ def get_banned_status(user, server):
     return banned_status[0]
 
 
+def get_verified_status(user, server):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    verified_status = list(
+        conn.cursor().execute("""SELECT UserServer.Verified FROM UserServer JOIN User 
+            ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
+                              [user.id, server.id]))
+    db_access.close_db_connection(conn)
+    return verified_status[0]
+
+
 def get_user_status(user, server):
     status_list = db_access.load_user_status(user.id, server.id)
-    verified = status_list[0]
-    banned = status_list[1]
+    if not status_list[0]:
+        return ""
+    verified = status_list[0][0]
+    banned = status_list[0][1]
     if banned:
         return "banned"
     if verified:
@@ -193,20 +206,41 @@ def unban_user(user, server):
 
 def update_dota_settings(server, column, new_value):
     conn = db_access.get_db_connection()
-
+    conn.cursor().execute(f"""UPDATE DotaSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) 
+                                AS Upds WHERE Upds.id = DotaSettings.ServerId""", [new_value, server.id])
+    conn.commit()
     db_access.close_db_connection(conn)
     return
+
+
+def load_dota_settings(server):
+    conn = db_access.get_db_connection()
+    settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM 
+                                              DotaSettings Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server 
+                                              = ?""", [server.id]))
+    db_access.close_db_connection(conn)
+    return list(settings[0])
+
+
+def load_tryhard_settings(server):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    tryhard = list(conn.cursor().execute("""SELECT Stg.Tryhard FROM ServerSettings Stg JOIN Server Srv ON Stg.ServerId 
+                                            = Srv.Id WHERE Srv.Server = ?""", [server.id]))
+    db_access.close_db_connection(conn)
+    return tryhard[0]
 
 
 def update_discord_settings(server, column, new_value):
     conn = db_access.get_db_connection()
-    conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) AS update_votekick_select 
-                            WHERE update_votekick_select.id = ServerSettings.ServerId""", [new_value, server.id])
+    conn.cursor().execute(f"""UPDATE ServerSettings SET {column} = ? FROM (SELECT Server.Id FROM Server WHERE Server.Server = ?) 
+                            AS Upds WHERE Upds.id = ServerSettings.ServerId""", [new_value, server.id])
+    conn.commit()
     db_access.close_db_connection(conn)
     return
 
 
-def load_server_settings(server):
+def load_discord_settings(server):
     conn = db_access.get_db_connection()
     settings = list(conn.cursor().execute("""SELECT Stg.AfkTimer, Stg.SkillFloor, Stg.SkillCeiling, Stg.QueueName FROM 
                                           ServerSettings Stg JOIN Server Srv ON Stg.ServerId = Srv.Id WHERE Srv.Server 
@@ -252,12 +286,15 @@ def update_user_data(discord_id, column, new_data):
     conn.commit()
     db_access.close_db_connection(conn)
 
+
 def check_discord_exists(user_id):
-    return db_access.check_for_value("Discord", user_id)
+    discord_list = db_access.check_for_value("Discord", user_id)
+    return discord_list
 
 
 def check_steam_exists(steam_id):
-    return db_access.check_for_value("Steam", steam_id)
+    discord_list = db_access.check_for_value("Steam", steam_id)
+    return discord_list
 
 
 def view_user_data(discord_id):
@@ -272,9 +309,10 @@ def view_user_data(discord_id):
 def get_user_stats(user, server):
     conn = db_access.get_db_connection()
     user_data_list = list(
-        conn.cursor().execute("SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
-                              "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
-                              "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [user.id, server.id]))
+        conn.cursor().execute(
+            "SELECT usr.Discord, usr.Steam, usr.MMR, usr.Pos1, usr.Pos2, usr.Pos3, usr.Pos4, usr.Pos5, "
+            "usv.Wins, usv.Losses FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId JOIN Server srv "
+            "ON usv.ServerId = srv.Id WHERE usr.Discord = ? AND srv.Server = ?", [user.id, server.id]))
     db_access.close_db_connection(conn)
     return list(user_data_list[0])
 
@@ -294,18 +332,17 @@ def remove_user_data(user, server):
     user_id = db_access.get_user_id(user)
     server_id = db_access.load_server_id(server)
     conn.cursor().execute("""DELETE FROM UserServer where UserId = ? AND ServerId = ?""", [user_id, server_id])
+    conn.commit()
     db_access.close_db_connection(conn)
     conn.close()
 
 
 def get_queue_user_data(queue_ids):
-    id_list = []
-    for user in queue_ids:
-        id_list.append(user.id)
     conn = db_access.get_db_connection()
     user_data = list(
-        conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?)",
-                              id_list))
+        conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?,?,?,?,?,?,?,?,?,?)",
+                              [queue_ids[0], queue_ids[1], queue_ids[2], queue_ids[3], queue_ids[4], queue_ids[5], queue_ids[6],
+                               queue_ids[7], queue_ids[8], queue_ids[9]]))
     queue_data = []
     for user in user_data:
         queue_data.append(flip_values(list(user)))
@@ -348,8 +385,26 @@ def count_users(server):
 def load_banned_users(server):
     conn = db_access.get_db_connection()
     ban_list = list(conn.cursor().execute(f"""SELECT usr.Discord, usr.Steam FROM User usr JOIN UserServer usv ON usr.Id = usv.UserId 
-                                        JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]))
+                                        JOIN Server srv ON usv.ServerId = srv.Id WHERE srv.Server = ? AND usv.Banned""",
+                                          [server.id]))
+    db_access.close_db_connection(conn)
     return ban_list
+
+
+def load_user_from_steam(steam):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    discord_id = list(conn.cursor().execute("SELECT Discord FROM User WHERE Steam = ?", [steam]))
+    db_access.close_db_connection(conn)
+    return discord_id[0]
+
+
+def get_user_mmr(user):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    user_mmr = list(conn.cursor().execute(f"""SELECT MMR FROM User WHERE Discord = ?""", [user.id]))
+    db_access.close_db_connection(conn)
+    return user_mmr[0]
 
 
 def load_users_below_mmr(mmr_cap, server):

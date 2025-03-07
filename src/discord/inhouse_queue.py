@@ -60,8 +60,15 @@ class AfkCheckButtons(discord.ui.View):
         self.stop()
 
 
+class QueueList:
+    def __init__(self, player_list):
+        self.queued_players = player_list
+        self.team_list = []
+        self.vote_kick_list = []
+
+
 # Embed and buttons for the inhouse queue
-class InhouseQueue(ChannelEmbeds, QueueSettings):
+class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
     def __init__(self, server, chat_channel, embed_channel, queue_embed):
         ChannelEmbeds.__init__(self, server, chat_channel, embed_channel)
         QueueSettings.__init__(self, server)
@@ -174,10 +181,10 @@ class InhouseQueue(ChannelEmbeds, QueueSettings):
 
     def check_user_can_join(self, interaction):
         user_status = client_db_interface.get_user_status(interaction.user, interaction.guild)
-        if user_status == "banned":
-            return "You are currently banned from joining the queue"
         if user_status != "verified":
             return "Only verified users may join the queue"
+        if user_status == "banned":
+            return "You are currently banned from joining the queue"
         gamer = next((x for x in self.queued_players if x.id == interaction.user.id), None)
         if gamer:
             return "You are already queued"

@@ -25,3 +25,4 @@ class DiscordBot(commands.Bot):
 
 bot = DiscordBot(discord.Intents.all())
 bot.run(client_db_interface.get_discord_token())
+

@@ -89,7 +89,7 @@ def create_tables():
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserServer(UserId INT, ServerId INT, Verified BOOL, Banned BOOL, 
         Wins INT, Losses INT, FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS ServerSettings(ServerId INT UNIQUE, AfkTimer INT, SkillFloor INT,
-        SkillCeiling INT, QueueName CHAR, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+        SkillCeiling INT, QueueName CHAR, Tryhard BOOL, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS GlobalQueue(ServerId INT UNIQUE, PublicListing BOOL, InviteLink CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS MessageIds(ServerId INT UNIQUE, AdminPanel BIGINT, AdminMenu BIGINT, 

@@ -156,11 +156,12 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
         super().__init__(timeout=None)
         self.steam_int = None
         self.mmr_int = None
+        self.is_valid = False
 
     dotabuff_url = discord.ui.TextInput(label='Dotabuff User URL')
     player_mmr = discord.ui.TextInput(label='Player MMR', max_length=5)
 
-    def confirm_register_values(self, steam, mmr):
+    def validate_steam(self, steam):
         if "dotabuff.com/players/" in steam:
             steam = steam.split("players/")
             steam = steam[1]
@@ -168,23 +169,37 @@ class RegisterUserModal(discord.ui.Modal, title='Player Register'):
             steam = steam.split('/')
             steam = steam[0]
         try:
-            mmr_int = int(mmr)
             steam_int = int(steam)
         except ValueError:
-            return None, None, 'Please enter your full dotabuff url and your mmr in the appropriate fields'
-        if mmr_int < 1 or mmr_int > 15000:
-            return None, None, 'Please enter a valid MMR'
+            return "Please enter your full Dotabuff url in the Dotabuff field"
         steam_reg = client_db_interface.check_steam_exists(steam_int)
         if steam_reg:
-            return None, None, 'Your dotabuff account is already registered to the database, please contact an admin for assistance',
-        else:
-            return steam_int, mmr_int, 'You\'ve been registered, please set your roles and wait to be verified',
+            return 'Your dotabuff account is already registered to the database, please contact an admin for assistance'
+        self.steam_int = steam_int
+
+    def validate_mmr(self, mmr):
+        try:
+            mmr_int = int(mmr)
+        except ValueError:
+            return "Please enter your MMR in the MMR field"
+        if mmr_int < 1 or mmr_int > 15000:
+            return 'Please enter a valid MMR'
+        self.mmr_int = mmr_int
 
     async def on_submit(self, interaction: discord.Interaction):
         steam = str(self.dotabuff_url)
         mmr = str(self.player_mmr)
-        self.steam_int, self.mmr_int, response_message = self.confirm_register_values(steam, mmr)
-        await interaction.response.send_message(content=response_message, ephemeral=True, delete_after=10)
+        error_message = self.validate_steam(steam)
+        if error_message:
+            await interaction.response.send_message(content=error_message, ephemeral=True, delete_after=10)
+            return
+        error_message = self.validate_mmr(mmr)
+        if error_message:
+            await interaction.response.send_message(content=error_message, ephemeral=True, delete_after=10)
+            return
+        self.is_valid = True
+        await interaction.response.send_message(content='You\'ve been registered, please set your roles and wait to be verified',
+                                                ephemeral=True, delete_after=10)
 
 
 class RegisterEmbed(discord.ui.View):
@@ -196,22 +211,21 @@ class RegisterEmbed(discord.ui.View):
         if client_db_interface.user_registered(user, guild):
             message_content = "You are already registered"
         elif client_db_interface.auto_register(user, guild):
+            user_mmr = client_db_interface.get_user_mmr(user)
             message_content = "Registration complete, please wait to be verified"
-            await self.register_notification(user, guild)
+            await self.register_notification(user, guild, user_mmr)
         else:
             message_content = None
         return message_content
 
-    @staticmethod
     async def register_user(self, user, steam_int, int_mmr, server):
         player = [user.id, steam_int, int_mmr, 5, 5, 5, 5, 5]
         client_db_interface.add_user_data(player)
         client_db_interface.auto_register(user, server)
-        self.approval_list.add_user_to_list(user, int_mmr, True)
-        await self.register_notification(user, server)
+        await self.register_notification(user, server, int_mmr)
 
-    @staticmethod
-    async def register_notification(user, server):
+    async def register_notification(self, user, server, int_mmr):
+        self.approval_list.add_user_to_list(user, int_mmr, True)
         admin_role = client_db_interface.load_admin_role(server)
         chat_channel = client_db_interface.load_chat_channel(server)
         await chat_channel.send(f'<@&{admin_role.id}> user <@{user.id}> has '
@@ -228,7 +242,8 @@ class RegisterEmbed(discord.ui.View):
         register_modal = RegisterUserModal()
         await interaction.response.send_modal(register_modal)
         await register_modal.wait()
-        await self.register_user(self, interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
+        if register_modal.is_valid:
+            await self.register_user(self, interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
