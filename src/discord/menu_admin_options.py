@@ -75,7 +75,7 @@ class AdminOptions(discord.ui.View):
                 result = self.change_tryhard_setting()
                 await interaction.response.send_message("Tryhard mode " + result, ephemeral=True, delete_after=10)
             case "Global":
-                await interaction.response.send_message("This option is not yet available")
+                await interaction.response.send_message("This option is not yet available", ephemeral=True, delete_after=10)
             case "Search":
                 await interaction.response.send_modal(SearchDotabuffModal())
 
@@ -103,7 +103,7 @@ class ManageUserEmbed(discord.ui.View):
             client_db_interface.disable_verification(self.user, self.server)
         else:
             client_db_interface.enable_verification(self.user, self.server)
-        self.user_ui.user_embed(self.user)
+        self.user_ui.user_embed(self.user, True)
 
     def change_user_ban_status(self):
         user_status = client_db_interface.get_banned_status(self.user, self.server)
@@ -111,7 +111,7 @@ class ManageUserEmbed(discord.ui.View):
             client_db_interface.unban_user(self.user, self.server)
         else:
             client_db_interface.ban_user(self.user, self.server)
-        self.user_ui.user_embed(self.user)
+        self.user_ui.user_embed(self.user, True)
 
     def update_user_details(self, mmr, steam):
         if mmr:
@@ -164,5 +164,5 @@ class AdminSelectUserEmbed(discord.ui.UserSelect):
             return
         user_view = ManageUserEmbed(user, interaction.guild, UserEmbed(interaction.guild))
         user_view.set_button_state()
-        user_view.user_ui.user_embed(user)
+        user_view.user_ui.user_embed(user, True)
         await interaction.response.send_message(view=user_view, embed=user_view.user_ui, ephemeral=True)

@@ -11,7 +11,7 @@ class UserEmbed(discord.Embed):
         super().__init__()
         self.server = server
 
-    def user_embed(self, user_account):
+    def user_embed(self, user_account, tryhard_mode):
         self.clear_fields()
         data_list = client_db_interface.get_user_stats(user_account, self.server)
         is_champion = client_db_interface.check_if_champion(user_account, self.server)
@@ -32,6 +32,9 @@ class UserEmbed(discord.Embed):
         else:
             user_status = "User is verified"
             user_clr = 0x00ff00
+        if not tryhard_mode:
+            data_list[8] = 0
+            data_list[9] = 0
         badge = check_user.badge_rank(user_mmr)
         self.title = f'{user_account.display_name}'
         self.description = f'{user_status}'
@@ -44,9 +47,13 @@ class UserEmbed(discord.Embed):
         self.add_field(name='MMR', value=f'{user_mmr} \u0020\u0020\u0020\u0020',
                        inline=True)
         self.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
-        self.add_field(name='Played', value=data_list[8] + data_list[9], inline=True)
         self.add_field(name='Wins', value=data_list[8], inline=True)
         self.add_field(name='Losses', value=data_list[9], inline=True)
+        if data_list[9] == 0:
+            winrate = 100
+        elif data_list[8] > 0:
+            winrate = round((data_list[8] / (data_list[8] + data_list[9])), 2)
+        self.add_field(name='Winrate', value=f'{winrate}%', inline=True)
         self.add_field(name='Role Preferences', value='', inline=False)
         role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
         for i in range(3, 8):
@@ -78,19 +85,33 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
 
     def stats_embed(self):
         user_count, verified_count, banned_count = client_db_interface.count_users(self.server)
-        server_settings = client_db_interface.load_discord_settings(self.server)
+        discord_settings = client_db_interface.load_discord_settings(self.server)
+        dota_settings = client_db_interface.load_dota_settings(self.server)
+        is_tryhard = client_db_interface.load_tryhard_settings(self.server)
+        if is_tryhard:
+            tryhard_mode = "Enabled"
+        else:
+            tryhard_mode = "Disabled"
+
         self.set_thumbnail(url=self.server.icon.url)
         self.title = "Server Details"
         self.description = f'Server Information'
-        self.add_field(name='Number of Registered Users', value=user_count, inline=False)
-        self.add_field(name='Number of Verified Users', value=verified_count, inline=False)
-        self.add_field(name='Number of Banned Users', value=banned_count, inline=False)
-        self.add_field(name='Afk Timer', value=server_settings[0], inline=False)
-        self.add_field(name='MMR Floor', value=server_settings[1], inline=False)
-        self.add_field(name='MMR Ceiling', value=server_settings[2], inline=False)
-        self.add_field(name='Tryhard Mode', value='Disabled', inline=False)
-        self.add_field(name='Global Queue', value='Disabled', inline=False)
-        self.add_field(name='Global Queue Visibility', value='Private', inline=False)
+        self.add_field(name='User Stats', value='', inline=False)
+        self.add_field(name='Registered Users', value=user_count, inline=True)
+        self.add_field(name='Verified Users', value=verified_count, inline=True)
+        self.add_field(name='Banned Users', value=banned_count, inline=True)
+        self.add_field(name='Discord Settings', value='', inline=False)
+        self.add_field(name='MMR Floor', value=discord_settings[1], inline=True)
+        self.add_field(name='MMR Ceiling', value=discord_settings[2], inline=True)
+        self.add_field(name='Afk Timer', value=discord_settings[0], inline=True)
+        self.add_field(name='Lobby Settings', value='', inline=False)
+        self.add_field(name='Lobby Name', value=dota_settings[0], inline=True)
+        self.add_field(name='Region ID', value=dota_settings[1], inline=True)
+        self.add_field(name='League ID', value=dota_settings[2], inline=True)
+        self.add_field(name='Other Details', value='', inline=False)
+        self.add_field(name='Tryhard Mode', value=tryhard_mode, inline=True)
+        self.add_field(name='Global Queue', value='Disabled', inline=True)
+        self.add_field(name='Visibility', value='Private', inline=True)
         self.color = 0xFFD700
         self.set_image(url=None)
 

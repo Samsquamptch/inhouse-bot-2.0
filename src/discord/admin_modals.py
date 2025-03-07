@@ -76,7 +76,7 @@ class SearchDotabuffModal(discord.ui.Modal, ModalValidator, title='Search User b
             await interaction.response.send_message(content=self.error_message, ephemeral=True, delete_after=10)
             return
         user_embed = UserEmbed(interaction.guild)
-        user_embed.user_embed(self.user_account)
+        user_embed.user_embed(self.user_account, True)
         await interaction.response.send_message(content="User Details found", embed=user_embed, ephemeral=True)
 
 

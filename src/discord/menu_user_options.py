@@ -120,7 +120,8 @@ class SelectUserEmbed(discord.ui.UserSelect):
         if not client_db_interface.user_registered(user, interaction.guild):
             await interaction.response.send_message("User not registered", ephemeral=True)
             return
+        tryhard = client_db_interface.load_tryhard_settings(interaction.guild)
         user_embed = UserEmbed(interaction.guild)
-        user_embed.user_embed(user)
+        user_embed.user_embed(user, tryhard)
         await interaction.response.send_message(embed=user_embed, ephemeral=True)
 

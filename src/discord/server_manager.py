@@ -159,4 +159,6 @@ class ServerManager:
         if not user_check:
             await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
         else:
-            await ctx.send(embed=UserEmbed(ctx.guild).user_embed(user_acc))
+            tryhard = client_db_interface.load_tryhard_settings(ctx.guild)
+            user_ui = UserEmbed(ctx.guild)
+            await ctx.send(embed=user_ui.user_embed(user_acc, tryhard))
