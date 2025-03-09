@@ -53,6 +53,21 @@ def add_default_settings(server):
     db_access.close_db_connection(conn)
 
 
+def update_server_details(server, column, new_value):
+    conn = db_access.get_db_connection()
+    conn.cursor().execute(f"""UPDATE Server SET {column} = ? WHERE Server = ?""", [new_value, server.id])
+    conn.commit()
+    db_access.close_db_connection(conn)
+
+
+def load_ladder_list(server):
+    conn = db_access.get_db_connection()
+    ladder_list = list(conn.cursor().execute(f"""SELECT Usr.Discord, Usr.MMR, Usv.Wins, Usv.Losses, (Usv.Wins - Usv.Losses)  
+                            AS Score FROM User Usr JOIN UserServer Usv ON Usr.Id = Usv.UserId JOIN Server Svr ON Svr.Id = Usv.ServerId 
+                            WHERE Svr.Server = ? ORDER BY Score DESC""", [server.id]))
+    db_access.close_db_connection(conn)
+    return ladder_list
+
 def load_admin_channel(server):
     channel_id = db_access.load_channel_id(server, "AdminChannel")
     return discord.utils.get(server.channels, id=channel_id)
@@ -370,17 +385,28 @@ def flip_values(data_list):
     return data_list
 
 
-def count_users(server):
+def load_user_count(server):
     conn = db_access.get_db_connection()
     user_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
-                                    srv.Id WHERE srv.Server = ?""", [server.id]).fetchone()
-    verified_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
-                                    srv.Id WHERE srv.Server = ? AND usv.Verified""", [server.id]).fetchone()
-    banned_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
-                                    srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]).fetchone()
+                                        srv.Id WHERE srv.Server = ?""", [server.id]).fetchone()
     conn.close()
-    return user_count[0], verified_count[0], banned_count[0]
+    return user_count[0]
 
+
+def load_verified_count(server):
+    conn = db_access.get_db_connection()
+    verified_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                        srv.Id WHERE srv.Server = ? AND usv.Verified""", [server.id]).fetchone()
+    conn.close()
+    return verified_count[0]
+
+
+def load_banned_count(server):
+    conn = db_access.get_db_connection()
+    banned_count = conn.cursor().execute(f"""SELECT COUNT(usv.UserId) FROM UserServer usv JOIN Server srv ON usv.ServerId = 
+                                        srv.Id WHERE srv.Server = ? AND usv.Banned""", [server.id]).fetchone()
+    conn.close()
+    return banned_count[0]
 
 def load_banned_users(server):
     conn = db_access.get_db_connection()

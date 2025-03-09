@@ -84,7 +84,9 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
             url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
 
     def stats_embed(self):
-        user_count, verified_count, banned_count = client_db_interface.count_users(self.server)
+        user_count = client_db_interface.load_user_count(self.server)
+        verified_count = client_db_interface.load_verified_count(self.server)
+        banned_count = client_db_interface.load_banned_count(self.server)
         discord_settings = client_db_interface.load_discord_settings(self.server)
         dota_settings = client_db_interface.load_dota_settings(self.server)
         is_tryhard = client_db_interface.load_tryhard_settings(self.server)
@@ -198,16 +200,16 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
             mmr_total_radiant = mmr_total_radiant + user_radiant[2]
             mmr_total_dire = mmr_total_dire + user_dire[2]
             self.add_field(name=f'{queue_roles[x]}',
-                                  value='\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
-                                  inline=True)
+                           value='\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC\u1CBC',
+                           inline=True)
             self.add_field(name=user_acc_radiant.display_name,
-                                  value=f'MMR: {user_radiant[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
-                                        f'[Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]})',
-                                  inline=True)
+                           value=f'MMR: {user_radiant[2]} \u1CBC\u1CBC\u1CBC\u1CBC\u1CBC \n'
+                                 f'[Dotabuff](https://www.dotabuff.com/players/{user_radiant[1]})',
+                           inline=True)
             self.add_field(name=user_acc_dire.display_name,
-                                  value=f'MMR: {user_dire[2]} \n'
-                                        f'[Dotabuff](https://www.dotabuff.com/players/{user_dire[1]})',
-                                  inline=True)
+                           value=f'MMR: {user_dire[2]} \n'
+                                 f'[Dotabuff](https://www.dotabuff.com/players/{user_dire[1]})',
+                           inline=True)
             x += 1
         mmr_avg_radiant = mmr_total_radiant / 5
         mmr_avg_dire = mmr_total_dire / 5
@@ -216,9 +218,9 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.add_field(name=f'{mmr_avg_dire}', value='', inline=True)
         update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         self.add_field(name='Players',
-                              value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
-                                    f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
-                                    f'<@{dire_team[4]}>', inline=False)
+                       value=f'<@{radiant_team[0]}> <@{radiant_team[1]}> <@{radiant_team[2]}> <@{radiant_team[3]}>'
+                             f'<@{radiant_team[4]}> <@{dire_team[0]}> <@{dire_team[1]}> <@{dire_team[2]}> <@{dire_team[3]}>'
+                             f'<@{dire_team[4]}>', inline=False)
         self.set_footer(text=f'Teams created at: {update_time}')
         if len(queue_list) == 10:
             return
@@ -233,9 +235,9 @@ class StandInEmbed(discord.Embed):
     def __init__(self, server):
         super().__init__()
         self.server = server
+        self.title = "Stand-in List"
 
     def show_stand_ins(self, mmr_cap):
-        self.title = "Stand-in List"
         self.set_thumbnail(url=self.server.icon.url)
         stand_in_list = client_db_interface.load_users_below_mmr(mmr_cap, self.server)
         match len(stand_in_list):
@@ -256,6 +258,33 @@ class StandInEmbed(discord.Embed):
         self.description = "Potential Stand-ins to use"
         for user_data in stand_in_list:
             user_account = discord.utils.get(self.server.members, id=user_data[0])
-            self.add_field(name=user_account.name, value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) '
-                                                         f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
+            if user_account:
+                user_name = user_account.name
+            else:
+                user_name = "Unknown"
+            self.add_field(name=user_name,
+                           value=f'MMR: {user_data[2]} | [Dotabuff](https://www.dotabuff.com/players/{user_data[1]}) '
+                                 f'| Roles: {user_data[3]} {user_data[4]} {user_data[5]} {user_data[6]} {user_data[7]}',
                            inline=False)
+
+
+class LadderEmbed(discord.Embed):
+    def __init__(self):
+        super().__init__()
+        self.title = "Server Ladder"
+
+    def show_ladder(self, player_list, start_num):
+        self.clear_fields()
+        if start_num < 1:
+            start_num = 0
+        if start_num == 1:
+            self.description = "Top 10 players"
+            self.color = 0x00ff00
+        else:
+            self.description = "Bottom 10 players"
+            self.color = 0xFF0000
+        for user in player_list:
+            self.add_field(name=f'{start_num}. {user.name}',
+                           value=f'MMR: {user.mmr} | Wins: {user.wins} | Losses: {user.losses} | Score: {user.score}',
+                           inline=False)
+            start_num += 1

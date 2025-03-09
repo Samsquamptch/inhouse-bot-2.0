@@ -1,9 +1,6 @@
 import math
-from typing_extensions import Self
 
-import discord
 import client_db_interface as get_data
-from src.discord import client_db_interface
 
 
 def badge_rank(mmr):
@@ -63,20 +60,3 @@ def check_role_priority(user):
             case _:
                 role_pref = "Balanced"
     return role_pref
-
-
-def flip_values(data_list):
-    data_numbers = [3, 4, 5, 6, 7]
-    for n in data_numbers:
-        match data_list[n]:
-            case 1:
-                data_list[n] = 5
-            case 2:
-                data_list[n] = 4
-            case 3:
-                data_list[n] = 3
-            case 4:
-                data_list[n] = 2
-            case 5:
-                data_list[n] = 1
-    return data_list

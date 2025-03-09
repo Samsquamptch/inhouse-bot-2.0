@@ -142,12 +142,14 @@ class DiscordSettingsModal(discord.ui.Modal, QueueSettings, ModalValidator, titl
         self.mmr_ceiling_int = None
         self.queue_name_string = None
         self.afk_timer_int = None
+        self.champion_role_int = None
         self.edit_settings = False
 
     new_mmr_floor = discord.ui.TextInput(label='Set Minimum MMR', required=False)
     new_mmr_limit = discord.ui.TextInput(label='Set Maximum MMR', required=False)
     new_queue_name = discord.ui.TextInput(label='Set inhouse queue name', required=False)
     new_afk_timer = discord.ui.TextInput(label='Set afk time', required=False)
+    new_champion_role = discord.ui.TextInput(label='Set champion role', required=False)
 
     def validate_mmr_inputs(self, floor, ceiling):
         if not floor and not ceiling:
@@ -188,13 +190,25 @@ class DiscordSettingsModal(discord.ui.Modal, QueueSettings, ModalValidator, titl
             return
         self.queue_name_string = queue_name
 
+    def validate_champion_role(self, champion):
+        if champion == "":
+            return
+        champion_int = self.check_int_value(champion)
+        if not champion_int:
+            self.error_message = "Please ensure you enter the role ID of your chosen champion role"
+            return
+        self.champion_role_int = champion_int
+
+
     async def on_submit(self, interaction: discord.Interaction):
         str_mmr_floor = str(self.new_mmr_floor)
         str_mmr_limit = str(self.new_mmr_limit)
         str_queue_name = str(self.new_queue_name)
         str_afk_timer = str(self.new_afk_timer)
+        str_champion_role = str(self.new_champion_role)
         self.validate_mmr_inputs(str_mmr_floor, str_mmr_limit)
         self.validate_afk(str_afk_timer)
+        self.validate_champion_role(str_champion_role)
         if self.error_message:
             return await interaction.response.send_message(self.error_message, ephemeral=True, delete_after=10)
         self.set_queue_name(str_queue_name)

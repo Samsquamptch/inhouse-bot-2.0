@@ -6,12 +6,8 @@ from networkx.algorithms import bipartite
 from src.discord import client_db_interface, check_user
 
 
-# TODO: This stuff won't work as intended because roles haven't been flipped for the bipartite graph
 def assign_teams(queue_ids):
     user_data = client_db_interface.get_queue_user_data(queue_ids)
-    i = 0
-    while i < 10:
-        user_data[i] = check_user.flip_values(user_data[i])
     queue = user_data.sort_values('mmr', ascending=False)
     team_uno = sort_balancer(queue['mmr'].tolist())
     team_dos = mean_balancer(queue['mmr'].tolist())
