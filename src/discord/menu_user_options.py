@@ -115,7 +115,7 @@ class UserOptions(discord.ui.View):
             case "Ladder":
                 # if self.check_tryhard_mode():
                 ladder_view = ServerLadderView(self.server, LadderEmbed())
-                ladder_view.set_lists(interaction.user)
+                ladder_view.set_lists()
                 ladder_view.set_embed_top()
                 await interaction.response.send_message(view=ladder_view, embed=ladder_view.ladder_ui, ephemeral=True)
                 # else:
@@ -136,10 +136,11 @@ class ServerLadderView(discord.ui.View):
         self.ladder_ui = ladder_ui
         self.top_ten = []
         self.bottom_ten = []
+        self.middle_ten = []
         self.ladder_length = 0
         self.ladder_user = None
 
-    def set_lists(self, interaction_user):
+    def set_lists(self):
         ladder_list = client_db_interface.load_ladder_list(self.server)
         self.ladder_length = len(ladder_list)
         for user_details in ladder_list[:10]:
@@ -154,20 +155,39 @@ class ServerLadderView(discord.ui.View):
                 self.bottom_ten.append(LadderUser(user, user_details))
             else:
                 self.bottom_ten.append(LadderUser("Unknown", user_details))
+        if self.ladder_length <= 20:
+            self.button_mid_ten.disabled = True
+            return
+        mid_start = (self.ladder_length//2) - 5
+        mid_end = (self.ladder_length//2) + 5
+        for user_details in ladder_list[mid_start:mid_end]:
+            user = discord.utils.get(self.server.members, id=user_details[0])
+            if user:
+                self.middle_ten.append(LadderUser(user, user_details))
+            else:
+                self.middle_ten.append(LadderUser("Unknown", user_details))
 
     def set_embed_top(self):
-        self.ladder_ui.show_ladder(self.top_ten, 1)
+        self.ladder_ui.show_ladder(self.top_ten, "top", 1)
+
+    def set_embed_mid(self):
+        self.ladder_ui.show_ladder(self.middle_ten, "mid", (self.ladder_length//2) - 5)
 
     def set_embed_bot(self):
-        self.ladder_ui.show_ladder(self.bottom_ten, self.ladder_length-9)
+        self.ladder_ui.show_ladder(self.bottom_ten, "bot", self.ladder_length - 9)
 
-    @discord.ui.button(label="View Top 10", emoji="⬆️", style=discord.ButtonStyle.blurple)
-    async def top_ten(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="View Top 10", emoji="⬆️", style=discord.ButtonStyle.green)
+    async def button_top_ten(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.set_embed_top()
         await interaction.response.edit_message(embed=self.ladder_ui, view=self)
 
-    @discord.ui.button(label="View Bottom 10", emoji="⬇️", style=discord.ButtonStyle.blurple)
-    async def bot_ten(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="View Middle 10", emoji="↔️", style=discord.ButtonStyle.blurple)
+    async def button_mid_ten(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.set_embed_mid()
+        await interaction.response.edit_message(embed=self.ladder_ui, view=self)
+
+    @discord.ui.button(label="View Bottom 10", emoji="⬇️", style=discord.ButtonStyle.red)
+    async def button_bot_ten(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.set_embed_bot()
         await interaction.response.edit_message(embed=self.ladder_ui, view=self)
 

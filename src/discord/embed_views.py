@@ -273,12 +273,15 @@ class LadderEmbed(discord.Embed):
         super().__init__()
         self.title = "Server Ladder"
 
-    def show_ladder(self, player_list, start_num):
+    def show_ladder(self, player_list, state, start_num):
         self.clear_fields()
         if start_num < 1:
             start_num = 0
-        if start_num == 1:
+        if state == "top":
             self.description = "Top 10 players"
+            self.color = 0x00ff00
+        elif state == "mid":
+            self.description = "Middle 10 players"
             self.color = 0x00ff00
         else:
             self.description = "Bottom 10 players"
