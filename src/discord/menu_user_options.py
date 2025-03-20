@@ -113,14 +113,14 @@ class UserOptions(discord.ui.View):
             case "Find":
                 await interaction.response.send_modal(FindStandInModal(StandInEmbed(interaction.guild)))
             case "Ladder":
-                # if self.check_tryhard_mode():
-                ladder_view = ServerLadderView(self.server, LadderEmbed())
-                ladder_view.set_lists()
-                ladder_view.set_embed_top()
-                await interaction.response.send_message(view=ladder_view, embed=ladder_view.ladder_ui, ephemeral=True)
-                # else:
-                #     await interaction.response.send_message(content="Tryhard mode must be enabled to use this feature",
-                #                                             ephemeral=True, delete_after=10)
+                if self.check_tryhard_mode():
+                    ladder_view = ServerLadderView(self.server, LadderEmbed())
+                    ladder_view.set_lists()
+                    ladder_view.set_embed_top()
+                    await interaction.response.send_message(view=ladder_view, embed=ladder_view.ladder_ui, ephemeral=True)
+                else:
+                    await interaction.response.send_message(content="Tryhard mode must be enabled to use this feature",
+                                                            ephemeral=True, delete_after=10)
             case "Update":
                 update_modal = NotifyUpdateModal()
                 await interaction.response.send_modal(update_modal)
@@ -195,10 +195,11 @@ class ServerLadderView(discord.ui.View):
 class LadderUser:
     def __init__(self, name, user_details):
         self.name = name
-        self.mmr = user_details[1]
-        self.wins = user_details[2]
-        self.losses = user_details[3]
-        self.score = user_details[4]
+        self.steam = user_details[1]
+        self.mmr = user_details[2]
+        self.wins = user_details[3]
+        self.losses = user_details[4]
+        self.score = user_details[5]
 
 
 class SelectUserView(discord.ui.View):

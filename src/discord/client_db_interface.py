@@ -62,7 +62,7 @@ def update_server_details(server, column, new_value):
 
 def load_ladder_list(server):
     conn = db_access.get_db_connection()
-    ladder_list = list(conn.cursor().execute(f"""SELECT Usr.Discord, Usr.MMR, Usv.Wins, Usv.Losses, (Usv.Wins - Usv.Losses)  
+    ladder_list = list(conn.cursor().execute(f"""SELECT Usr.Discord, Usr.Steam, Usr.MMR, Usv.Wins, Usv.Losses, (Usv.Wins - Usv.Losses)  
                             AS Score FROM User Usr JOIN UserServer Usv ON Usr.Id = Usv.UserId JOIN Server Svr ON Svr.Id = Usv.ServerId 
                             WHERE Svr.Server = ? ORDER BY Score DESC""", [server.id]))
     db_access.close_db_connection(conn)

@@ -132,7 +132,6 @@ class ManageUserEmbed(discord.ui.View):
             await interaction.followup.edit_message(message_id, embed=self.user_ui, view=self)
         self.set_button_state()
 
-
     @discord.ui.button(label="Set Verification", emoji="✅", style=discord.ButtonStyle.green)
     async def set_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.change_user_verification()

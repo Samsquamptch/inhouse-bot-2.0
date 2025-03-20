@@ -288,6 +288,7 @@ class LadderEmbed(discord.Embed):
             self.color = 0xFF0000
         for user in player_list:
             self.add_field(name=f'{start_num}. {user.name}',
-                           value=f'MMR: {user.mmr} | Wins: {user.wins} | Losses: {user.losses} | Score: {user.score}',
+                           value=f'MMR: {user.mmr} | Dotabuff: [{user.steam}](https://www.dotabuff.com/players/{user.steam}) '
+                                 f'| Wins: {user.wins} | Losses: {user.losses} | Score: {user.score}',
                            inline=False)
             start_num += 1
