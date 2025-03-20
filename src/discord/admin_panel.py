@@ -21,7 +21,7 @@ class AdminEmbed(embed_superclass.ChannelEmbeds):
         if self.button_state == AdminButtonState.UNVERIFIED:
             if self.approval_list.list_contains_users():
                 self.current_user = self.approval_list.get_first_user()
-                self.admin_ui.user_embed(self.current_user)
+                self.admin_ui.user_embed(self.current_user, True)
             else:
                 self.admin_ui.empty_embed()
         elif self.button_state == AdminButtonState.STATS:

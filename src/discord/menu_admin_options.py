@@ -31,7 +31,7 @@ class AdminOptions(discord.ui.View):
         if viewer_delay:
             client_db_interface.update_dota_settings(self.server, "ViewerDelay", viewer_delay)
 
-    def edit_discord_settings(self, mmr_floor, mmr_ceiling, queue_name, akf_timer):
+    def edit_discord_settings(self, mmr_floor, mmr_ceiling, queue_name, akf_timer, champion_role):
         if mmr_floor:
             client_db_interface.update_discord_settings(self.server, "SkillFloor", mmr_floor)
         if mmr_ceiling:
@@ -40,6 +40,8 @@ class AdminOptions(discord.ui.View):
             client_db_interface.update_discord_settings(self.server, "QueueName", queue_name)
         if akf_timer:
             client_db_interface.update_discord_settings(self.server, "AfkTimer", akf_timer)
+        if champion_role:
+            client_db_interface.update_server_details(self.server, "ChampionRole", champion_role)
 
     @discord.ui.select(placeholder="Change server settings here", min_values=0, max_values=1, options=[
         discord.SelectOption(label="Edit Discord Settings", value="Discord", emoji="🖥️",
@@ -58,24 +60,24 @@ class AdminOptions(discord.ui.View):
             self.last_value = select.values[0]
         match self.last_value:
             case "Discord":
-                discord_settings = DiscordSettingsModal(self.server)
-                await interaction.response.send_modal(discord_settings)
-                await discord_settings.wait()
-                if discord_settings.edit_settings:
-                    self.edit_discord_settings(discord_settings.mmr_floor_int, discord_settings.mmr_ceiling_int,
-                                            discord_settings.queue_name_string, discord_settings.afk_timer_int)
+                settings = DiscordSettingsModal(self.server)
+                await interaction.response.send_modal(settings)
+                await settings.wait()
+                if settings.edit_settings:
+                    self.edit_discord_settings(settings.mmr_floor_int, settings.mmr_ceiling_int, settings.queue_name_string,
+                                               settings.afk_timer_int, settings.champion_role_int)
             case "Dota":
-                dota_settings = DotaSettingsModal(self.server)
-                await interaction.response.send_modal(dota_settings)
-                await dota_settings.wait()
-                if dota_settings.edit_settings:
-                    self.edit_dota_settings(dota_settings.new_lobby_name, dota_settings.lobby_region_int,
-                                            dota_settings.league_id_int, dota_settings.viewer_delay_int)
+                settings = DotaSettingsModal(self.server)
+                await interaction.response.send_modal(settings)
+                await settings.wait()
+                if settings.edit_settings:
+                    self.edit_dota_settings(settings.new_lobby_name, settings.lobby_region_int, settings.league_id_int,
+                                            settings.viewer_delay_int)
             case "Tryhard":
                 result = self.change_tryhard_setting()
                 await interaction.response.send_message("Tryhard mode " + result, ephemeral=True, delete_after=10)
             case "Global":
-                await interaction.response.send_message("This option is not yet available")
+                await interaction.response.send_message("This option is not yet available", ephemeral=True, delete_after=10)
             case "Search":
                 await interaction.response.send_modal(SearchDotabuffModal())
 
@@ -103,7 +105,7 @@ class ManageUserEmbed(discord.ui.View):
             client_db_interface.disable_verification(self.user, self.server)
         else:
             client_db_interface.enable_verification(self.user, self.server)
-        self.user_ui.user_embed(self.user)
+        self.user_ui.user_embed(self.user, True)
 
     def change_user_ban_status(self):
         user_status = client_db_interface.get_banned_status(self.user, self.server)
@@ -111,7 +113,7 @@ class ManageUserEmbed(discord.ui.View):
             client_db_interface.unban_user(self.user, self.server)
         else:
             client_db_interface.ban_user(self.user, self.server)
-        self.user_ui.user_embed(self.user)
+        self.user_ui.user_embed(self.user, True)
 
     def update_user_details(self, mmr, steam):
         if mmr:
@@ -129,7 +131,6 @@ class ManageUserEmbed(discord.ui.View):
             self.update_user_details(edit_modal.mmr_int, edit_modal.steam_int)
             await interaction.followup.edit_message(message_id, embed=self.user_ui, view=self)
         self.set_button_state()
-
 
     @discord.ui.button(label="Set Verification", emoji="✅", style=discord.ButtonStyle.green)
     async def set_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -164,5 +165,5 @@ class AdminSelectUserEmbed(discord.ui.UserSelect):
             return
         user_view = ManageUserEmbed(user, interaction.guild, UserEmbed(interaction.guild))
         user_view.set_button_state()
-        user_view.user_ui.user_embed(user)
+        user_view.user_ui.user_embed(user, True)
         await interaction.response.send_message(view=user_view, embed=user_view.user_ui, ephemeral=True)
