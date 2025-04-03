@@ -3,7 +3,7 @@ import random
 import networkx as nx
 from networkx.algorithms import bipartite
 
-from src.discord import client_db_interface, check_user
+from src.discord import client_db_interface, validate_user
 
 
 def assign_teams(queue_ids):

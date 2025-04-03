@@ -1,15 +1,43 @@
+import math
 from abc import ABC, abstractmethod
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import discord
-from src.discord import client_db_interface, check_user
+from src.discord import client_db_interface
 
 
 class UserEmbed(discord.Embed):
     def __init__(self, server):
         super().__init__()
         self.server = server
+
+    def set_badge_rank(self, mmr):
+        match mmr:
+            case _ if mmr >= 5620:
+                return "Immortal"
+            case _ if mmr >= 4620:
+                badge = "Divine "
+                mmr = mmr - 4620
+                return badge + str(math.ceil(mmr / 200))
+            case _ if mmr >= 3850:
+                badge = "Ancient "
+                mmr = mmr - 3850
+            case _ if mmr >= 3080:
+                badge = "Legend "
+                mmr = mmr - 3080
+            case _ if mmr >= 2310:
+                badge = "Archon "
+                mmr = mmr - 2310
+            case _ if mmr >= 1540:
+                badge = "Crusader "
+                mmr = mmr - 1540
+            case _ if mmr >= 770:
+                badge = "Guardian "
+                mmr = mmr - 770
+            case _:
+                badge = "Herald "
+        return badge + str(math.ceil(mmr / 154))
 
     def user_embed(self, user_account, tryhard_mode):
         self.clear_fields()
@@ -35,7 +63,7 @@ class UserEmbed(discord.Embed):
         if not tryhard_mode:
             data_list[8] = 0
             data_list[9] = 0
-        badge = check_user.badge_rank(user_mmr)
+        badge = self.set_badge_rank(user_mmr)
         self.title = f'{user_account.display_name}'
         self.description = f'{user_status}'
         self.color = user_clr
@@ -144,9 +172,7 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.server = server
         self.set_thumbnail(url=self.server.icon.url)
         self.role_champion = client_db_interface.load_champion_role(server)
-
-    def set_title(self, queue_name):
-        self.title = f"{queue_name} QUEUE"
+        self.title = "INHOUSE QUEUE"
 
     def empty_embed(self):
         self.clear_fields()

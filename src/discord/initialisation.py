@@ -87,7 +87,7 @@ class ConfigButtons(discord.ui.View):
         client_db_interface.add_default_settings(interaction.guild)
         await self.button_state(True)
         await interaction.response.send_message(
-            content="Channels have been registered and defauls settings added. Please amend these via the admin panel",
+            content="Channels have been registered and default settings added. Please amend these via the admin panel",
             ephemeral=True)
         self.completed = True
         return

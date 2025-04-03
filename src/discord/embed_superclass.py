@@ -26,7 +26,7 @@ class QueueSettings:
         self.afk_timer = queue_settings[0]
         self.mmr_floor = queue_settings[1]
         self.mmr_ceiling = queue_settings[2]
-        self.queue_name = queue_settings[3]
+        self.ping_role = queue_settings[3]
 
 
 class AdminPanelUserList:

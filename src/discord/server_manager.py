@@ -3,7 +3,6 @@ import menu_admin_options
 import register_user
 import client_db_interface
 import inhouse_queue
-import check_user
 import initialisation
 import menu_user_options
 from src.discord.embed_superclass import AdminPanelUserList
@@ -22,6 +21,7 @@ class ServerEmbeds:
     def __init__(self, server, inhouse_view, admin_view, admin_menu, user_menu, register_view):
         super().__init__()
         self.server = server.id
+        self.chat_channel = client_db_interface.load_chat_channel(server)
         self.inhouse_queue = inhouse_view
         self.admin_panel = admin_view
         self.admin_menu = admin_menu
@@ -31,6 +31,7 @@ class ServerEmbeds:
 
 class ServerManager:
     def __init__(self, queue_manager):
+        super().__init__()
         self.server_list = []
         self.queue_manager = queue_manager
 
@@ -83,7 +84,6 @@ class ServerManager:
         user_menu_message = await channels.queue_channel.send("Already registered? More options are available via the below menu",
                                                               view=embeds.user_menu)
         await embeds.inhouse_queue.send_embed()
-        # await embeds.
         message_id_list = [embeds.admin_panel.message.id, admin_menu_message.id, register_message.id, user_menu_message.id,
                            embeds.inhouse_queue.message.id, 100]
         client_db_interface.update_message_ids(server, message_id_list)
@@ -102,24 +102,6 @@ class ServerManager:
     def start_check_loop(self):
         self.queue_manager.check_full_queues.start()
 
-    async def register_command(self, ctx, user, dotabuff_id, mmr):
-        return
-        # server = self.check_channel(ctx)
-        # if not server:
-        #     return
-        # ctx.response.send_message()
-        # disc_reg = client_db_interface.check_for_value("disc", ctx.author.id)
-        # steam_reg = client_db_interface.check_for_value("steam", dotabuff_id)
-        # if registered_role in ctx.author.roles or disc_reg:
-        #     await ctx.send("Your discord account is already registered!")
-        #     return
-        # elif steam_reg:
-        #     await ctx.send("Your steam account is already registered!")
-        #     return
-        # else:
-        #     await self.bot.register_command(ctx.author, dotabuff_id, mmr)
-        #     await ctx.send("You have been registered. Please set your roles using !roles")
-
     async def refresh_command(self, ctx):
         if not client_db_interface.check_server_settings(ctx.guild):
             await ctx.send("Server not set up yet!")
@@ -134,31 +116,10 @@ class ServerManager:
             self.server_list.remove(server)
         await self.add_embeds(server)
 
-    async def check_channel(self, ctx):
+    def check_channel(self, ctx):
         if not client_db_interface.check_server_settings(ctx.guild):
-            await ctx.send(content=f'Please ensure setup has been completed before using commands', ephemeral=True)
-            return False
-        if not client_db_interface.check_chat_channel(ctx.message, ctx.guild):
-            return False
-        else:
-            chosen_server = next(x for x in self.server_list if x.server == ctx.guild.id)
-            return chosen_server
-
-    async def who_command(self, ctx, user=None):
-        server = self.check_channel(ctx)
-        if not server:
-            return
-        if user is None:
-            user_acc = await ctx.guild.fetch_member(ctx.author.id)
-            user_check = client_db_interface.check_discord_exists(ctx.author.id)
-        elif user[0:2] == '<@':
-            user_acc = await ctx.guild.fetch_member(user[2:-1])
-            user_check = client_db_interface.check_discord_exists(int(user[2:-1]))
-        else:
-            user_check, user_acc = check_user.user_exists(ctx.guild, user)
-        if not user_check:
-            await ctx.send(content=f'{user_acc.display_name} not found', ephemeral=True)
-        else:
-            tryhard = client_db_interface.load_tryhard_settings(ctx.guild)
-            user_ui = UserEmbed(ctx.guild)
-            await ctx.send(embed=user_ui.user_embed(user_acc, tryhard))
+            return None
+        chosen_server = next(x for x in self.server_list if x.server == ctx.guild.id)
+        if chosen_server.chat_channel != ctx.message.channel:
+            return None
+        return chosen_server

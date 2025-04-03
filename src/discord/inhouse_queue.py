@@ -5,7 +5,7 @@ import client_db_interface
 from _datetime import datetime, timedelta
 import asyncio
 
-from src.discord import team_balancer, check_user
+from src.discord import team_balancer, validate_user
 from src.discord.embed_superclass import ChannelEmbeds, QueueSettings
 
 
@@ -18,7 +18,7 @@ class Gamer:
         self.steam = gamer_stats[1]
         self.mmr = gamer_stats[2]
         role_pref = [gamer_stats[3], gamer_stats[4], gamer_stats[5], gamer_stats[6], gamer_stats[7]]
-        self.role_preference = check_user.check_role_priority(role_pref)
+        self.role_preference = validate_user.check_role_priority(role_pref)
         self.is_champion = is_champion
 
 
@@ -82,6 +82,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         self.queue_full_time = datetime.now(tz=None)
         self.team_list = []
         self.vote_kick_list = []
+        self.last_ping = datetime.now(tz=None)
 
     @tasks.loop(minutes=1)
     async def match_end_check(self):
@@ -91,6 +92,13 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         #     await self.bot_clear_queue()
         # else:
         #     pass
+
+    @tasks.loop(minutes=10)
+    async def inhouse_role_ping(self):
+        current_time = datetime.now(tz=None)
+        if current_time - timedelta(minutes=10) > self.last_ping:
+            await self.chat_channel.send(f"<@&{self.ping_role}> +{10 - len(self.queued_players)} users needed for an inhouse game!")
+            self.last_ping = current_time
 
     @tasks.loop(minutes=5)
     async def afk_check(self):
@@ -132,7 +140,6 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         return True
 
     async def send_embed(self):
-        self.queue_embed.set_title(self.queue_name)
         self.message = await self.embed_channel.send(view=self)
         await self.update_message()
 
@@ -172,12 +179,21 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
             self.team_list.clear()
             self.vote_kick_list.clear()
             self.queue_embed.partial_queue(self.queued_players)
+            await self.update_inhouse_ping()
         elif self.queue_state == InhouseQueueState.EMPTY:
             self.queue_embed.empty_embed()
         self.last_action_field(update_user)
         self.update_votekick_select()
         self.update_afk_checker()
         await self.message.edit(embed=self.queue_embed, view=self)
+
+    async def update_inhouse_ping(self):
+        if not self.ping_role:
+            return
+        if len(self.queued_players) < 6:
+            self.inhouse_role_ping.stop()
+        elif not self.inhouse_role_ping.get_task():
+            self.inhouse_role_ping.start()
 
     def check_user_can_join(self, interaction):
         user_status = client_db_interface.get_user_status(interaction.user, interaction.guild)

@@ -4,7 +4,7 @@ from embed_views import UserEmbed
 from collections import defaultdict
 
 
-# TODO: Rework this into RolePreferenceSelect to reduce the amount of redundant code (low priority)
+# Rework this into RolePreferenceSelect to reduce the amount of redundant code (low priority)
 # class PreferenceSelect(discord.ui.Select):
 #     def __init__(self):
 #         options = [
@@ -243,7 +243,7 @@ class RegisterEmbed(discord.ui.View):
         await interaction.response.send_modal(register_modal)
         await register_modal.wait()
         if register_modal.is_valid:
-            await self.register_user(self, interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
+            await self.register_user(interaction.user, register_modal.steam_int, register_modal.mmr_int, interaction.guild)
 
     @discord.ui.button(label="View your details", emoji="📋",
                        style=discord.ButtonStyle.blurple)
