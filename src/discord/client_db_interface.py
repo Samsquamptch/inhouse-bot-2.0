@@ -44,8 +44,8 @@ def register_server(server, setup_list):
 
 def add_default_settings(server):
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, QueueName, Tryhard)
-                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, "INHOUSE", False)""",
+    conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, PingRole, Tryhard)
+                            VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, NULL, False)""",
                           [server.id])
     conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
                           [server.id])
@@ -259,7 +259,7 @@ def update_discord_settings(server, column, new_value):
 
 def load_discord_settings(server):
     conn = db_access.get_db_connection()
-    settings = list(conn.cursor().execute("""SELECT Stg.AfkTimer, Stg.SkillFloor, Stg.SkillCeiling, Stg.QueueName FROM 
+    settings = list(conn.cursor().execute("""SELECT Stg.AfkTimer, Stg.SkillFloor, Stg.SkillCeiling, Stg.PingRole FROM 
                                           ServerSettings Stg JOIN Server Srv ON Stg.ServerId = Srv.Id WHERE Srv.Server 
                                           = ?""", [server.id]))
     db_access.close_db_connection(conn)

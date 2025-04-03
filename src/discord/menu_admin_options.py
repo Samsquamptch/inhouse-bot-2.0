@@ -31,13 +31,13 @@ class AdminOptions(discord.ui.View):
         if viewer_delay:
             client_db_interface.update_dota_settings(self.server, "ViewerDelay", viewer_delay)
 
-    def edit_discord_settings(self, mmr_floor, mmr_ceiling, queue_name, akf_timer, champion_role):
+    def edit_discord_settings(self, mmr_floor, mmr_ceiling, ping_role, akf_timer, champion_role):
         if mmr_floor:
             client_db_interface.update_discord_settings(self.server, "SkillFloor", mmr_floor)
         if mmr_ceiling:
             client_db_interface.update_discord_settings(self.server, "SkillCeiling", mmr_ceiling)
-        if queue_name:
-            client_db_interface.update_discord_settings(self.server, "QueueName", queue_name)
+        if ping_role:
+            client_db_interface.update_discord_settings(self.server, "PingRole", ping_role)
         if akf_timer:
             client_db_interface.update_discord_settings(self.server, "AfkTimer", akf_timer)
         if champion_role:
@@ -64,7 +64,7 @@ class AdminOptions(discord.ui.View):
                 await interaction.response.send_modal(settings)
                 await settings.wait()
                 if settings.edit_settings:
-                    self.edit_discord_settings(settings.mmr_floor_int, settings.mmr_ceiling_int, settings.queue_name_string,
+                    self.edit_discord_settings(settings.mmr_floor_int, settings.mmr_ceiling_int, settings.ping_role_int,
                                                settings.afk_timer_int, settings.champion_role_int)
             case "Dota":
                 settings = DotaSettingsModal(self.server)

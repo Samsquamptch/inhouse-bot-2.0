@@ -12,7 +12,7 @@ class UserEmbed(discord.Embed):
         super().__init__()
         self.server = server
 
-    def badge_rank(self, mmr):
+    def set_badge_rank(self, mmr):
         match mmr:
             case _ if mmr >= 5620:
                 return "Immortal"
@@ -63,7 +63,7 @@ class UserEmbed(discord.Embed):
         if not tryhard_mode:
             data_list[8] = 0
             data_list[9] = 0
-        badge = self.badge_rank(user_mmr)
+        badge = self.set_badge_rank(user_mmr)
         self.title = f'{user_account.display_name}'
         self.description = f'{user_status}'
         self.color = user_clr
@@ -172,9 +172,7 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.server = server
         self.set_thumbnail(url=self.server.icon.url)
         self.role_champion = client_db_interface.load_champion_role(server)
-
-    def set_title(self, queue_name):
-        self.title = f"{queue_name} QUEUE"
+        self.title = "INHOUSE QUEUE"
 
     def empty_embed(self):
         self.clear_fields()
