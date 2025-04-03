@@ -90,6 +90,8 @@ def load_chat_channel(server):
 
 def check_chat_channel(message_channel, server):
     chat_channel_id = db_access.load_channel_id(server, "ChatChannel")
+    print(message_channel.id)
+    print(chat_channel_id)
     return message_channel.id == chat_channel_id
 
 
