@@ -98,4 +98,6 @@ def create_tables():
         LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS SteamLogin(ServerId INT UNIQUE, Title CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS AutoLobby(ServerId INT UNIQUE, LobbyStatus BOOL, MatchStatus BOOL,
+        FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.close()

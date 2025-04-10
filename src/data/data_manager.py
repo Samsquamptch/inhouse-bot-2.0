@@ -67,9 +67,9 @@ def delete_steam_credentials():
         return
 
 
-def import_database():
-    # TODO: add a way to import old databases
-    print("This feature has not been implemented yet")
+def update_database():
+    manager_service.create_tables()
+    print("Updating Database...")
     return
 
 
@@ -87,14 +87,14 @@ def start_data_manager():
     exit_loop = False
     while not exit_loop:
         print("Welcome to the Database Manager. Please input the number that matches the option you want.")
-        option = input("""1. Update Discord Bot Token\n2. View Steam Credentials\n3. Import Database\n4. Exit\n""")
+        option = input("""1. Update Discord Bot Token\n2. View Steam Credentials\n3. Update Database\n4. Exit\n""")
         match option:
             case "1":
                 update_bot_token()
             case "2":
                 view_steam_credentials()
             case "3":
-                import_database()
+                update_database()
             case "4":
                 exit_loop = True
             case _:
