@@ -5,6 +5,10 @@ import dota2
 import logging
 from datetime import date
 
+class DotaClient:
+    def __init__(self):
+        self.bots = []
+
 
 def run_dota_bot():
     # logging.basicConfig(filename=f'../../data/{date.today()}.-dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.DEBUG)
