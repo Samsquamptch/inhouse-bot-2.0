@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from src.discord import client_db_interface, validate_user
 
 
 class Commands(discord.ext.commands.Cog, name='Commands module'):
