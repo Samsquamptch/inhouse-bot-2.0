@@ -5,7 +5,7 @@ from time import sleep
 import dota2
 import os
 import sys
-import db_queries
+import dota_db_interface
 import logging
 from eventemitter import EventEmitter
 from multiprocessing.connection import Client

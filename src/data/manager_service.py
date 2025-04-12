@@ -18,7 +18,8 @@ def delete_env_variable(key):
 def get_reference_list(identifier=None):
     conn = db_access.get_db_connection()
     if not identifier:
-        login_list = list(conn.cursor().execute("""SELECT Title, ServerId FROM SteamLogin""").fetchall())
+        login_list = list(conn.cursor().execute("""SELECT stl.Title, srv.Server FROM SteamLogin stl JOIN Server srv ON
+                                            srv.Id = stl.ServerId""").fetchall())
     else:
         login_list = list(conn.cursor().execute("""SELECT Title, ServerId FROM SteamLogin
                                         WHERE Title = ? OR ServerId = ?""", [identifier, identifier]).fetchall())
@@ -29,8 +30,8 @@ def get_reference_list(identifier=None):
 def get_reference_server(identifier):
     conn = db_access.get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
-    login_list = list(conn.cursor().execute("""SELECT ServerId FROM SteamLogin
-                                            WHERE Title = ? OR ServerId = ?""", [identifier, identifier]).fetchall())
+    login_list = list(conn.cursor().execute("""SELECT srv.Server FROM Server srv JOIN SteamLogin stl ON srv.Id = stl.ServerId
+                                            WHERE stl.Title = ? OR srv.Server = ?""", [identifier, identifier]).fetchall())
     server = str(login_list[0])
     db_access.close_db_connection(conn)
     return server
@@ -57,7 +58,7 @@ def edit_credentials(identifier, username, password):
 def add_credentials(title, server, username, password):
     conn = db_access.get_db_connection()
     try:
-        conn.cursor().execute("""INSERT INTO SteamLogin (Title, ServerId) Values (?, ?)""",
+        conn.cursor().execute("""INSERT INTO SteamLogin (Title, ServerId) Values (?, (SELECT Id FROM Server WHERE Server = ?))""",
                               [title, server])
         set_env_variable(server + "username", username)
         set_env_variable(server + "password", password)
