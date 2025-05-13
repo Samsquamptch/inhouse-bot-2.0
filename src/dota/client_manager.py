@@ -1,6 +1,4 @@
 import asyncio
-import time
-
 import dota_db_interface
 from src.dota.dota_client import DotaClient
 
@@ -37,7 +35,7 @@ class ClientManager:
 
     async def add_lobby(self, match):
         client = DotaClient(match[0])
-        task = asyncio.create_task(client.start_bot())  # Run in background
+        task = asyncio.create_task(client.start_bot())
         self.bots.append(task)
         print(f"{match[0]}: task started")
 
@@ -47,8 +45,3 @@ class ClientManager:
 
 manager = ClientManager()
 manager.main()
-
-import asyncio
-import dota_db_interface
-from src.dota.dota_client import DotaClient
-

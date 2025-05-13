@@ -14,3 +14,6 @@ def load_server_steam(server):
     username = dotenv.get_key("../../credentials/.env", str(server)+"username")
     password = dotenv.get_key("../../credentials/.env", str(server)+"password")
     return [username, password]
+
+def update_match_records(winners, losers):
+    return
