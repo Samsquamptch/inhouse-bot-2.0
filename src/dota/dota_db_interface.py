@@ -27,13 +27,19 @@ def update_match_records(winners, losers, server):
         conn.cursor().execute("""UPDATE UserServer SET Losses = Losses + 1 WHERE EXISTS (SELECT 1 FROM Server WHERE 
                     UserServer.ServerId = Server.Id AND Server.Server = ?""", [server])
         conn.commit()
+    db_access.close_db_connection(conn)
     return
+
+def update_autolobby_status(column, match_id):
+    conn = db_access.get_db_connection()
+    conn.cursor().execute(f"""UPDATE AutoLobby SET {column} = 1 WHERE MatchId = ?"""[match_id])
 
 def return_queue_ids(match_id):
     conn = db_access.get_db_connection()
     steam_ids = []
     id_list = list(conn.cursor().execute("""SELECT Usr.Steam FROM User Usr JOIN UserLobby Uly ON Uly.UserId = Usr.Id
                                                 WHERE Uly.MatchId = ?""", [match_id]))
+    db_access.close_db_connection(conn)
     for id in id_list:
         steam_ids.append(id[0] + 76561197960265728)
     return steam_ids

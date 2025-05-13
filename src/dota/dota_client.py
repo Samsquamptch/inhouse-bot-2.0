@@ -58,7 +58,7 @@ class DotaClient:
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
         def lobby_new(lobby):
             print('%s joined lobby %s' % (dota.steam.username, lobby.lobby_id))
-            Manager.join_lobby_channel()
+            manager.join_lobby_channel()
 
         @dota.on('match_end')
         def update_player_stats():
@@ -66,6 +66,7 @@ class DotaClient:
                 dota_db_interface.update_match_records(self.radiant_team, self.dire_team, self.server)
             else:
                 dota_db_interface.update_match_records(self.dire_team, self.radiant_team, self.server)
+            dota_db_interface.update_autolobby_status("MatchStatus", self.match_id)
             dota.destroy_lobby()
             self.finished = True
 
@@ -92,6 +93,7 @@ class DotaClient:
                         self.radiant_team.append(player.id - 76561197960265728)
                     else:
                         self.dire_team.append(player.id - 76561197960265728)
+                dota_db_interface.update_autolobby_status("LobbyStatus", self.match_id)
                 dota.launch_practice_lobby()
 
 

@@ -30,7 +30,6 @@ class ClientManager:
             lobby = next((x for x in self.bots if x.server == match[0]), None)
             if not lobby:
                 await self.add_lobby(match)
-        print(self.bots)
 
 
     async def add_lobby(self, match):
