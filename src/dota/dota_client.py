@@ -9,17 +9,20 @@ from time import sleep
 
 
 class DotaClient:
-    def __init__(self, server):
+    def __init__(self, server, match_id):
         self.server = server
         self.finished = False
-        self.player_list = [76561197988972789]
+        self.match_id = match_id
+        self.player_list = []
+        self.radiant_team = []
+        self.dire_team = []
 
     async def start_bot(self):
         steam_login = dota_db_interface.load_server_steam(self.server)
         logging.basicConfig(filename=f'../../data/dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.ERROR)
         client = SteamClient()
         dota = Dota2Client(client)
-        Manager = dota2.features.chat.ChannelManager(dota, 'logger')
+        manager = dota2.features.chat.ChannelManager(dota, 'logger')
 
         @client.on('logged_on')
         def start_dota():
@@ -34,20 +37,22 @@ class DotaClient:
 
         @dota.on('make_lobby')
         def create_new_lobby():
+            lobby_settings = dota_db_interface.load_dota_settings(self.server)
             opt = {
-                'game_name': 'test lobby',
-                'server_region': 8,
+                'game_name': lobby_settings[0],
+                'server_region': lobby_settings[2],
                 'game_mode': dota2.enums.DOTA_GameMode.DOTA_GAMEMODE_CM,
-                'leagueid': 17134,
+                'leagueid': lobby_settings[3],
                 'fill_with_bots': False,
                 'allow_spectating': True,
                 'allow_cheats': False,
                 'allchat': False,
-                'dota_tv_delay': 2,
+                'dota_tv_delay': lobby_settings[4],
                 'pause_setting': 0
             }
-            dota.create_practice_lobby(password="woof", options=opt)
-            sleep(5)
+            dota.create_practice_lobby(password=lobby_settings[1], options=opt)
+            sleep(2)
+            self.player_list = dota_db_interface.return_queue_ids(self.match_id)
 
 
         @dota.on(dota2.features.Lobby.EVENT_LOBBY_NEW)
@@ -55,21 +60,17 @@ class DotaClient:
             print('%s joined lobby %s' % (dota.steam.username, lobby.lobby_id))
             Manager.join_lobby_channel()
 
-        @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
-        def print_state(lobby):
-            if int(dota.lobby.state) == 3:
-                print("Queue will be cleared")
-                if dota.lobby.match_outcome == EMatchOutcome.RadVictory:
-                    pass
-                else:
-                    pass
-                dota.destroy_lobby()
-                sleep(3)
-                dota.emit('make_lobby')
+        @dota.on('match_end')
+        def update_player_stats():
+            if dota.lobby.match_outcome == EMatchOutcome.RadVictory:
+                dota_db_interface.update_match_records(self.radiant_team, self.dire_team, self.server)
+            else:
+                dota_db_interface.update_match_records(self.dire_team, self.radiant_team, self.server)
+            dota.destroy_lobby()
+            self.finished = True
 
-        @Manager.on('message')
+        @manager.on('message')
         def message_check(c, message):
-            print(message)
             if message.text == "start":
                 players = []
                 users = dota.lobby.all_members
@@ -82,10 +83,17 @@ class DotaClient:
                         return
                 if not players:
                     print("No players in queue")
-                elif len(players) == 10:
-                    dota.launch_practice_lobby()
-                else:
+                    return
+                elif len(players) < 10:
                     print("Number of players is only " + str(len(players)))
+                    return
+                for player in players:
+                    if player.team == 0:
+                        self.radiant_team.append(player.id - 76561197960265728)
+                    else:
+                        self.dire_team.append(player.id - 76561197960265728)
+                dota.launch_practice_lobby()
+
 
 
         client.login(username=steam_login[0], password=steam_login[1])

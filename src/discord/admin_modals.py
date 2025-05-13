@@ -1,6 +1,6 @@
 import discord
 from src.discord import client_db_interface
-from src.discord.embed_superclass import QueueSettings, DotaSettings
+from src.discord.embed_superclass import QueueSettings
 from src.discord.embed_views import UserEmbed
 
 
@@ -229,29 +229,36 @@ class DotaSettingsModal(discord.ui.Modal, ModalValidator, title='Change Discord 
         self.lobby_region_int = None
         self.league_id_int = None
         self.viewer_delay_int = None
+        self.new_lobby_password = None
         self.edit_settings = False
 
     lobby_name = discord.ui.TextInput(label='Set lobby name', required=False)
     lobby_region = discord.ui.TextInput(label='Set inhouse region', required=False)
     league_id = discord.ui.TextInput(label='Set inhouse league ID', required=False)
     viewer_delay = discord.ui.TextInput(label='Set viewer delay', required=False)
+    lobby_password = discord.ui.TextInput(label='Set lobby password', required=False)
 
     def validate_lobby_name(self, lobby_name):
         if lobby_name == "":
             return
         self.new_lobby_name = lobby_name
 
+    def validate_password(self, password):
+        if password =="":
+            return
+        self.new_lobby_password = password
+
     def validate_region(self, region):
         if region == "":
             return
         int_region = self.check_int_value(region)
         if not int_region:
-            self.error_message = "Please only enter an int value for the lobby region. Check the github repository for more information"
+            self.error_message = "Please only enter an int value for the lobby region. Check the github wiki page for more information"
             return
         region_list = list(range(1, 17))
         region_list.append(37)
         if int_region not in region_list:
-            self.error_message = "Please input a region ID which matches one of the parameters outlined in the github repository"
+            self.error_message = "Please input a region ID which matches one of the parameters outlined in the github repository wiki"
             return
         self.lobby_region_int = region
 
@@ -278,7 +285,9 @@ class DotaSettingsModal(discord.ui.Modal, ModalValidator, title='Change Discord 
         str_region = str(self.lobby_region)
         str_league_id = str(self.league_id)
         str_viewer_delay = str(self.viewer_delay)
+        str_lobby_password = str(self.lobby_password)
         self.validate_lobby_name(str_lobby_name)
+        self.validate_password(str_lobby_password)
         self.validate_region(str_region)
         self.validate_league_id(str_league_id)
         self.validate_viewer_delay(str_viewer_delay)

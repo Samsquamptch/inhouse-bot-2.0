@@ -34,7 +34,7 @@ class ClientManager:
 
 
     async def add_lobby(self, match):
-        client = DotaClient(match[0])
+        client = DotaClient(match[0], match[1])
         task = asyncio.create_task(client.start_bot())
         self.bots.append(task)
         print(f"{match[0]}: task started")

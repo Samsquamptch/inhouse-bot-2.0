@@ -78,9 +78,9 @@ def database_exists():
 
 def create_tables():
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INTEGER PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INT PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
         MMR INT, Pos1 INT, Pos2 INT,Pos3 INT, Pos4 INT, Pos5 INT, LastUpdated DATETIME)""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Server(Id INTEGER PRIMARY KEY, Server BIGINT, AdminChannel BIGINT,
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Server(Id INT PRIMARY KEY, Server BIGINT, AdminChannel BIGINT,
         QueueChannel BIGINT, GlobalChannel BIGINT, ChatChannel BIGINT, ChampionRole BIGINT, AdminRole BIGINT)""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserServer(UserId INT, ServerId INT, Verified BOOL, Banned BOOL, 
         Wins INT, Losses INT, FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
@@ -90,8 +90,12 @@ def create_tables():
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS MessageIds(ServerId INT UNIQUE, AdminPanel BIGINT, AdminMenu BIGINT, 
         UserButtons BIGINT, UserMenu BIGINT, InhouseQueue BIGINT, GlobalQueue BIGINT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, AllChat BOOL, Region INT,
-        LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, LobbyPassword, AllChat BOOL, 
+        Region INT, LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS SteamLogin(ServerId INT UNIQUE, Title CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS AutoLobby(MatchId INT PRIMARY KEY, ServerId INT, LobbyStatus BOOL,
+        MatchStatus BOOL, FOREIGN KEY(ServerId) REFERENCES Server(Id)""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserLobby(MatchId INT, UserId INT, FOREIGN KEY(UserId) REFERENCES User(Id), 
+        FOREIGN KEY(MatchId) REFERENCES AutoLobby(MatchId)""")
     db_access.close_db_connection(conn)

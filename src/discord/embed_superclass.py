@@ -11,15 +11,6 @@ class ChannelEmbeds(discord.ui.View):
         self.embed_channel = embed_channel
         self.message = None
 
-
-class DotaSettings:
-    def __init__(self, server):
-        server_settings = client_db_interface.load_dota_settings(server)
-        self.lobby_name = server_settings[0]
-        self.region = server_settings[1]
-        self.league_id = server_settings[2]
-        self.viewer_delay = server_settings[3]
-
 class QueueSettings:
     def __init__(self, server):
         queue_settings = client_db_interface.load_discord_settings(server)
