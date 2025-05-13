@@ -1,4 +1,6 @@
 import asyncio
+import time
+
 import dota_db_interface
 from src.dota.dota_client import DotaClient
 
@@ -15,13 +17,13 @@ class ClientManager:
                 self.bots.clear()
                 print("bots cleared")
             else:
-                self.check_lobby_exists(match_list)
+                await self.check_lobby_exists(match_list)
             await asyncio.sleep(30)
 
-    def check_lobby_exists(self, match_list):
+    async def check_lobby_exists(self, match_list):
         if not self.bots:
             for match in match_list:
-                self.add_lobby(match)
+                await self.add_lobby(match)
             return
         for lobby in self.bots:
             if lobby.finished:
@@ -29,11 +31,15 @@ class ClientManager:
         for match in match_list:
             lobby = next((x for x in self.bots if x.server == match[0]), None)
             if not lobby:
-                self.add_lobby(match)
+                await self.add_lobby(match)
         print(self.bots)
 
-    def add_lobby(self, match):
-        self.bots.append(DotaClient(match[0]))
+
+    async def add_lobby(self, match):
+        client = DotaClient(match[0])
+        task = asyncio.create_task(client.start_bot())  # Run in background
+        self.bots.append(task)
+        print(f"{match[0]}: task started")
 
     def main(self):
         asyncio.run(self.check_for_active_lobbies())
@@ -41,3 +47,8 @@ class ClientManager:
 
 manager = ClientManager()
 manager.main()
+
+import asyncio
+import dota_db_interface
+from src.dota.dota_client import DotaClient
+

@@ -40,8 +40,7 @@ class ServerManager:
         await self.delete_messages(server, server_channels)
         await self.run_user_modules(server, server_channels)
 
-    # TODO: Will need improving
-    # Deletes all previous posts
+    # Deletes all previous posts. Not the most elegant solution but it does the job
     async def delete_messages(self, server, channel_list):
         message_id_list = client_db_interface.load_message_ids(server)
         i = 0
@@ -87,7 +86,7 @@ class ServerManager:
         message_id_list = [embeds.admin_panel.message.id, admin_menu_message.id, register_message.id, user_menu_message.id,
                            embeds.inhouse_queue.message.id, 100]
         client_db_interface.update_message_ids(server, message_id_list)
-        # await channels.chat_channel.send("Bot is now running, please feel free to join the queue.")
+        await channels.chat_channel.send("Bot is now running, please feel free to join the queue.")
         return
 
     async def setup_command(self, ctx):
