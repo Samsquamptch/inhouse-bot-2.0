@@ -85,13 +85,12 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         self.last_ping = datetime.now(tz=None)
 
     @tasks.loop(minutes=1)
-    async def match_end_check(self):
+    async def check_lobby_status(self):
         print("Checking")
-        # TODO: Update to check new autolobby system (when in use)
-        # if client_db_interface.check_autolobby(self.server.id) == 0:
-        #     await self.bot_clear_queue()
-        # else:
-        #     pass
+        if not client_db_interface.check_autolobby(self.server):
+            await self.bot_clear_queue()
+        else:
+            pass
 
     @tasks.loop(minutes=10)
     async def inhouse_role_ping(self):
@@ -115,6 +114,11 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
                 gamer.last_action = current_time
                 asyncio.create_task(self.afk_ping(gamer))
 
+    async def start_autolobby(self):
+        client_db_interface.add_autolobby_match(self.server, self.team_list)
+        self.check_lobby_status.start()
+        return
+
     async def afk_ping(self, gamer):
         user = discord.utils.get(self.server.members, id=gamer.id)
         afk_check_ping = AfkCheckButtons()
@@ -135,6 +139,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         del self.queued_players[:10]
         self.team_list.clear()
         self.vote_kick_list.clear()
+        self.check_lobby_status.stop()
         if self.action_state != InhouseActionState.AUTOLOBBY:
             self.action_state = InhouseActionState.CLEAR
         return True
@@ -172,9 +177,9 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
                 self.queue_full_time = datetime.now(tz=None)
                 team_ids = (x.id for x in self.queued_players[:10])
                 self.team_list = team_balancer.assign_teams(team_ids)
+                await self.start_autolobby()
                 await self.notify_gamers()
             self.queue_embed.full_queue(self.queued_players, self.team_list)
-            # client_db_interface.update_autolobby(self.server.id, [1, 1])
         elif self.queue_state == InhouseQueueState.ACTIVE:
             self.team_list.clear()
             self.vote_kick_list.clear()

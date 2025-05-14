@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import threading
+
 from steam.client import SteamClient
 from dota2.client import Dota2Client
 import dota2
@@ -16,8 +18,10 @@ class DotaClient:
         self.player_list = []
         self.radiant_team = []
         self.dire_team = []
+        self.lock = threading.Lock()
+        self._stop_event = threading.Event()
 
-    async def start_bot(self):
+    def start_bot(self):
         steam_login = dota_db_interface.load_server_steam(self.server)
         logging.basicConfig(filename=f'../../data/dota.log', format='[%(asctime)s] %(levelname)s %(name)s: %(message)s', level=logging.ERROR)
         client = SteamClient()
@@ -68,7 +72,8 @@ class DotaClient:
                 dota_db_interface.update_match_records(self.dire_team, self.radiant_team, self.server)
             dota_db_interface.update_autolobby_status("MatchStatus", self.match_id)
             dota.destroy_lobby()
-            self.finished = True
+            with self.lock:
+                self.finished = True
 
         @manager.on('message')
         def message_check(c, message):
@@ -99,4 +104,7 @@ class DotaClient:
 
 
         client.login(username=steam_login[0], password=steam_login[1])
-        await asyncio.to_thread(client.run_forever())
+        asyncio.to_thread(client.run_forever())
+
+    def stop(self):
+        self._stop_event.set()

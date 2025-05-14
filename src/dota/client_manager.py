@@ -1,6 +1,7 @@
 import asyncio
 import dota_db_interface
 from src.dota.dota_client import DotaClient
+import threading
 
 
 class ClientManager:
@@ -24,8 +25,10 @@ class ClientManager:
                 await self.add_lobby(match)
             return
         for lobby in self.bots:
-            if lobby.finished:
-                self.bots.remove(lobby)
+            with lobby.lock:
+                if lobby.finished:
+                    lobby.stop()
+                    self.bots.remove(lobby)
         for match in match_list:
             lobby = next((x for x in self.bots if x.server == match[0]), None)
             if not lobby:
@@ -34,8 +37,9 @@ class ClientManager:
 
     async def add_lobby(self, match):
         client = DotaClient(match[0], match[1])
-        task = asyncio.create_task(client.start_bot())
-        self.bots.append(task)
+        task = threading.Thread(target=client.start_bot)
+        task.start()
+        self.bots.append(client)
         print(f"{match[0]}: task started")
 
     def main(self):

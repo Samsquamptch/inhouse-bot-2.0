@@ -227,7 +227,6 @@ def update_dota_settings(server, column, new_value):
     db_access.close_db_connection(conn)
     return
 
-
 def load_dota_settings(server):
     conn = db_access.get_db_connection()
     settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM 
@@ -264,28 +263,37 @@ def load_discord_settings(server):
     return list(settings[0])
 
 
-def setup_autolobby():
+def add_autolobby_match(server, player_list):
     conn = db_access.get_db_connection()
-    data = [1, 0]
-    conn.cursor().execute("""INSERT INTO Autolobby (Id, Active) VALUES (?, ?)""", data)
+    conn.cursor().execute("""INSERT INTO Autolobby (GlobalQueue, LobbyStatus, MatchStatus, ServerId) SELECT 0, 0, 0, 
+            Id FROM Server WHERE Server = ?""", [server])
+    match_id = conn.cursor().lastrowid
+    conn.commit()
+    for player in player_list[0]:
+        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) VALUES (?, ?)""", [match_id, player])
+        conn.commit()
+    for player in player_list[1]:
+        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) VALUES (?, ?)""", [match_id, player])
+        conn.commit()
+    db_access.close_db_connection(conn)
+    return
+
+
+def close_autolobby(server):
+    conn = db_access.get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"""UPDATE Autolobby SET LobbyStatus = 1, MatchStatus = 1 WHERE EXISTS (SELECT 1 From Server WHERE 
+            Server.Id = AutoLobby.ServerId AND Server.Server = ?""", server.id)
     conn.commit()
     db_access.close_db_connection(conn)
 
 
-def update_autolobby(value):
+def check_autolobby(server):
     conn = db_access.get_db_connection()
     cur = conn.cursor()
-    cur.execute("""UPDATE Autolobby SET Active = ? WHERE Id = ?""", value)
-    conn.commit()
-    db_access.close_db_connection(conn)
-
-
-def check_autolobby():
-    conn = db_access.get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT Active from Autolobby where Id=?", [1])
+    cur.execute("SELECT Alb.LobbyStatus FROM Autolobby JOIN Server Srv ON Srv.Id = Alb.ServerId WHERE "
+                "Srv.Server=? AND Alb.MatchStatus = ?", [server.id, 0])
     match_state = cur.fetchone()[0]
-    print(match_state)
     db_access.close_db_connection(conn)
     return match_state
 
@@ -365,9 +373,9 @@ def get_queue_user_data(queue_ids):
     return queue_data
 
 
-# Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to (which
-# is higher number = more pref and lower number = less pref). This swap shows what users expect to see, instead of what
-# is actually happening behind the scenes (low num = more pref and high num = less pref).
+# Due to how the role balancer calculations work, number weighting is calculated the opposite to how users are used to (which
+# is higher number = more pref and lower number = less pref). This swap sets role preferences to what the bipartite graph
+# requires behind the scenes (low num = more pref and high num = less pref).
 def flip_values(data_list):
     data_numbers = [3, 4, 5, 6, 7]
     for n in data_numbers:
