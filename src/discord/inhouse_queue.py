@@ -115,6 +115,8 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
                 asyncio.create_task(self.afk_ping(gamer))
 
     async def start_autolobby(self):
+        if not client_db_interface.check_ticket_exists(self.server):
+            return
         client_db_interface.add_autolobby_match(self.server, self.team_list)
         self.check_lobby_status.start()
         return

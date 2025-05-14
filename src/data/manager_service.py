@@ -90,8 +90,8 @@ def create_tables():
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS MessageIds(ServerId INT UNIQUE, AdminPanel BIGINT, AdminMenu BIGINT, 
         UserButtons BIGINT, UserMenu BIGINT, InhouseQueue BIGINT, GlobalQueue BIGINT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, LobbyPassword, AllChat BOOL, 
-        Region INT, LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, LobbyPassword CHAR, Region INT,
+                            LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS SteamLogin(ServerId INT UNIQUE, Title CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS AutoLobby(MatchId INT PRIMARY KEY, ServerId INT, LobbyStatus BOOL,

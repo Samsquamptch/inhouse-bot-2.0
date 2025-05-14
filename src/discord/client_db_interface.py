@@ -45,6 +45,9 @@ def add_default_settings(server):
     conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, PingRole, Tryhard)
                             VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, NULL, False)""",
                           [server.id])
+    conn.cursor().execute("""INSERT INTO DotaSettings (ServerId, LobbyName, LobbyPassword, Region, LeagueId, ViewerDelay)
+                                VALUES ((SELECT Id from Server where Server = ?), 'Slug Lobby', slug, 3, 0, 2)""",
+                          [server.id])
     conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
                           [server.id])
     conn.commit()
@@ -229,12 +232,17 @@ def update_dota_settings(server, column, new_value):
 
 def load_dota_settings(server):
     conn = db_access.get_db_connection()
-    settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM 
-                                              DotaSettings Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server 
-                                              = ?""", [server.id]))
+    settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM DotaSettings 
+                                            Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server = ?""", [server.id]))
     db_access.close_db_connection(conn)
     return list(settings[0])
 
+def check_ticket_exists(server):
+    conn = db_access.get_db_connection()
+    conn.cursor().execute("""SELECT Dts.LeagueId FROM DotaSettings Dts JOIN Server Srv ON Dts.ServerId = 
+                                            Srv.Id WHERE Srv.Server = ?""", [server.id])
+    league_id = conn.cursor().fetchone()[0]
+    return league_id != 0
 
 def load_tryhard_settings(server):
     conn = db_access.get_db_connection()
