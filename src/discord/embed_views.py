@@ -108,8 +108,7 @@ class AdminEmbedView(UserEmbed, EmptyEmbed):
         self.title = "No unverified users"
         self.description = f'There\'s nobody to verify!'
         self.color = 0xFF0000
-        self.set_image(
-            url=f'https://static.ffx.io/images/$width_620%2C$height_414/t_crop_fill/q_86%2Cf_auto/4cd67e7495a14e514c82a814124bf47e9390b7d9')
+        self.set_image(url="https://raw.githubusercontent.com/Samsquamptch/inhouse-bot-2.0/refs/heads/feature-images/icons/slug_admin.png")
 
     def stats_embed(self):
         user_count = client_db_interface.load_user_count(self.server)
@@ -181,8 +180,10 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.add_field(name=f'No one is in the queue', value='', inline=False)
         update_time = datetime.now(ZoneInfo("Europe/Paris")).strftime("%H:%M:%S")
         self.set_footer(text=f'Queue updated at: {update_time}')
+        self.set_image(url="https://raw.githubusercontent.com/Samsquamptch/inhouse-bot-2.0/refs/heads/feature-images/icons/slug_queue.png")
 
     def partial_queue(self, queue_list):
+        self.set_image(url=None)
         self.clear_fields()
         if any(x for x in queue_list if x.is_champion is True):
             self.description = f"A champion is in the queue!"
@@ -206,6 +207,7 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
 
     def full_queue(self, queue_list, queue_teams):
+        self.set_image(url=None)
         self.clear_fields()
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
         self.description = f'Queue is full, please join the lobby!'
