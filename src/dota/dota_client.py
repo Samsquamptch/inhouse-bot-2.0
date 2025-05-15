@@ -66,16 +66,17 @@ class DotaClient:
             for player in self.player_list:
                 dota.invite_to_lobby(player)
 
-        @dota.on('match_end')
+        @dota.on(dota2.features.Lobby.EVENT_LOBBY_CHANGED)
         def update_player_stats():
-            if dota.lobby.match_outcome == EMatchOutcome.RadVictory:
-                dota_db_interface.update_match_records(self.radiant_team, self.dire_team, self.server)
-            else:
-                dota_db_interface.update_match_records(self.dire_team, self.radiant_team, self.server)
-            dota_db_interface.update_autolobby_status("MatchStatus", self.match_id)
-            dota.destroy_lobby()
-            with self.lock:
-                self.finished = True
+            if int(dota.lobby.state) == 3:
+                if dota.lobby.match_outcome == EMatchOutcome.RadVictory:
+                    dota_db_interface.update_match_records(self.radiant_team, self.dire_team, self.server)
+                else:
+                    dota_db_interface.update_match_records(self.dire_team, self.radiant_team, self.server)
+                dota_db_interface.update_autolobby_status("MatchStatus", self.match_id)
+                dota.destroy_lobby()
+                with self.lock:
+                    self.finished = True
 
         @manager.on('message')
         def message_check(c, message):
