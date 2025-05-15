@@ -13,6 +13,8 @@ class ClientManager:
             print("looping")
             match_list = dota_db_interface.load_active_lobbies()
             if not match_list and self.bots:
+                for lobby in self.bots:
+                    lobby.stop()
                 self.bots.clear()
                 print("bots cleared")
             else:

@@ -63,6 +63,8 @@ class DotaClient:
         def lobby_new(lobby):
             print('%s joined lobby %s' % (dota.steam.username, lobby.lobby_id))
             manager.join_lobby_channel()
+            for player in self.player_list:
+                dota.invite_to_lobby(player)
 
         @dota.on('match_end')
         def update_player_stats():
@@ -85,19 +87,19 @@ class DotaClient:
                         players.append(user)
                 for player in players:
                     if player.id not in self.player_list:
-                        dota.practice_lobby_kick(player.id - 76561197960265728)
+                        dota.channels.lobby.send("Kicking players who aren't in the queue")
+                        dota.practice_lobby_kick(self.bit_converter(player.id))
                         return
-                if not players:
-                    print("No players in queue")
-                    return
-                elif len(players) < 10:
-                    print("Number of players is only " + str(len(players)))
+                if len(players) < 10:
+                    dota.channels.lobby.send("Not enough players to start, please fill all slots.")
                     return
                 for player in players:
                     if player.team == 0:
-                        self.radiant_team.append(player.id - 76561197960265728)
+                        self.radiant_team.append(self.bit_converter(player.id))
                     else:
-                        self.dire_team.append(player.id - 76561197960265728)
+                        self.dire_team.append(self.bit_converter(player.id))
+                dota.channels.lobby.send("Starting match, good luck!")
+                sleep(2)
                 dota_db_interface.update_autolobby_status("LobbyStatus", self.match_id)
                 dota.launch_practice_lobby()
 
@@ -108,3 +110,7 @@ class DotaClient:
 
     def stop(self):
         self._stop_event.set()
+
+    # In cases where the Dota ID and not the Steam ID are required, this converts them
+    def bit_converter(self, player_id):
+        return player_id - 76561197960265728
