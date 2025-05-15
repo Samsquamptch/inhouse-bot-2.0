@@ -1,10 +1,6 @@
 import discord
 import client_db_interface
-import admin_panel
-import register_user
-import menu_admin_options
-import inhouse_queue
-
+import file_loader
 
 class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
     def __init__(self):
@@ -13,14 +9,15 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
 
     admin_channel = discord.ui.TextInput(label='Set admin channel')
     queue_channel = discord.ui.TextInput(label='Set queue channel')
-    global_channel = discord.ui.TextInput(label='Set global queue channel')
     chat_channel = discord.ui.TextInput(label='Set chat channel')
     admin_role = discord.ui.TextInput(label="Set Admin Role")
 
+    # As global queue was not implemented, this has been set to zero by default
+    # it wasn't removed entirely so that it can be implemented in the future
     async def on_submit(self, interaction: discord.Interaction):
         try:
             queue_id = int(str(self.queue_channel))
-            global_id = int(str(self.global_channel))
+            global_id = 0
             chat_id = int(str(self.chat_channel))
             admin_id = int(str(self.admin_channel))
         except ValueError:
@@ -44,15 +41,15 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
 class ConfigButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        with open("../../data/setup.txt", "r") as setup:
-            self.setup_guide = setup.read().split("\n\n")
-            self.config_user = None
-            self.message = None
-            self.completed = False
+        self.setup_image = file_loader.load_setup_image()
+        self.setup_guide = file_loader.load_initialisation_instructions()
+        self.config_user = None
+        self.message = None
+        self.completed = False
 
     async def config_start(self, ctx):
         self.config_user = ctx.author
-        self.message = await ctx.channel.send(self.setup_guide[0], view=self)
+        self.message = await ctx.channel.send(self.setup_guide[0], view=self, file=discord.File(self.setup_image))
 
     async def button_state(self, setup_status):
         # False means confirm button can be pressed (i.e. channels have been configured). True means setup is complete

@@ -5,7 +5,7 @@ import client_db_interface
 from _datetime import datetime, timedelta
 import asyncio
 
-from src.discord import team_balancer, validate_user
+from src.discord import team_balancer
 from src.discord.embed_superclass import ChannelEmbeds, QueueSettings
 
 
@@ -18,7 +18,7 @@ class Gamer:
         self.steam = gamer_stats[1]
         self.mmr = gamer_stats[2]
         role_pref = [gamer_stats[3], gamer_stats[4], gamer_stats[5], gamer_stats[6], gamer_stats[7]]
-        self.role_preference = validate_user.check_role_priority(role_pref)
+        self.role_preference = client_db_interface.check_role_priority(role_pref)
         self.is_champion = is_champion
 
 

@@ -3,6 +3,6 @@ Please press the "Configure Settings" button to add the ID for each required cha
 The required channels are:
 - Admin Channel
 - Queue Channel
-- Global Queue Channel
 - Chat Channel
-More details can be found on the GitHub setup page
+- Inhouse Admin Role
+More details can be found on the [GitHub wiki quick start page](https://github.com/Samsquamptch/inhouse-bot-2.0/wiki/Quick-Setup-Guide)
