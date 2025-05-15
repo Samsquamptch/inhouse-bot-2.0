@@ -18,7 +18,7 @@ class NotifyUpdateModal(discord.ui.Modal, title='Update MMR'):
         date_format = '%Y-%m-%d'
         date_obj = datetime.datetime.strptime(date_str, date_format)
         current_day = datetime.datetime.today()
-        if current_day <= date_obj + datetime.timedelta(days=0):
+        if current_day <= date_obj + datetime.timedelta(days=14):
             return True
         else:
             return False

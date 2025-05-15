@@ -1,11 +1,6 @@
 import sqlite3
 import dotenv
-
-
-def get_db_connection():
-    conn = sqlite3.connect(f'../../data/inhouse.db')
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+import db_access
 
 
 def set_env_variable(key, newvalue):
@@ -21,34 +16,35 @@ def delete_env_variable(key):
 
 
 def get_reference_list(identifier=None):
-    conn = get_db_connection()
+    conn = db_access.get_db_connection()
     if not identifier:
-        login_list = list(conn.cursor().execute("""SELECT Title, ServerId FROM SteamLogin""").fetchall())
+        login_list = list(conn.cursor().execute("""SELECT stl.Title, srv.Server FROM SteamLogin stl JOIN Server srv ON
+                                            srv.Id = stl.ServerId""").fetchall())
     else:
         login_list = list(conn.cursor().execute("""SELECT Title, ServerId FROM SteamLogin
                                         WHERE Title = ? OR ServerId = ?""", [identifier, identifier]).fetchall())
-    conn.close()
+    db_access.close_db_connection(conn)
     return login_list
 
 
 def get_reference_server(identifier):
-    conn = get_db_connection()
+    conn = db_access.get_db_connection()
     conn.row_factory = lambda cursor, row: row[0]
-    login_list = list(conn.cursor().execute("""SELECT ServerId FROM SteamLogin
-                                            WHERE Title = ? OR ServerId = ?""", [identifier, identifier]).fetchall())
-    conn.close()
+    login_list = list(conn.cursor().execute("""SELECT srv.Server FROM Server srv JOIN SteamLogin stl ON srv.Id = stl.ServerId
+                                            WHERE stl.Title = ? OR srv.Server = ?""", [identifier, identifier]).fetchall())
     server = str(login_list[0])
+    db_access.close_db_connection(conn)
     return server
 
 
 def delete_credentials(identifier):
-    conn = get_db_connection()
+    conn = db_access.get_db_connection()
     server = get_reference_server(identifier)
     delete_env_variable(server + "username")
     delete_env_variable(server + "password")
     conn.cursor().execute("""DELETE FROM SteamLogin WHERE Title = ? OR ServerId = ?""", [identifier, identifier])
     conn.commit()
-    conn.close()
+    db_access.close_db_connection(conn)
     return
 
 
@@ -60,31 +56,31 @@ def edit_credentials(identifier, username, password):
 
 
 def add_credentials(title, server, username, password):
-    conn = get_db_connection()
+    conn = db_access.get_db_connection()
     try:
-        conn.cursor().execute("""INSERT INTO SteamLogin (Title, ServerId) Values (?, ?)""",
+        conn.cursor().execute("""INSERT INTO SteamLogin (Title, ServerId) Values (?, (SELECT Id FROM Server WHERE Server = ?))""",
                               [title, server])
         set_env_variable(server + "username", username)
         set_env_variable(server + "password", password)
         conn.commit()
-        conn.close()
+        db_access.close_db_connection(conn)
     except sqlite3.IntegrityError:
         print("Server does not exist within the database!")
     return
 
 
 def database_exists():
-    conn = get_db_connection()
+    conn = db_access.get_db_connection()
     check = conn.cursor().execute("""SELECT name FROM sqlite_master; """).fetchall()
-    conn.close()
+    db_access.close_db_connection(conn)
     return check
 
 
 def create_tables():
-    conn = get_db_connection()
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INTEGER PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
+    conn = db_access.get_db_connection()
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS User(Id INT PRIMARY KEY, Discord BIGINT UNIQUE, Steam BIGINT UNIQUE,
         MMR INT, Pos1 INT, Pos2 INT,Pos3 INT, Pos4 INT, Pos5 INT, LastUpdated DATETIME)""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Server(Id INTEGER PRIMARY KEY, Server BIGINT, AdminChannel BIGINT,
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS Server(Id INT PRIMARY KEY, Server BIGINT, AdminChannel BIGINT,
         QueueChannel BIGINT, GlobalChannel BIGINT, ChatChannel BIGINT, ChampionRole BIGINT, AdminRole BIGINT)""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserServer(UserId INT, ServerId INT, Verified BOOL, Banned BOOL, 
         Wins INT, Losses INT, FOREIGN KEY(UserId) REFERENCES User(Id), FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
@@ -94,8 +90,12 @@ def create_tables():
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS MessageIds(ServerId INT UNIQUE, AdminPanel BIGINT, AdminMenu BIGINT, 
         UserButtons BIGINT, UserMenu BIGINT, InhouseQueue BIGINT, GlobalQueue BIGINT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
-    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, AllChat BOOL, Region INT,
-        LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS DotaSettings(ServerId INT, LobbyName CHAR, LobbyPassword CHAR, Region INT,
+                            LeagueId INT, ViewerDelay INT, FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
     conn.cursor().execute("""CREATE TABLE IF NOT EXISTS SteamLogin(ServerId INT UNIQUE, Title CHAR,
         FOREIGN KEY(ServerId) REFERENCES Server(Id))""")
-    conn.close()
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS AutoLobby(MatchId INT PRIMARY KEY, ServerId INT, LobbyStatus BOOL,
+        MatchStatus BOOL, FOREIGN KEY(ServerId) REFERENCES Server(Id)""")
+    conn.cursor().execute("""CREATE TABLE IF NOT EXISTS UserLobby(MatchId INT, UserId INT, FOREIGN KEY(UserId) REFERENCES User(Id), 
+        FOREIGN KEY(MatchId) REFERENCES AutoLobby(MatchId)""")
+    db_access.close_db_connection(conn)

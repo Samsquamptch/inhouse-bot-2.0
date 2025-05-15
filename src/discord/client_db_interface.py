@@ -1,9 +1,7 @@
 import discord.utils
-import pandas as pd
+import src.data.db_access as db_access
 from datetime import datetime
 from dotenv import get_key
-import discord_database_access as db_access
-
 
 def get_discord_token():
     return get_key("../../credentials/.env", "TOKEN")
@@ -47,6 +45,9 @@ def add_default_settings(server):
     conn.cursor().execute("""INSERT INTO ServerSettings (ServerId, AfkTimer, SkillFloor, SkillCeiling, PingRole, Tryhard)
                             VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, NULL, False)""",
                           [server.id])
+    conn.cursor().execute("""INSERT INTO DotaSettings (ServerId, LobbyName, LobbyPassword, Region, LeagueId, ViewerDelay)
+                                VALUES ((SELECT Id from Server where Server = ?), 'Slug Lobby', slug, 3, 0, 2)""",
+                          [server.id])
     conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
                           [server.id])
     conn.commit()
@@ -69,27 +70,27 @@ def load_ladder_list(server):
     return ladder_list
 
 def load_admin_channel(server):
-    channel_id = db_access.load_channel_id(server, "AdminChannel")
+    channel_id = load_channel_id(server, "AdminChannel")
     return discord.utils.get(server.channels, id=channel_id)
 
 
 def load_queue_channel(server):
-    channel_id = db_access.load_channel_id(server, "QueueChannel")
+    channel_id = load_channel_id(server, "QueueChannel")
     return discord.utils.get(server.channels, id=channel_id)
 
 
 def load_global_channel(server):
-    channel_id = db_access.load_channel_id(server, "QueueChannel")
+    channel_id = load_channel_id(server, "QueueChannel")
     return discord.utils.get(server.channels, id=channel_id)
 
 
 def load_chat_channel(server):
-    channel_id = db_access.load_channel_id(server, "ChatChannel")
+    channel_id = load_channel_id(server, "ChatChannel")
     return discord.utils.get(server.channels, id=channel_id)
 
 
 def check_chat_channel(message_channel, server):
-    chat_channel_id = db_access.load_channel_id(server, "ChatChannel")
+    chat_channel_id = load_channel_id(server, "ChatChannel")
     print(message_channel.id)
     print(chat_channel_id)
     return message_channel.id == chat_channel_id
@@ -122,12 +123,12 @@ def check_admin(user, server):
 
 
 def load_admin_role(server):
-    admin_id = db_access.load_id_from_server(server, "AdminRole")
+    admin_id = load_id_from_server(server, "AdminRole")
     return discord.utils.get(server.roles, id=admin_id)
 
 
 def load_champion_role(server):
-    champion_id = db_access.load_id_from_server(server, "ChampionRole")
+    champion_id = load_id_from_server(server, "ChampionRole")
     return discord.utils.get(server.roles, id=champion_id)
 
 
@@ -163,7 +164,7 @@ def get_verified_status(user, server):
 
 
 def get_user_status(user, server):
-    status_list = db_access.load_user_status(user.id, server.id)
+    status_list = load_user_status(user.id, server.id)
     if not status_list[0]:
         return ""
     verified = status_list[0][0]
@@ -198,7 +199,7 @@ def auto_register(user, server):
 
 
 def get_unverified_users(server):
-    unverified_ids = db_access.load_unverified_ids(server)
+    unverified_ids = load_unverified_ids(server)
     unverified_list = []
     for user in unverified_ids:
         unverified_list.append(user)
@@ -206,19 +207,19 @@ def get_unverified_users(server):
 
 
 def enable_verification(user, server):
-    db_access.set_verification(user, server, True)
+    set_verification(user, server, True)
 
 
 def disable_verification(user, server):
-    db_access.set_verification(user, server, False)
+    set_verification(user, server, False)
 
 
 def ban_user(user, server):
-    db_access.set_banned(user, server, True)
+    set_banned(user, server, True)
 
 
 def unban_user(user, server):
-    db_access.set_banned(user, server, False)
+    set_banned(user, server, False)
 
 
 def update_dota_settings(server, column, new_value):
@@ -229,15 +230,19 @@ def update_dota_settings(server, column, new_value):
     db_access.close_db_connection(conn)
     return
 
-
 def load_dota_settings(server):
     conn = db_access.get_db_connection()
-    settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM 
-                                              DotaSettings Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server 
-                                              = ?""", [server.id]))
+    settings = list(conn.cursor().execute("""SELECT Dts.LobbyName, Dts.Region, Dts.LeagueId, Dts.ViewerDelay FROM DotaSettings 
+                                            Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server = ?""", [server.id]))
     db_access.close_db_connection(conn)
     return list(settings[0])
 
+def check_ticket_exists(server):
+    conn = db_access.get_db_connection()
+    conn.cursor().execute("""SELECT Dts.LeagueId FROM DotaSettings Dts JOIN Server Srv ON Dts.ServerId = 
+                                            Srv.Id WHERE Srv.Server = ?""", [server.id])
+    league_id = conn.cursor().fetchone()[0]
+    return league_id != 0
 
 def load_tryhard_settings(server):
     conn = db_access.get_db_connection()
@@ -266,28 +271,37 @@ def load_discord_settings(server):
     return list(settings[0])
 
 
-def setup_autolobby():
+def add_autolobby_match(server, player_list):
     conn = db_access.get_db_connection()
-    data = [1, 0]
-    conn.cursor().execute("""INSERT INTO Autolobby (Id, Active) VALUES (?, ?)""", data)
+    conn.cursor().execute("""INSERT INTO Autolobby (GlobalQueue, LobbyStatus, MatchStatus, ServerId) SELECT 0, 0, 0, 
+            Id FROM Server WHERE Server = ?""", [server])
+    match_id = conn.cursor().lastrowid
+    conn.commit()
+    for player in player_list[0]:
+        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) VALUES (?, ?)""", [match_id, player])
+        conn.commit()
+    for player in player_list[1]:
+        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) VALUES (?, ?)""", [match_id, player])
+        conn.commit()
+    db_access.close_db_connection(conn)
+    return
+
+
+def close_autolobby(server):
+    conn = db_access.get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"""UPDATE Autolobby SET LobbyStatus = 1, MatchStatus = 1 WHERE EXISTS (SELECT 1 From Server WHERE 
+            Server.Id = AutoLobby.ServerId AND Server.Server = ?""", server.id)
     conn.commit()
     db_access.close_db_connection(conn)
 
 
-def update_autolobby(value):
+def check_autolobby(server):
     conn = db_access.get_db_connection()
     cur = conn.cursor()
-    cur.execute("""UPDATE Autolobby SET Active = ? WHERE Id = ?""", value)
-    conn.commit()
-    db_access.close_db_connection(conn)
-
-
-def check_autolobby():
-    conn = db_access.get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT Active from Autolobby where Id=?", [1])
+    cur.execute("SELECT Alb.LobbyStatus FROM Autolobby JOIN Server Srv ON Srv.Id = Alb.ServerId WHERE "
+                "Srv.Server=? AND Alb.MatchStatus = ?", [server.id, 0])
     match_state = cur.fetchone()[0]
-    print(match_state)
     db_access.close_db_connection(conn)
     return match_state
 
@@ -305,12 +319,12 @@ def update_user_data(discord_id, column, new_data):
 
 
 def check_discord_exists(user_id):
-    discord_list = db_access.check_for_value("Discord", user_id)
+    discord_list = check_for_value("Discord", user_id)
     return discord_list
 
 
 def check_steam_exists(steam_id):
-    discord_list = db_access.check_for_value("Steam", steam_id)
+    discord_list = check_for_value("Steam", steam_id)
     return discord_list
 
 
@@ -367,9 +381,9 @@ def get_queue_user_data(queue_ids):
     return queue_data
 
 
-# Due to how the role balancer calculations work, number weighting is saved the opposite to how users are used to (which
-# is higher number = more pref and lower number = less pref). This swap shows what users expect to see, instead of what
-# is actually happening behind the scenes (low num = more pref and high num = less pref).
+# Due to how the role balancer calculations work, number weighting is calculated the opposite to how users are used to (which
+# is higher number = more pref and lower number = less pref). This swap sets role preferences to what the bipartite graph
+# requires behind the scenes (low num = more pref and high num = less pref).
 def flip_values(data_list):
     data_numbers = [3, 4, 5, 6, 7]
     for n in data_numbers:
@@ -451,3 +465,96 @@ def user_within_mmr_range(user, mmr_bot, mmr_top):
                                           [user.id, mmr_bot, mmr_top]))
     db_access.close_db_connection(conn)
     return is_below
+
+
+def load_channel_id(server, channel_name):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    channel_id = list(
+        conn.cursor().execute(f'SELECT {channel_name} FROM Server where Server = ?', [server.id]).fetchall())
+    db_access.close_db_connection(conn)
+    return channel_id[0]
+
+
+def load_id_from_server(server, column):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    column_id = list(
+        conn.cursor().execute(f'SELECT {column} FROM Server where Server = ?', [server.id]).fetchall())
+    db_access.close_db_connection(conn)
+    return column_id[0]
+
+
+def set_banned(user, server, banned):
+    conn = db_access.get_db_connection()
+    user_id = get_user_id(user)
+    server_id = load_server_id(server)
+    conn.cursor().execute("UPDATE UserServer SET Banned = ? WHERE UserId = ? AND ServerId = ?",
+                          [banned, user_id, server_id])
+    conn.commit()
+    db_access.close_db_connection(conn)
+    return
+
+
+def get_user_id(user):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    user_id = list(conn.cursor().execute("""SELECT Id FROM User WHERE Discord = ?""", [user.id]))
+    db_access.close_db_connection(conn)
+    if not user_id:
+        return 0
+    return user_id[0]
+
+
+def load_server_id(server):
+    conn = db_access.get_db_connection()
+    conn.row_factory = lambda cursor, row: row[0]
+    server_id = list(conn.cursor().execute("""SELECT Id FROM Server WHERE Server = ?""", [server.id]))
+    db_access.close_db_connection(conn)
+    return server_id[0]
+
+
+def set_verification(user, server, verified):
+    conn = db_access.get_db_connection()
+    user_id = get_user_id(user)
+    server_id = load_server_id(server)
+    conn.cursor().execute("UPDATE UserServer SET Verified = ? WHERE UserId = ? AND ServerId = ?",
+                          [verified, user_id, server_id])
+    conn.commit()
+    db_access.close_db_connection(conn)
+    return
+
+
+def load_unverified_ids(server):
+    conn = db_access.get_db_connection()
+    unverified_ids = (
+        list(conn.cursor().execute(
+            "SELECT User.Discord, User.MMR FROM UserServer INNER JOIN Server ON Server.Id = UserServer.ServerId "
+            "JOIN User ON User.Id = UserServer.UserId WHERE Server.Server = ? AND UserServer.Verified "
+            "IS NULL", [server.id]).fetchall())
+    )
+    conn.close()
+    db_access.close_db_connection(conn)
+    return unverified_ids
+
+
+def check_for_value(column, value_check):
+    conn = db_access.get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f"SELECT Discord FROM User WHERE {column} = ?", [value_check])
+    item = cur.fetchone()
+    db_access.close_db_connection(conn)
+    if item:
+        return item
+    else:
+        return None
+
+
+def load_user_status(user_id, server_id):
+    conn = db_access.get_db_connection()
+    user_status = list(
+        conn.cursor().execute("""SELECT UserServer.Verified, UserServer.Banned FROM UserServer JOIN User 
+            ON User.Id = UserServer.UserId JOIN Server ON Server.Id = UserServer.ServerId WHERE User.Discord = ? AND Server.Server = ?""",
+                              [user_id, server_id]))
+    db_access.close_db_connection(conn)
+    return user_status

@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from src.discord import client_db_interface, validate_user
 
 
 class Commands(discord.ext.commands.Cog, name='Commands module'):
@@ -14,7 +13,7 @@ class Commands(discord.ext.commands.Cog, name='Commands module'):
 
     @commands.command()
     async def refresh(self, ctx):
-        await self.manager.remove_from_server_list(ctx)
+        await self.manager.refresh_command(ctx)
 
     # @commands.command()
     # async def stop_lobby(self, ctx):

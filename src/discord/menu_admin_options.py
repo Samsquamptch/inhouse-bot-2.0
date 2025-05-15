@@ -21,9 +21,11 @@ class AdminOptions(discord.ui.View):
             client_db_interface.update_discord_settings(self.server, "Tryhard", True)
             return "enabled"
 
-    def edit_dota_settings(self, lobby_name, region, league_id, viewer_delay):
+    def edit_dota_settings(self, lobby_name, lobby_password, region, league_id, viewer_delay):
         if lobby_name:
             client_db_interface.update_dota_settings(self.server, "LobbyName", lobby_name)
+        if lobby_password:
+            client_db_interface.update_dota_settings(self.server, "LobbyPassword", lobby_password)
         if region:
             client_db_interface.update_dota_settings(self.server, "Region", region)
         if league_id:
@@ -71,8 +73,8 @@ class AdminOptions(discord.ui.View):
                 await interaction.response.send_modal(settings)
                 await settings.wait()
                 if settings.edit_settings:
-                    self.edit_dota_settings(settings.new_lobby_name, settings.lobby_region_int, settings.league_id_int,
-                                            settings.viewer_delay_int)
+                    self.edit_dota_settings(settings.new_lobby_name, settings.new_lobby_password, settings.lobby_region_int,
+                                            settings.league_id_int, settings.viewer_delay_int)
             case "Tryhard":
                 result = self.change_tryhard_setting()
                 await interaction.response.send_message("Tryhard mode " + result, ephemeral=True, delete_after=10)
