@@ -28,9 +28,9 @@ def check_server_settings(server):
 
 def register_server(server, setup_list):
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""UPDATE Server SET AdminChannel = ?, QueueChannel = ?, GlobalChannel = ?, ChatChannel = ?, 
+    conn.cursor().execute("""UPDATE Server SET AdminChannel = ?, QueueChannel = ?, ChatChannel = ?, 
                                 AdminRole = ? WHERE Server = ?""", [setup_list[0], setup_list[1], setup_list[2],
-                                                                    setup_list[3], setup_list[4], server.id])
+                                                                    setup_list[3], server.id])
     conn.commit()
     db_access.close_db_connection(conn)
 
@@ -41,7 +41,7 @@ def add_default_settings(server):
                             VALUES ((SELECT Id from Server where Server = ?), 15, 0, 6000, NULL, False)""",
                           [server.id])
     conn.cursor().execute("""INSERT INTO DotaSettings (ServerId, LobbyName, LobbyPassword, Region, LeagueId, ViewerDelay)
-                                VALUES ((SELECT Id from Server where Server = ?), 'Slug Lobby', slug, 3, 0, 2)""",
+                                VALUES ((SELECT Id from Server where Server = ?), 'Slug Lobby', 'slug', 3, 0, 2)""",
                           [server.id])
     conn.cursor().execute("""INSERT INTO MessageIds (ServerId) VALUES ((SELECT Id from Server where Server = ?))""",
                           [server.id])
@@ -106,6 +106,8 @@ def load_message_ids(server):
                              mid.InhouseQueue, mid.GlobalQueue FROM MessageIds mid JOIN Server srv ON mid.ServerId = 
                              srv.Id WHERE srv.Server = ?""", [server.id]))
     db_access.close_db_connection(conn)
+    if not message_ids:
+        return None
     return message_ids[0]
 
 
@@ -181,10 +183,10 @@ def user_registered(user, server):
 
 
 def auto_register(user, server):
-    user_id = db_access.get_user_id(user)
+    user_id = get_user_id(user)
     if user_id == 0:
         return False
-    server_id = db_access.load_server_id(server)
+    server_id = load_server_id(server)
     conn = db_access.get_db_connection()
     conn.cursor().execute("""INSERT INTO UserServer (UserId, ServerId, Banned, Wins, Losses) VALUES (?, ?, 0, 0, 0)""",
                           [user_id, server_id])
@@ -234,9 +236,11 @@ def load_dota_settings(server):
 
 def check_ticket_exists(server):
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""SELECT Dts.LeagueId FROM DotaSettings Dts JOIN Server Srv ON Dts.ServerId = 
-                                            Srv.Id WHERE Srv.Server = ?""", [server.id])
-    league_id = conn.cursor().fetchone()[0]
+    conn.cursor().execute("""SELECT Dts.LeagueId FROM DotaSettings Dts JOIN Server Srv ON Dts.ServerId = Srv.Id WHERE Srv.Server = ?""", [server.id])
+    try:
+        league_id = conn.cursor().fetchone()[0]
+    except:
+        league_id = 0
     return league_id != 0
 
 def load_tryhard_settings(server):
@@ -268,15 +272,15 @@ def load_discord_settings(server):
 
 def add_autolobby_match(server, player_list):
     conn = db_access.get_db_connection()
-    conn.cursor().execute("""INSERT INTO Autolobby (GlobalQueue, LobbyStatus, MatchStatus, ServerId) SELECT 0, 0, 0, 
-            Id FROM Server WHERE Server = ?""", [server])
+    conn.cursor().execute("""INSERT INTO Autolobby (LobbyStatus, MatchStatus, ServerId) SELECT 0, 0, 
+            Id FROM Server WHERE Server = ?""", [server.id])
     match_id = conn.cursor().lastrowid
     conn.commit()
     for player in player_list[0]:
-        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) VALUES (?, ?)""", [match_id, player])
+        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) SELECT ?, Id FROM User WHERE Discord = ?""", [match_id, player])
         conn.commit()
     for player in player_list[1]:
-        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) VALUES (?, ?)""", [match_id, player])
+        conn.cursor().execute("""INSERT INTO UserLobby (MatchId, UserId) SELECT ?, Id FROM User WHERE Discord = ?""", [match_id, player])
         conn.commit()
     db_access.close_db_connection(conn)
     return
@@ -294,8 +298,8 @@ def close_autolobby(server):
 def check_autolobby(server):
     conn = db_access.get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT Alb.LobbyStatus FROM Autolobby JOIN Server Srv ON Srv.Id = Alb.ServerId WHERE "
-                "Srv.Server=? AND Alb.MatchStatus = ?", [server.id, 0])
+    cur.execute("""SELECT Alb.LobbyStatus FROM Autolobby JOIN Server Srv ON Srv.Id = Alb.ServerId WHERE Srv.Server=? 
+        AND Alb.MatchStatus = ?""", [server.id, 0])
     match_state = cur.fetchone()[0]
     db_access.close_db_connection(conn)
     return match_state
@@ -355,8 +359,8 @@ def add_user_data(player):
 
 def remove_user_data(user, server):
     conn = db_access.get_db_connection()
-    user_id = db_access.get_user_id(user)
-    server_id = db_access.load_server_id(server)
+    user_id = get_user_id(user)
+    server_id = load_server_id(server)
     conn.cursor().execute("""DELETE FROM UserServer where UserId = ? AND ServerId = ?""", [user_id, server_id])
     conn.commit()
     db_access.close_db_connection(conn)
@@ -364,6 +368,7 @@ def remove_user_data(user, server):
 
 
 def get_queue_user_data(queue_ids):
+    queue_ids = list(queue_ids)
     conn = db_access.get_db_connection()
     user_data = list(
         conn.cursor().execute("SELECT Discord, Steam, MMR, Pos1, Pos2, Pos3, Pos4, Pos5 FROM User WHERE Discord IN (?,?,?,?,?,?,?,?,?,?)",

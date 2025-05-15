@@ -77,16 +77,21 @@ class UserEmbed(discord.Embed):
         self.add_field(name='Rank', value=f'{badge} \u0020\u0020', inline=True)
         self.add_field(name='Wins', value=data_list[8], inline=True)
         self.add_field(name='Losses', value=data_list[9], inline=True)
-        if data_list[9] == 0:
-            winrate = 100
-        elif data_list[8] > 0:
-            winrate = round((data_list[8] / (data_list[8] + data_list[9])), 2)
-        self.add_field(name='Winrate', value=f'{winrate}%', inline=True)
+        self.add_field(name='Winrate', value=f'{self.calculate_winrate(data_list[8], data_list[9])}%', inline=True)
         self.add_field(name='Role Preferences', value='', inline=False)
         role_list = ["Carry", "Midlane", "Offlane", "Soft Support", "Hard Support"]
         for i in range(3, 8):
             self.add_field(name=f'{role_list[i - 3]} ', value=f'{data_list[i]}', inline=False)
         self.set_image(url=None)
+
+    def calculate_winrate(self, wins, losses):
+        if losses == 0:
+            winrate = 100
+        elif wins == 0:
+            winrate = 0
+        else:
+            winrate = round((wins / (wins + losses)), 2)
+        return winrate
 
 
 class EmptyEmbed(ABC):
@@ -207,7 +212,6 @@ class QueueEmbedView(discord.Embed, EmptyEmbed):
         self.set_footer(text=f'Queue updated at: {update_time} | Average MMR: {average_mmr}')
 
     def full_queue(self, queue_list, queue_teams):
-        self.set_image(url=None)
         self.clear_fields()
         queue_roles = ["Carry", "Midlane", "Offlane", "Soft Supp", "Hard Supp"]
         self.description = f'Queue is full, please join the lobby!'

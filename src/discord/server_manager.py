@@ -43,6 +43,8 @@ class ServerManager:
     # Deletes all previous posts. Not the most elegant solution but it does the job
     async def delete_messages(self, server, channel_list):
         message_id_list = client_db_interface.load_message_ids(server)
+        if not message_id_list:
+            return
         i = 0
         while i < 2:
             try:

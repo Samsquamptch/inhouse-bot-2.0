@@ -135,7 +135,7 @@ class InhouseQueueEmbed(ChannelEmbeds, QueueSettings):
         else:
             gamer.last_action = datetime.now(tz=None)
 
-    async def bot_clear_queue(self):
+    def bot_clear_queue(self):
         if len(self.queued_players) < 10:
             return False
         del self.queued_players[:10]

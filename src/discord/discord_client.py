@@ -18,6 +18,7 @@ class DiscordBot(commands.Bot):
             if not client_db_interface.check_server_in_db(server):
                 client_db_interface.add_server_to_db(server)
             if client_db_interface.check_server_settings(server):
+                print(server.id)
                 await self.server_manager.add_embeds(server)
         print('Channels loaded')
         await self.add_cog(Commands(self.server_manager))

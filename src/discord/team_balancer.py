@@ -1,5 +1,6 @@
 import random
 
+import pandas as pd
 import networkx as nx
 from networkx.algorithms import bipartite
 
@@ -8,7 +9,9 @@ from src.discord import client_db_interface
 
 def assign_teams(queue_ids):
     user_data = client_db_interface.get_queue_user_data(queue_ids)
-    queue = user_data.sort_values('mmr', ascending=False)
+    columns = ['disc', 'Steam', 'mmr', 'Pos1', 'Pos2', 'Pos3', 'Pos4', 'Pos5']
+    df = pd.DataFrame(user_data, columns=columns)
+    queue = df.sort_values('mmr', ascending=False)
     team_uno = sort_balancer(queue['mmr'].tolist())
     team_dos = mean_balancer(queue['mmr'].tolist())
     team_tres = draft_balancer(queue['mmr'].tolist())

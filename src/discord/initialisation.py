@@ -17,14 +17,13 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
     async def on_submit(self, interaction: discord.Interaction):
         try:
             queue_id = int(str(self.queue_channel))
-            global_id = 0
             chat_id = int(str(self.chat_channel))
             admin_id = int(str(self.admin_channel))
         except ValueError:
             await interaction.response.send_message(content="please only enter numbers for the Channel IDs",
                                                     ephemeral=True)
             return
-        channel_list = [admin_id, queue_id, global_id, chat_id, admin_id]
+        channel_list = [admin_id, queue_id, chat_id, admin_id]
         for channel in channel_list:
             print(channel)
             if not discord.utils.get(interaction.guild.channels, id=channel):
