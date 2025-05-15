@@ -1,10 +1,6 @@
 import discord
 import client_db_interface
-import admin_panel
-import register_user
-import menu_admin_options
-import inhouse_queue
-
+import file_loader
 
 class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
     def __init__(self):
@@ -44,15 +40,15 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
 class ConfigButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        with open("../../data/setup.txt", "r") as setup:
-            self.setup_guide = setup.read().split("\n\n")
-            self.config_user = None
-            self.message = None
-            self.completed = False
+        self.setup_image = file_loader.load_setup_image()
+        self.setup_guide = file_loader.load_initialisation_instructions()
+        self.config_user = None
+        self.message = None
+        self.completed = False
 
     async def config_start(self, ctx):
         self.config_user = ctx.author
-        self.message = await ctx.channel.send(self.setup_guide[0], view=self)
+        self.message = await ctx.channel.send(self.setup_guide[0], view=self, file=discord.File(self.setup_image))
 
     async def button_state(self, setup_status):
         # False means confirm button can be pressed (i.e. channels have been configured). True means setup is complete

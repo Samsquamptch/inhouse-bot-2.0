@@ -101,15 +101,34 @@ class ServerManager:
     def start_check_loop(self):
         self.queue_manager.check_full_queues.start()
 
-    async def refresh_command(self, ctx):
-        if not client_db_interface.check_server_settings(ctx.guild):
-            await ctx.send("Server not set up yet!")
-        if not client_db_interface.check_admin(ctx.author, ctx.guild):
-            await ctx.send("Only admins can use this role")
-        await self.remove_from_server_list(ctx)
+    async def stop_lobby_command(self, ctx):
+        server = self.check_channel(ctx)
+        if not server:
+            return
+        error_message = self.check_server_permissions(ctx)
+        if not error_message:
+            await client_db_interface.close_autolobby(ctx.guild)
+            await ctx.send("Please wait for up to a minute for the queue to clear")
+        else:
+            await ctx.send(error_message)
 
-    async def remove_from_server_list(self, ctx):
-        server = next((x for x in self.server_list if x.server == ctx.guild.id), None)
+    async def refresh_command(self, ctx):
+        server = self.check_channel(ctx)
+        if not server:
+            return
+        error_message = self.check_server_permissions(ctx)
+        if not error_message:
+            await self.remove_from_server_list(server)
+        else:
+            await ctx.send(error_message)
+
+    async def check_server_permissions(self, ctx):
+        if not client_db_interface.check_server_settings(ctx.guild):
+            return "Server not set up yet!"
+        if not client_db_interface.check_admin(ctx.author, ctx.guild):
+            return "Only admins can use this role"
+
+    async def remove_from_server_list(self, server):
         if server:
             print("Clearing channels for server " + server.name)
             self.server_list.remove(server)

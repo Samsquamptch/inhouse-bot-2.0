@@ -4,6 +4,7 @@ import client_db_interface
 from server_manager import ServerManager
 from src.discord.bot_commands import Commands
 from src.discord.queue_manager import QueueManager
+import file_loader
 
 
 class DiscordBot(commands.Bot):
@@ -24,5 +25,5 @@ class DiscordBot(commands.Bot):
 
 
 bot = DiscordBot(discord.Intents.all())
-bot.run(client_db_interface.get_discord_token())
+bot.run(file_loader.get_discord_token())
 
