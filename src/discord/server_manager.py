@@ -6,7 +6,7 @@ import inhouse_queue
 import initialisation
 import menu_user_options
 from src.discord.embed_superclass import AdminPanelUserList
-from src.discord.embed_views import AdminEmbedView, UserEmbed, QueueEmbedView
+from src.discord.embed_views import AdminEmbedView, QueueEmbedView
 
 
 class ChannelList:
