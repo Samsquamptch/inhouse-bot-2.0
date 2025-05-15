@@ -9,14 +9,15 @@ class SetupModal(discord.ui.Modal, title='Text Channels Configuration'):
 
     admin_channel = discord.ui.TextInput(label='Set admin channel')
     queue_channel = discord.ui.TextInput(label='Set queue channel')
-    global_channel = discord.ui.TextInput(label='Set global queue channel')
     chat_channel = discord.ui.TextInput(label='Set chat channel')
     admin_role = discord.ui.TextInput(label="Set Admin Role")
 
+    # As global queue was not implemented, this has been set to zero by default
+    # it wasn't removed entirely so that it can be implemented in the future
     async def on_submit(self, interaction: discord.Interaction):
         try:
             queue_id = int(str(self.queue_channel))
-            global_id = int(str(self.global_channel))
+            global_id = 0
             chat_id = int(str(self.chat_channel))
             admin_id = int(str(self.admin_channel))
         except ValueError:
