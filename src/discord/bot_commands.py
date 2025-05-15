@@ -16,10 +16,5 @@ class Commands(discord.ext.commands.Cog, name='Commands module'):
         await self.manager.refresh_command(ctx)
 
     @commands.command()
-    async def post_message(self, ctx):
-        image = file_loader.load_setup_image()
-        await ctx.send(file=discord.File(image))
-
-    @commands.command()
     async def stop_lobby(self, ctx):
         await self.manager.stop_lobby_command(ctx)
