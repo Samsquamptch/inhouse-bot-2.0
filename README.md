@@ -2,6 +2,7 @@
 A lightweight Dota 2 Inhouse Bot capable of supporting multiple servers simultaneously. <br> 
 This project is a continuation of the [Birdhouse Inhouse bot](https://github.com/Samsquamptch/BirdHouse-Inhouse-Bot), 
 which itself was intended to be a successor to the [Dota2 EU Ladder Bot](https://github.com/UncleVasya/Dota2-EU-Ladder).
+The bot was built using Python 3.10.0, along with the Discord.py and Dota2 APIs for interacting with Discord and Dota 2.
 
 ## Key Features
 - Improved UI and UX for ease of use
